@@ -63,10 +63,8 @@ class aws {
 					$max_chunk =  floor($filesize / ($parts-1) /1024/1024);
 					$found_match = false;
 					for ($i = $min_chunk; $i <= $max_chunk; $i++) {
-						echo PHP_EOL . 'Trying '. $i .' Mb chunks...';
 						if (calculate_aws_etag($filename, $i) === $expected) {
 							$found_match = true;
-							echo ' BINGO!'. PHP_EOL;
 							break;
 						}
 					}
