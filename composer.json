@@ -19,6 +19,6 @@
         "psr-4": {
             "winternet\\jensenfw2\\": "src/"
         },
-        "files": ["src/_functions.php"]
+        "_comment": "To always include a file whenever this library is used add a property here here called 'files' with the value of [\"src/_functions.php\"]"
     }
 }
