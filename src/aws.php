@@ -1,8 +1,8 @@
 <?php
 namespace winternet\jensenfw2;
 
-class Aws {
-	public static function calculateEtag($filename, $chunksize, $expected = false) {
+class aws {
+	public static function calculate_etag($filename, $chunksize, $expected = false) {
 		/*
 		DESCRIPTION:
 		- calculate Amazon AWS ETag used on the S3 service
