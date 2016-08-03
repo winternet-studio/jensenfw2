@@ -13,7 +13,7 @@ class imaging {
 		- $image_path_rgb : full path required
 		- $image_path_cmyk : full path required
 		OUTPUT:
-		- 
+		-
 		*/
 		$defaults = array(
 			'rgb_icc_profile_path' => '',
@@ -23,7 +23,7 @@ class imaging {
 		);
 
 		if (!extension_loaded('imagick')) {
-			throw new Exception('The extension Imagick is not installed. Required for converting RGB to CMYK.');
+			throw new core\system_error('The extension Imagick is not installed. Required for converting RGB to CMYK.');
 		}
 
 		// TODO: check *_icc_profile_path has been set, check input file exists, check output file written
@@ -58,9 +58,47 @@ class imaging {
 		$img = null;
 	}
 
-	public function get_colorspace($image_path) {
-		// TODO: change to return an understandable string instead, like 'rgb' / 'cmyk'
-		$img = new Imagick($image_path_rgb);
-		return $img->getImageColorspace();
+	static public function get_colorspace($image_path) {
+		$img = new Imagick($image_path);
+		$int = $img->getImageColorspace();
+
+		// Source: http://php.net/manual/en/imagick.setimagecolorspace.php (comment by "jdstraughan dot com at gmail dot com")
+		if ($int == 0) {
+			return 'undefined';
+		} elseif ($int == 1) {
+			return 'RGB';
+		} elseif ($int == 2) {
+			return 'GRAY';
+		} elseif ($int == 3) {
+			return 'Transparent';
+		} elseif ($int == 4) {
+			return 'OHTA';
+		} elseif ($int == 5) {
+			return 'LAB';
+		} elseif ($int == 6) {
+			return 'XYZ';
+		} elseif ($int == 7) {
+			return 'YCbCr';
+		} elseif ($int == 8) {
+			return 'YCC';
+		} elseif ($int == 9) {
+			return 'YIQ';
+		} elseif ($int == 10) {
+			return 'YPbPr';
+		} elseif ($int == 11) {
+			return 'YUV';
+		} elseif ($int == 12) {
+			return 'CMYK';
+		} elseif ($int == 13) {
+			return 'sRGB';
+		} elseif ($int == 14) {
+			return 'HSB';
+		} elseif ($int == 15) {
+			return 'HSL';
+		} elseif ($int == 16) {
+			return 'HWB';
+		} else {
+			return $int;
+		}
 	}
 }
