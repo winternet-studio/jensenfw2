@@ -19,7 +19,7 @@ class imaging {
 			'rgb_icc_profile_path' => '',
 			'cmyk_icc_profile_path' => '',
 			'force_overwrite' => false,
-			'jpg_compression_quality' => 96,
+			'jpg_compression_quality' => 80,
 		);
 
 		if (!extension_loaded('imagick')) {
