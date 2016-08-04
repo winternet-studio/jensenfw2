@@ -59,6 +59,10 @@ class imaging {
 	}
 
 	static public function get_colorspace($image_path) {
+		if (!extension_loaded('imagick')) {
+			throw new core\system_error('The extension Imagick is not installed. Required for converting RGB to CMYK.');
+		}
+
 		$img = new Imagick($image_path);
 		$int = $img->getImageColorspace();
 
