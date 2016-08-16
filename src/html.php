@@ -53,7 +53,10 @@ class html {
 						$is_new_block_element = true;
 					}
 					if (!empty($attributes)) {  //no reason to add it if it is empty
-						$the_optlist[$id]['attribs'] = $level;
+						$the_optlist[$id]['attribs'] = $attributes;
+						if ($the_optlist[$id]['attribs']['style']) {
+							$the_optlist[$id]['attribs']['style_parsed'] = self::parse_style_css($the_optlist[$id]['attribs']['style']);
+						}
 					}
 				} elseif (is_array($a) && array_key_exists('children', $a)) {
 					$process_array($a['children'], $the_output, $the_optlist, ++$level);
@@ -85,5 +88,15 @@ class html {
 
 		$process_array($dom, $the_output, $the_optlist);
 		return $the_output;
+	}
+
+	static public function parse_style_css($css) {
+		// Source: http://stackoverflow.com/questions/4432334/parse-inline-css-values-with-regex
+		$output = array();
+		preg_match_all("/([\w-]+)\s*:\s*([^;]+)\s*;?/", $css, $matches, PREG_SET_ORDER);
+		foreach ($matches as $match) {
+			$output[$match[1]] = $match[2];
+		}
+		return $output;
 	}
 }
