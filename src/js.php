@@ -53,9 +53,10 @@ class js {
 			$out  = "<script type=\"text/javascript\">\r\n";
 			$out .= "/* <![CDATA[ */\r\n";
 		}
-		$out .= "function ". $options['js_function_name'] ."(ref) {\r\n";  //default: function getphp()
-		$out .= "var v = ". json_encode($a) .";\r\n";
-		$out .= "if (typeof v[ref]==\"undefined\"){alert(\"Configuration error. The given reference '\"+ ref +\"' does not exist.\");return \"UNKNOWN_REFERENCE:\"+ref;}";
+		$out .= "function ". $options['js_function_name'] ."(ref){\r\n";  //default: function getphp()
+		$out .= "var v=". json_encode($a) .";\r\n";
+		$out .= "if(typeof ref==\"undefined\"){return v};\r\n";
+		$out .= "if(typeof v[ref]==\"undefined\"){alert(\"Configuration error. The reference '\"+ ref +\"' does not exist.\");return\"UNKNOWN_REFERENCE:\"+ref}";
 		$out .= "return v[ref];";
 		$out .= "}\r\n";
 		if (!$options['is_js_context']) {
