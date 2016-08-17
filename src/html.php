@@ -2,7 +2,7 @@
 namespace winternet\jensenfw2;
 
 class html {
-	static public function parse_to_flat_array($html) {
+	public static function parse_to_flat_array($html) {
 		$element_to_obj = function($element) use (&$element_to_obj) {
 		    $obj = array( 'tag' => $element->tagName );
 		    foreach ($element->attributes as $attribute) {
@@ -90,7 +90,7 @@ class html {
 		return $the_output;
 	}
 
-	static public function parse_style_css($css) {
+	public static function parse_style_css($css) {
 		// Source: http://stackoverflow.com/questions/4432334/parse-inline-css-values-with-regex
 		$output = array();
 		preg_match_all("/([\w-]+)\s*:\s*([^;]+)\s*;?/", $css, $matches, PREG_SET_ORDER);
@@ -98,5 +98,40 @@ class html {
 			$output[$match[1]] = $match[2];
 		}
 		return $output;
+	}
+
+	public static function format_standard_function_result($arr_result, $ok_messageHTML, $error_messageHTML) {
+		/*
+		DESCRIPTION:
+		- format the standard result/output from a function with 'status', 'result_msg', and 'err_msg' keys in an array
+		INPUT:
+		- $arr_result : the array that was returned by the function
+		- $ok_messageHTML : message to write to the user when the operation succeeds (normally one sentence, eg. 'The event has been deleted.')
+		- $error_messageHTML : message to write to the user when the operation fails (eg. 'Sorry, the event could not be deleted because:')
+		OUTPUT:
+		- HTML code
+		*/
+		$html = '';
+		if ($arr_result['status'] == 'ok') {
+			$html = '<div class="std-func-result ok">'. $ok_messageHTML;
+			if (count($arr_result['result_msg']) > 0) {
+				$html .= ' Please note:';
+				$html .= '<ul>';
+				foreach ($arr_result['result_msg'] as $curr_msg) {
+					$html .= '<li>'. $curr_msg .'</li>';
+				}
+				$html .= '</ul>';
+			}
+			$html .= '</div>';
+		} else {
+			$html  = '<div class="std-func-result error">'. $error_messageHTML;
+			$html .= '<ul>';
+			foreach ($arr_result['err_msg'] as $curr_msg) {
+				$html .= '<li>'. $curr_msg .'</li>';
+			}
+			$html .= '</ul>';
+			$html .= '</div>';
+		}
+		return $html;
 	}
 }
