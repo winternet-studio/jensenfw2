@@ -4,8 +4,6 @@ This file contains functions related to file system handling and manipulation
 */
 namespace winternet\jensenfw2;
 
-use winternet\jensenfw2\core;
-
 class filesystem {
 	public static function get_folders($folder, $sorting_order = 0) {
 		/*
@@ -532,7 +530,7 @@ class filesystem {
 		}
 		$mkdir_result = mkdir($folder);
 		if (!$mkdir_result) {
-			throw new core\system_error('Folder did not exists and automatic creation failed.', ['Folder' => $folder]);
+			throw core::system_error('Folder did not exists and automatic creation failed.', ['Folder' => $folder]);
 		} else {
 			return true;
 		}
