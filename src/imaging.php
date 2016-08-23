@@ -66,7 +66,7 @@ class imaging {
 		if (file_exists($image_path)) {
 			$img = new Imagick($image_path);
 		} else {
-			throw core::system_error('File to get colorspace for does not exist.');
+			throw core::system_error('File to get colorspace for does not exist.', ['Image path' => $image_path]);
 		}
 
 		$int = $img->getImageColorspace();
