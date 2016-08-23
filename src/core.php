@@ -158,7 +158,6 @@ class core {
 		TODO:
 		- what do I do with $vars ??? How can I let the programmer decide what happens to that information?
 		*/
-file_put_contents('dump.txt', print_r(self::$is_dev, true) ."\r\n--------------------- line ". __LINE__ ." in ". __FILE__ ." at ". date('Y-m-d H:i:s') ."\r\n\r\n\r\n", FILE_APPEND);
 		if (self::$is_dev) {
 			$msg .= PHP_EOL.PHP_EOL .'EXTRA INFORMATION:'. PHP_EOL . json_encode($vars, JSON_PRETTY_PRINT);
 		}
