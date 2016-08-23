@@ -154,10 +154,6 @@ class core {
 	//////////////////////////// Debugging and error handling ////////////////////////////
 
 	public static function system_error($msg, $vars = [], $dirs = []) {
-		/*
-		TODO:
-		- what do I do with $vars ??? How can I let the programmer decide what happens to that information?
-		*/
 		if (self::$is_dev) {
 			$msg .= PHP_EOL.PHP_EOL .'EXTRA INFORMATION:'. PHP_EOL . json_encode($vars, JSON_PRETTY_PRINT);
 		}
