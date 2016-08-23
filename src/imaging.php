@@ -68,7 +68,7 @@ class imaging {
 		} else {
 			throw core::system_error('File to get colorspace for does not exist.');
 		}
-exit;
+
 		$int = $img->getImageColorspace();
 
 		// Source: http://php.net/manual/en/imagick.setimagecolorspace.php (comment by "jdstraughan dot com at gmail dot com")
