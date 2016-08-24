@@ -23,7 +23,7 @@ class imaging {
 		);
 
 		if (!extension_loaded('imagick')) {
-			throw core::system_error('The extension Imagick is not installed. Required for converting RGB to CMYK.');
+			core::system_error('The extension Imagick is not installed. Required for converting RGB to CMYK.');
 		}
 
 		// TODO: check *_icc_profile_path has been set, check input file exists, check output file written
@@ -60,13 +60,13 @@ class imaging {
 
 	static public function get_colorspace($image_path) {
 		if (!extension_loaded('imagick')) {
-			throw core::system_error('The extension Imagick is not installed. Required for getting colorspace of image.');
+			core::system_error('The extension Imagick is not installed. Required for getting colorspace of image.');
 		}
 
 		if (file_exists($image_path)) {
 			$img = new Imagick($image_path);
 		} else {
-			throw core::system_error('File to get colorspace for does not exist.', ['Image path' => $image_path]);
+			core::system_error('File to get colorspace for does not exist.', ['Image path' => $image_path]);
 		}
 
 		$int = $img->getImageColorspace();

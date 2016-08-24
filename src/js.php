@@ -39,7 +39,7 @@ class js {
 		$options = array_merge($default_options, (array) $options);
 
 		if (!is_array($array)) {
-			throw core::system_error('Invalid array to pass on to Javascript.');
+			core::system_error('Invalid array to pass on to Javascript.');
 		}
 		$a = array();
 		foreach ($array as $ref => $value) {

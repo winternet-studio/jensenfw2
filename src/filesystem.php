@@ -535,7 +535,7 @@ class filesystem {
 		}
 		$mkdir_result = mkdir($folder);
 		if (!$mkdir_result) {
-			throw core::system_error('Folder did not exists and automatic creation failed.', ['Folder' => $folder]);
+			core::system_error('Folder did not exists and automatic creation failed.', ['Folder' => $folder]);
 		} else {
 			return true;
 		}
