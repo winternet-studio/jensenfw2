@@ -5,6 +5,293 @@ class core {
 
 	public static $is_dev = false;
 
+	public static $userconfig = array();  //format: array('\path\to\namespace\ClassName', 'static_method')
+
+	// Property that can be used by any class to store globally accessible data (instead of using $GLOBALS)
+	public static $globaldata = array();
+
+	public static function class_defaults() {
+		$cfg = array();
+
+		// System
+		$cfg['system_name'] = '';
+		$cfg['administrator_name'] = '';
+		$cfg['administrator_email'] = '';
+		$cfg['developer_name'] = '';
+		$cfg['developer_email'] = '';
+
+		// Core paths and files
+		$cfg['path_filesystem'] = dirname(dirname(dirname(dirname(__FILE__))));
+		$cfg['path_webserver'] = str_ireplace(rtrim($_SERVER['DOCUMENT_ROOT'], '/'), '', str_replace('\\', '/', $cfg['path_filesystem']));
+		$cfg['noscript_tag_html'] = '<div style="padding: 200px; font-size: 400%"><b>Your browser has Javascript disabled. This site requires Javascript.</b></div>';  //HTML to put in the <noscript> tag when testing browser for Javascript support
+
+		// Databases
+		$cfg['databases'] = array();
+
+		//   1st and primary server
+		$cfg['databases'][0] = array(   //key 0 is the server ID (primary server must always be 0) (IDs must always be numeric)
+			'db_host' => 'localhost',
+			'db_port' => 3306,
+			'db_user' => '',
+			'db_pw'   => '',
+			'db_name' => ''  //primary database
+		);
+
+		// Errors
+		$cfg['log_errors_to'] = 'database';  //'file' or 'database'
+		$cfg['errorlog_file'] = false;  //format: full path to file. Required if log_errors_to='file'
+		$cfg['errorlog_table'] = "`". $cfg['databases'][0]['db_name'] ."`.`system_ctl_errors`";  //format: databasename.tablename (SQL format). Required if log_errors_to='database'
+		$cfg['custom_user_error_msgHTML'] = false;  //for making a custom error message. The tags %%timestamp%% and %%errormessage%% will be replaced with the actual value, the URL encoded timestamp and the actual error message respectively.
+
+		// System settings in database
+		$cfg['db_table_system_settings'] = $cfg['databases'][0]['db_name'] .".system_settings";   //databasename.tablename
+
+		// Translation
+		$cfg['translation_mode'] = 'inline';  //'database', 'file', 'inline' - designation of where text translations are to be found
+		$cfg['default_language'] = 'en';
+		$cfg['languages_available'] = array('en');
+		$cfg['db_table_translations'] = $cfg['databases'][0]['db_name'] .'.system_translations';   //databasename.tablename
+		$cfg['missing_lang_log_mode'] = false;  //how should missing translation be logged? 'email', 'file', or false (if a *tag* is missing it will ALWAYS be notified by email)
+
+		return $cfg;
+	}
+
+	public static function get_class_defaults($class_name, $get_var = null) {
+		$class = call_user_func(array($class_name, 'class_defaults'));
+
+		if (self::$userconfig) {
+			$user = call_user_func(self::$userconfig, $class_name);
+
+			$eff = array_merge($class, $user);
+		} else {
+			$eff = $class;
+		}
+
+		if ($get_var && array_key_exists($get_var, $eff)) {
+			return $eff[$get_var];
+		} else {
+			return $eff;
+		}
+	}
+
+	//////////////////////////// Database ////////////////////////////
+
+	// TODO: make option to use Yii's database connection instead
+
+	public static function require_database($serverID = 0) {
+		/*
+		DESCRIPTION:
+		- require a database connection. If not connected, try to connect.
+		*/
+		$serverID = (int) $serverID;  //convert empty strings to 0
+		$server_id = ($serverID == 0 ? '' : $serverID);
+		if (!$GLOBALS['_jfw_db_connection'.$server_id]) {  //don't open the database if it is already open
+			$cfg = self::get_class_defaults(__CLASS__, 'databases');
+			$GLOBALS['_jfw_db_connection'.$server_id] = mysqli_connect($cfg[$serverID]['db_host'], $cfg[$serverID]['db_user'], $cfg[$serverID]['db_pw'], $cfg[$serverID]['db_name'], $cfg[$serverID]['db_port']);
+			if (!$GLOBALS['_jfw_db_connection'.$server_id]) {
+				self::system_error('Could not connect to the database.', array('MySQL error' => mysqli_connect_error(), 'MySQL error no.' => mysqli_connect_errno()), array('xsevere' => 'CRITICAL ERROR'));
+			}
+			mysqli_set_charset($GLOBALS['_jfw_db_connection'.$server_id], 'utf8');
+		}
+	}
+
+	public static function disconnect_database($serverID = 0) {
+		$server_id = ($serverID == 0 ? '' : (int) $serverID);
+		if ($GLOBALS['_jfw_db_connection'.$server_id]) {
+			mysqli_close($GLOBALS['_jfw_db_connection'.$server_id]);
+			unset($GLOBALS['_jfw_db_connection'.$server_id]);
+		}
+	}
+
+	public static function &database_query($sql, $err_msg = 'Communication with the database failed.', $varinfo = array(), $directives = 'AUTO' ) {
+		/*
+		DESCRIPTION:
+		- pass-through function for running queries against the database (to have a single place where all queries go through)
+		INPUT:
+		- $sql : string or array with SQL statement to execute
+			- array:
+				- first element is the SQL statement having position holders (?-marks) for each data element that is given in the rest of the array
+					- example with basic use      : INSERT INTO mytable VALUE (?, ?, ?)
+					- example with named positions: INSERT INTO mytable VALUE (?firstname, ?lastname, ?email)
+				- all subsequent elements are each one piece of data that will be inserted into the SQL at the position holders with the first data element being inserted at the first ?-mark found and so on
+					- the data will be escaped and put in quotes automatically
+					- to use named positions the key for each data element must match exactly the name used in the SQL
+			- to run the query on another server use the array method and make the first entry use key 'server_id' and it's value the ID of the server as defined in core config
+		- $err_msg : error message to show to user if query fails
+		OUTPUT:
+		- output from mysqli_query() by reference
+		- if output is used REMEMBER to assign like this: $dbresource =& database_query()
+		*/
+		if (!is_array($varinfo)) {
+			self::system_error('Configuration error. Extra information for error debugging is invalid.', array('Varinfo' => $varinfo) );
+		}
+		// Prepare query
+		if (is_array($sql)) {
+			if (array_key_exists('server_id', $sql)) {
+				$server_id = ($sql['server_id'] == 0 ? '' : $sql['server_id']);
+				$sql = self::prepare_sql(array_slice($sql, 1));
+			} else {
+				$server_id = '';
+				$sql = self::prepare_sql($sql);
+			}
+		}
+		// Execute query
+		if (count($varinfo) > 0) {  //NOTE: had to do it like this for mysqli_error() to work!
+			$db_query = mysqli_query($GLOBALS['_jfw_db_connection'.$server_id], $sql) or self::system_error($err_msg, array_merge(array('MySQL error' => mysqli_error($GLOBALS['_jfw_db_connection'.$server_id]), 'SQL' => $sql), $varinfo), $directives);
+		} else {
+			$db_query = mysqli_query($GLOBALS['_jfw_db_connection'.$server_id], $sql) or self::system_error($err_msg, array('MySQL error' => mysqli_error($GLOBALS['_jfw_db_connection'.$server_id]), 'SQL' => $sql), $directives);
+		}
+		return $db_query;
+	}
+
+	public static function database_result($sql, $format = false, $err_msg = 'Communication with the database failed.', $varinfo = array(), $directives = 'AUTO' ) {
+		/*
+		DESCRIPTION:
+		- execute a database query and return the result recordset in an associative array
+		INPUT:
+		- $sql (req.) : string or array with SQL statement to execute (according to database_query() )
+		- $format (opt.) : the dataset has a certain format that output should be optimized to:
+			- 'onerow' : result will only have one row and multiple column, and output will therefore only be "one-dimensional" (one array with keys corresponding to field names)
+				- in case SQL statement would return multiple rows only the first row will be returned
+			- 'onecolumn' : result will only have multiple rows but only one column, and output will be an array of those values (one array with no specific keys, only sequentially numeric index values)
+				- in case SQL statement would return multiple columns only the first column will be returned
+			- 'onevalue' : result will only have one row and one column, and output will just that specific value (no array) (empty array returned if SQL returned no data)
+				- in case SQL statement would return multiple rows and/or columns only the value from the first row in the first column will be returned
+				- in case no rows were found in database, an empty array is returned
+			- 'multirow' or false : result has multiple rows and multiple columns
+			- 'keyvalue' : result will be an associative array where first column is the key and the second column the value (additional columns will be ignored)
+			- 'first_as_key' : result will be same as multirow but the key of the first level array will be the value of the first column (which won't be included in the second level array)
+			- 'countonly' : only count how many records would be retrieved and that number would be returned (SELECT clause is replaced with COUNT(*). Function return number of records)
+			- append ':both' to 'onerow' and 'multirow' to return both numeric and associative array (normally only associative is used)
+		- $err_msg (req.) : user-friendly error message to display if query fails (use only common language everybody understands)
+		OUTPUT:
+		- associative "two-dimensional" array, unless $format specifies differently
+		- for INSERT the ID of the new record is returned
+		- for UPDATE, DELETE, DROP, etc. the number of affected rows is returned
+		- for SELECT if no records were found, an empty array is returned
+		*/
+		if (is_array($sql)) {
+			if (array_key_exists('server_id', $sql) && $sql['server_id'] != 0) {
+				$server_id = $sql['server_id'];
+			} else {
+				$server_id = '';
+			}
+			$effsql =& $sql[0];
+		} else {
+			$effsql =& $sql;
+		}
+		if ($format == 'countonly') {
+			$effsql = "SELECT COUNT(*) FROM (". $effsql .") AS tmp";
+		}
+		$db_query =& self::database_query($sql, $err_msg, $varinfo, $directives);
+		if ($db_query === true) {
+			if (strtoupper(substr($effsql, 0, 6)) == 'INSERT') {
+				//query was INSERT
+				return mysqli_insert_id($GLOBALS['_jfw_db_connection'.$server_id]);
+			} else {
+				//query was UPDATE, DELETE, DROP, etc.
+				return mysqli_affected_rows($GLOBALS['_jfw_db_connection'.$server_id]);
+			}
+		} else {
+			$arr_return = array();
+			if (mysqli_num_rows($db_query) == 0) {
+				//no records found, leave array empty
+			} else {
+				if (!$format || $format == 'multirow' || $format == 'multirow:both') {
+					if ($format == 'multirow:both') {
+						while ($row = mysqli_fetch_array($db_query)) {
+							$arr_return[] = $row;
+						}
+					} else {
+						while ($row = mysqli_fetch_assoc($db_query)) {
+							$arr_return[] = $row;
+						}
+					}
+				} elseif ($format == 'onecolumn') {
+					while ($row = mysqli_fetch_row($db_query)) {
+						$arr_return[] = $row[0];
+					}
+				} elseif ($format == 'onerow' || $format == 'onerow:both') {
+					if ($format == 'onerow:both') {
+						$arr_return = mysqli_fetch_array($db_query);
+					} else {
+						$arr_return = mysqli_fetch_assoc($db_query);
+					}
+				} elseif ($format == 'onevalue' || $format == 'countonly') {
+					$row = mysqli_fetch_row($db_query);
+					$arr_return = $row[0];
+				} elseif ($format == 'keyvalue') {
+					while ($row = mysqli_fetch_row($db_query)) {
+						$arr_return[$row[0]] = $row[1];
+					}
+				} elseif ($format == 'first_as_key') {
+					while ($row = mysqli_fetch_assoc($db_query)) {
+						if (!$firstcol_name) {
+							$firstcol_name = key($row);
+						}
+						$keyval = $row[$firstcol_name];
+						unset($row[$firstcol_name]);
+						$arr_return[$keyval] = $row;
+					}
+				} else {
+					self::system_error('Invalid format for getting database result.');
+				}
+			}
+			return $arr_return;
+		}
+	}
+
+	public static function prepare_sql($array) {
+		/*
+		DESCRIPTION:
+		- prepare an SQL statement by safely inserting variables into the SQL
+		INPUT:
+		- $array : array with SQL statement and variables
+			- first element is the SQL statement having position holders (?-marks) for each data element that is given in the rest of the array
+				- example with basic use      : INSERT INTO mytable VALUE (?, ?, ?)
+				- example with named positions: INSERT INTO mytable VALUE (?firstname, ?lastname, ?email)
+			- all subsequent elements are each one piece of data that will be inserted into the SQL at the position holders with the first data element being inserted at the first ?-mark found and so on
+				- the data will be escaped and put in quotes automatically
+				- to use named positions the key for each data element must match exactly the name used in the SQL
+		OUTPUT:
+		- string with generated SQL statement
+		*/
+		$data = array_slice($array, 1);
+		$sql = $array[0];
+		foreach ($data as $key => $value) {
+			if (is_array($value)) {
+				self::system_error('Value for preparing SQL statement cannot be an array.', array('Value' => $value) );
+			}
+			if ($value === '::emptY-String') {
+				$valueSQL = "''";
+			} elseif ($value === '' || $value === false || $value === null) {
+				$valueSQL = 'NULL';
+			} else {
+				$valueSQL = "'". self::sql_esc($value) ."'";  //convert even numbers to strings because comparing the string against number 0 in MySQL (also when written as -0 or 0.00) will always evaluate to true (http://stackoverflow.com/questions/9948389/mysql-string-conversion-return-0). Comparing numbers against numeric strings is no problem though, therefore always do that.
+			}
+			if (!is_numeric($key)) {
+				$sql = preg_replace("|\\?". $key ."\\b|".(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), $valueSQL, $sql);
+			} else {
+				$sql = preg_replace("|\\?(?!\\w)|".(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), $valueSQL, $sql, 1);
+			}
+		}
+		return $sql;
+	}
+
+	public static function sql_esc($str) {
+		/*
+		DESCRIPTION:
+		- convenience alias for mysqli_real_escape_string()
+		*/
+		if ($str && !is_string($str) && !is_numeric($str)) {
+			self::system_error('A non-string was passed to SQL escaping function.', array('Argument' => print_r($str, true)), array('xnotify' => 'developer') );
+		}
+		if (!$GLOBALS['_jfw_db_connection']) {
+			self::system_error('Database connection was not found in SQL escaping function.', array('Argument' => print_r($str, true)), array('xnotify' => 'developer') );
+		}
+		return mysqli_real_escape_string($GLOBALS['_jfw_db_connection'], (string) $str);  //cast numbers as strings
+	}
+
 	//////////////////////////// Hook/plugin system ////////////////////////////
 
 	public static function run_hooks($hook_id, $value = '.NO-VALUE.') {
@@ -154,7 +441,7 @@ class core {
 	//////////////////////////// Debugging and error handling ////////////////////////////
 
 	public static function system_error($msg, $vars = [], $dirs = []) {
-		if (self::$is_dev) {
+		if (self::$is_dev && !empty($vars)) {
 			$msg .= PHP_EOL.PHP_EOL .'EXTRA INFORMATION:'. PHP_EOL . json_encode($vars, JSON_PRETTY_PRINT);
 		}
 		throw new \Exception($msg);
@@ -181,8 +468,6 @@ class core {
 		- e-mail sent : true
 		- e-mail not sent : false (due to being a "duplicate")
 		*/
-		require_function('send_email');
-
 		if (is_array($reference)) {
 			$use_systembuffer = ($reference['persist'] ? true : false);
 
@@ -201,8 +486,7 @@ class core {
 
 		// Don't send duplicate notifications
 		if ($use_systembuffer) {
-			require_function('get_buffer_value');
-			if ($reference && get_buffer_value('jfwnotifd'. $reference) && !$GLOBALS['_send_all_webmaster_notifs']) {
+			if ($reference && system::get_buffer_value('jfwnotifd'. $reference) && !$GLOBALS['_send_all_webmaster_notifs']) {
 				return false;
 			}
 		} else {
@@ -211,7 +495,7 @@ class core {
 			}
 		}
 
-		$cfg = jfw__core_cfg();
+		$cfg = self::get_class_defaults(__CLASS__);
 		$bt = debug_backtrace();
 
 		if ($who == 'developer') {
@@ -243,11 +527,11 @@ class core {
 		if ($reference) {
 			$body .= "\r\nReference: ". $reference;
 		}
-		send_email($cfg['administrator_email'], $cfg['system_name'], $to, $subj, $body);
+		mail::send_email($cfg['administrator_email'], $cfg['system_name'], $to, $subj, $body);
 
 		if ($reference) {
 			if ($use_systembuffer) {
-				set_buffer_value('jfwnotifd'. $reference, '1', $expire);
+				system::set_buffer_value('jfwnotifd'. $reference, '1', $expire);
 			} else {
 				$_SESSION['_jfw_webmaster_notifd_'. $reference] = true;
 			}
@@ -334,10 +618,10 @@ class core {
 		if (!$str) {
 			return $str;
 		} else {
-			if (preg_match('/,,,\\s*[a-zA-Z]{2}\\s*=/'._RXU, $str)) {
+			if (preg_match('/,,,\\s*[a-zA-Z]{2}\\s*=/'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), $str)) {
 				$str = explode(',,,', $str);
 				foreach ($str as &$a) {
-					if (preg_match('|^\\s*([a-zA-Z]{2})\\s*=\\s*(.*?)\\s*$|s'._RXU, $a, $match)) {
+					if (preg_match('|^\\s*([a-zA-Z]{2})\\s*=\\s*(.*?)\\s*$|s'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), $a, $match)) {
 						$clang = strtolower($match[1]);
 						if ($_SESSION['runtime']['currlang'] == $clang || ($GLOBALS['_override_current_language'] && $GLOBALS['_override_current_language'] == $clang) ) {
 							return $match[2];
@@ -366,9 +650,9 @@ class core {
 		*/
 		if (!isset($GLOBALS['cache']['system_settings'])) {
 			$GLOBALS['cache']['system_settings'] = array();
-			require_database();
-			$sql = "SELECT settingname, settingvalue FROM ". jfw__core_cfg('db_table_system_settings');
-			$db_query =& database_query($sql, 'Database query for getting system settings failed.');
+			self::require_database();
+			$sql = "SELECT settingname, settingvalue FROM ". core::get_class_defaults(__CLASS__, 'db_table_system_settings');
+			$db_query =& self::database_query($sql, 'Database query for getting system settings failed.');
 
 			$GLOBALS['cache']['system_settings'] = array();
 			if (mysqli_num_rows($db_query) > 0) {
