@@ -461,7 +461,8 @@ class filesystem {
 		$extension = str_replace($invalid_chars, '', $extension);
 
 		// Remove any other non-ASCII characters
-		$basename = preg_replace('/[^\x20-\x7E]/','', $basename);
+		$basename = preg_replace('/[^\x20-\x7E]/'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''),'', $basename);
+		$extension = preg_replace('/[^\x20-\x7E]/'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''),'', $extension);
 
 		if ($extension) {
 			return $basename .'.'. $extension;
