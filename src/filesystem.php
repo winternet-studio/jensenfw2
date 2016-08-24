@@ -452,11 +452,16 @@ class filesystem {
 		$search  = array('æ' , 'Æ' , 'ø' , 'Ø' , 'å' , 'Å' , 'à', 'á', 'â', 'ã', 'ä', 'è', 'é', 'ê', 'ë', 'ì', 'í', 'î', 'ï', 'ò', 'ó', 'ô', 'õ', 'ö', 'ù', 'ú', 'û', 'ü', 'ý', 'À', 'Á', 'Â', 'Ã', 'Ä', 'È', 'É', 'Ê', 'Ë', 'Ì', 'Í', 'Î', 'Ï', 'Ò', 'Ó', 'Ô', 'Õ', 'Ö', 'Ù', 'Ú', 'Û', 'Ü', 'Ý', 'ß' , '');
 		$replace = array('ae', 'AE', 'oe', 'OE', 'aa', 'AA', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'i', 'i', 'i', 'i', 'o', 'o', 'o', 'o', 'o', 'u', 'u', 'u', 'u', 'y', 'A', 'A', 'A', 'A', 'A', 'E', 'E', 'E', 'E', 'I', 'I', 'I', 'I', 'O', 'O', 'O', 'O', 'O', 'U', 'U', 'U', 'U', 'Y', 'ss', "'");
 		$basename = str_replace($search, $replace, $basename);
+		$extension = str_replace($search, $replace, $extension);
 
 		// Remove invalid and odd characters
 		$invalid_chars = array('\\', '/', ':', '*', '?', '"', '<', '>', '|',
 			'.', ',', '&', '%', '¤', '#', '!', '§', '½', ';', '(', ')', '=', '`', '´', '^', '+', '', ''); //de første er direkte ugyldige, resten er bare nogen jeg ikke vil have med
 		$basename = str_replace($invalid_chars, '', $basename);
+		$extension = str_replace($invalid_chars, '', $extension);
+
+		// Remove any other non-ASCII characters
+		$basename = preg_replace('/[^\x20-\x7E]/','', $basename);
 
 		if ($extension) {
 			return $basename .'.'. $extension;
