@@ -68,12 +68,13 @@ class salesforce {
 			curl_setopt($this->curl, CURLOPT_URL, $this->login_uri .'/services/oauth2/token');
 			curl_setopt($this->curl, CURLOPT_POST, true);
 			curl_setopt($this->curl, CURLOPT_POSTFIELDS, http_build_query($params));
+			curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, null);
 
 			$json_response = curl_exec($this->curl);
 
 			$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
 			if ($status != 200) {
-				core::system_error('Salesforce authentication failed.', ['Status' => $status, 'Token URL' => $token_url, 'Response' => $json_response, 'cURL error' => curl_error($this->curl), 'cURL errno' => curl_errno($this->curl) ]);
+				core::system_error('Salesforce authentication failed.', ['Status' => $status, 'Response' => $json_response, 'cURL error' => curl_error($this->curl), 'cURL errno' => curl_errno($this->curl) ]);
 			}
 
 			$response = json_decode($json_response, true);
@@ -91,21 +92,50 @@ class salesforce {
 		DESCRIPTION:
 		- run an SOQL query
 		INPUT:
-		- 
+		- $SOQL : string with a query in the format of Salesforce Object Query Language
 		OUTPUT:
-		- 
+		- array
 		*/
 		$this->authenticate();
 
 		curl_setopt($this->curl, CURLOPT_URL, $this->auth_response['instance_url'] .'/services/data/'. $this->api_version .'/query?q=' . urlencode($SOQL));
 		curl_setopt($this->curl, CURLOPT_HTTPHEADER, array('Authorization: OAuth '. $this->auth_response['access_token']));
 		curl_setopt($this->curl, CURLOPT_POST, false);
+		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, null);
 		
 		$json_response = curl_exec($this->curl);
 
 		$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
 		if ($status != 200) {
-			core::system_error('Salesforce SOQL execution failed.', ['Status' => $status, 'Token URL' => $token_url, 'Response' => $json_response, 'cURL error' => curl_error($this->curl), 'cURL errno' => curl_errno($this->curl) ]);
+			core::system_error('Salesforce SOQL execution failed.', ['Status' => $status, 'Response' => $json_response, 'cURL error' => curl_error($this->curl), 'cURL errno' => curl_errno($this->curl) ]);
+		}
+
+		return json_decode($json_response, true);
+	}
+
+	public function create($object_name, $fields = array() ) {
+		/*
+		DESCRIPTION:
+		- create a single record
+		INPUT:
+		- $object_name : string with name of object to create, eg. "Account", "Contact", etc.
+		- $fields : associative array with fieldname/value pairs
+		OUTPUT:
+		- array
+		*/
+		$this->authenticate();
+
+		curl_setopt($this->curl, CURLOPT_URL, $this->auth_response['instance_url'] .'/services/data/'. $this->api_version .'/sobjects/'. $object_name .'/');
+		curl_setopt($this->curl, CURLOPT_HTTPHEADER, array('Authorization: OAuth '. $this->auth_response['access_token'], 'Content-Type: application/json'));
+		curl_setopt($this->curl, CURLOPT_POST, true);
+		curl_setopt($this->curl, CURLOPT_POSTFIELDS, json_encode($fields));
+		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, null);
+
+		$json_response = curl_exec($this->curl);
+
+		$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
+		if ($status != 200) {
+			core::system_error('Creating Salesforce object failed.', ['Status' => $status, 'Response' => $json_response, 'cURL error' => curl_error($this->curl), 'cURL errno' => curl_errno($this->curl) ]);
 		}
 
 		return json_decode($json_response, true);
