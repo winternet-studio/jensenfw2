@@ -1233,4 +1233,16 @@ class simple_html_dom {
     function getElementByTagName($name) {return $this->find($name, 0);}
     function getElementsByTagName($name, $idx=-1) {return $this->find($name, $idx);}
     function loadFile() {$args = func_get_args();$this->load_file($args);}
+
+
+    // CUSTOMIZATION: Allan Jensen made these static shortcut methods so we don't have to use the functions outside the class!
+    static public function file_get_html($url, $use_include_path = false, $context=null, $offset = -1, $maxLen=-1, $lowercase = true, $forceTagsClosed=true, $target_charset = 'UTF-8', $stripRN=true, $defaultBRText="\r\n") {
+        return \winternet\jensenfw2\file_get_html($url, $use_include_path, $context=null, $offset, $maxLen, $lowercase, $forceTagsClosed, $target_charset, $stripRN, $defaultBRText);
+    }
+    static public function str_get_html($str, $lowercase=true, $forceTagsClosed=true, $target_charset = 'UTF-8', $stripRN=true, $defaultBRText="\r\n") {
+        return \winternet\jensenfw2\str_get_html($str, $lowercase, $forceTagsClosed, $target_charset, $stripRN, $defaultBRText);
+    }
+    static public function dump_html_tree($node, $show_attr=true, $deep=0) {
+        return \winternet\jensenfw2\dump_html_tree($node, $show_attr, $deep);
+    }
 }
