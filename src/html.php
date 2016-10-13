@@ -49,9 +49,10 @@ class html {
 
 					$the_optlist[$id]['_level'] = $level;
 					$the_optlist[$id]['tag'] = $a;
-					if (in_array($a, array('h1', 'h2', 'h3', 'h4', 'h5', 'h6'))) {
+					if (in_array($a, array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'pre', 'blockquote', 'li', 'ol', 'ul', 'p', 'nav', 'section'))) {
 						$is_new_block_element = true;
 					}
+					$the_optlist[$id]['tagtype'] = ($is_new_block_element ? 'block' : 'inline');
 					if (!empty($attributes)) {  //no reason to add it if it is empty
 						$the_optlist[$id]['attribs'] = $attributes;
 						if ($the_optlist[$id]['attribs']['style']) {
@@ -66,10 +67,10 @@ class html {
 					$output_index++;
 					$the_output[$output_index] = array('text' => $a, 'optlist' => array_values($the_optlist));  //use array_values to get rid of the keys consisting of the ID, which we don't need for anything (I think!)
 
-					// If the optlist indicates that this text is a new block element (= that text starts in a new paragraph) then rtrim() any trailing spaces from the previous text so that they are not converted to blank lines and thereby making extra space between the paragraphs
+					// If the optlist indicates that this text is a new block element (= that text starts in a new paragraph) then trim the last trailing line-break (if any) from the previous text so that they are not converted to blank lines and thereby making extra space between the paragraphs (only trim one space since multiple line-breaks do need to make extra space between the paragraphs)
 					if ($is_new_block_element && $output_index >= 1) {
 						$prev_output_index = $output_index - 1;
-						$the_output[$prev_output_index]['text'] = rtrim($the_output[$prev_output_index]['text']);
+						$the_output[$prev_output_index]['text'] = preg_replace("/\\n$/", '', $the_output[$prev_output_index]['text'], 1);
 					}
 
 					$is_new_block_element = false;
