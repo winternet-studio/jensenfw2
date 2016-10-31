@@ -26,10 +26,10 @@ class imaging {
 		$aspect_ratio = $w / $h; //calculate aspect ratio
 		$is_vertical = ($aspect_ratio < 1 ? true : false);  //determine if the image is vertical
 		return array(
-			'w' => $w, 
-			'h' => $h, 
-			'ratio' => $aspect_ratio, 
-			'is_vertical' => $is_vertical
+			'w' => $w,
+			'h' => $h,
+			'ratio' => $aspect_ratio,
+			'is_vertical' => $is_vertical,
 		);
 	}
 
@@ -217,9 +217,9 @@ class imaging {
 				if ($elem['type'] == 'text') {
 					//make transparent box as background
 					if ($elem['add_transp_bg']) {
-						$white_trans = imagecolorallocatealpha($img_dst, 0, 0, 0, 80); 
+						$white_trans = imagecolorallocatealpha($img_dst, 0, 0, 0, 80);
 						if ($elem['position'] == 'bottom_left') {
-							imagefilledrectangle($img_dst, 0, $new_height-19, $new_width, $new_height, $white_trans); 
+							imagefilledrectangle($img_dst, 0, $new_height-19, $new_width, $new_height, $white_trans);
 						}
 					}
 
