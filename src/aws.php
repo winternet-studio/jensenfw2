@@ -63,7 +63,7 @@ class aws {
 					$max_chunk =  floor($filesize / ($parts-1) /1024/1024);
 					$found_match = false;
 					for ($i = $min_chunk; $i <= $max_chunk; $i++) {
-						if (self::calculateEtag($filename, $i) === $expected) {
+						if (self::calculate_etag($filename, $i) === $expected) {
 							$found_match = true;
 							break;
 						}
