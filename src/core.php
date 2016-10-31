@@ -4,6 +4,7 @@ namespace winternet\jensenfw2;
 class core {
 
 	public static $is_dev = false;
+	public static $preg_u = 'u';
 
 	public static $userconfig = array();  //format: array('\path\to\namespace\ClassName', 'static_method')
 
