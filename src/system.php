@@ -76,7 +76,7 @@ class system {
 		core::require_database($cfg['db_server_id']);
 
 		// Auto-overwrite any record with the same key
-		$sql = "REPLACE INTO `". $cfg['db_name'] ."`.`". $cfg['db_table_buffer'] ."` SET tmpd_key = '". sql_esc($key) ."', tmpd_value = '". sql_esc($value) ."'";
+		$sql = "REPLACE INTO `". $cfg['db_name'] ."`.`". $cfg['db_table_buffer'] ."` SET tmpd_key = '". core::sql_esc($key) ."', tmpd_value = '". core::sql_esc($value) ."'";
 		if ($expiration) {
 			if (preg_match('|^\\d{2,4}-\\d{1,2}-\\d{1,2}$|', $expiration)) {
 				//do nothing, use raw value
@@ -123,7 +123,7 @@ class system {
 		}
 
 		// Get the value
-		$sql = "SELECT tmpd_value FROM `". $cfg['db_name'] ."`.`". $cfg['db_table_buffer'] ."` WHERE tmpd_key = '". sql_esc($key) ."' AND (tmpd_date_expire IS NULL OR tmpd_date_expire > NOW())";
+		$sql = "SELECT tmpd_value FROM `". $cfg['db_name'] ."`.`". $cfg['db_table_buffer'] ."` WHERE tmpd_key = '". core::sql_esc($key) ."' AND (tmpd_date_expire IS NULL OR tmpd_date_expire > NOW())";
 		return core::database_result($sql, 'onevalue', 'Database query for getting value from temporary buffer table failed.');
 	}
 
