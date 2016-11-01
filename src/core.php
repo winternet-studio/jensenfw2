@@ -58,6 +58,17 @@ class core {
 	}
 
 	public static function get_class_defaults($class_name, $get_var = null) {
+		/*
+		DESCRIPTION:
+		- get the defaults for a given class, possibly modified by user configuration
+		INPUT:
+		- $class_name : name of class. It will be automatically prefixed with '\winternet\jensenfw2\' if is it not a fully qualified class name.
+		OUTPUT:
+		- associative array with the defaults
+		*/
+		if (strpos($class_name, 'jensenfw2') === false) {
+			$class_name = "\\winternet\\jensenfw2\\". $class_name;
+		}
 		$class = call_user_func(array($class_name, 'class_defaults'));
 
 		if (self::$userconfig) {
