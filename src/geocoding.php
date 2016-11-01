@@ -30,8 +30,9 @@ class geocoding {
 			- 'country' : name is probably preferred, but 2-letter ISO-3166 codes can also be used
 		- $parms : associative array with any of the following keys:
 			- 'google_api_key' : Google API key (provide to allow more free requets per day) (do not restrict it to IP addresses in case you want to use this function's proxy_url feature)
-			- 'table_name' : name of database table that should be used for caching. Default is 'temp_cached_address_latlon'
 			- 'db_name' : name of database that should be used for caching. Default is the one currently selected by the database connection.
+			- 'table_name' : name of database table that should be used for caching. Default is 'temp_cached_address_latlon'
+			- 'skip_table_autocreate' (boolean|0|1) : set to true to skip auto-creating caching table
 			- 'server_id' : ID of the database connection defined in core config. Default is the primary connection.
 			- 'proxy_url' : URL with a proxy that will do the actual calls to the Google API. The query string part of the normal URL will be appended to the URL
 				- example: 'http://myserver.com/googleproxy.php?query='
@@ -65,7 +66,7 @@ class geocoding {
 		unset($GLOBALS['_jfw_google_addr_geocoder_url']);
 
 		// Ensure database table exists
-		if (!$_SESSION['_jfw_address_geocoding_cache_table_created']) {  //only run this check once per session
+		if (!$parms['skip_table_autocreate'] && !$_SESSION['_jfw_address_geocoding_cache_table_created']) {  //only run this check once per session
 			$createtblSQL = "CREATE TABLE IF NOT EXISTS ". $tableSQL ." (
 				`cached_addr_latlonID` INT(3) UNSIGNED NOT NULL AUTO_INCREMENT,
 				`geoaddr_address` VARCHAR(255) NOT NULL,
@@ -198,10 +199,11 @@ class geocoding {
 		- $userID
 		- $licensekey
 		- $options : associative with any combination of the following keys:
-			- 'skip_database' = 1 : skip caching in database
+			- 'skip_database' (boolean|0|1) : set to true to skip caching in database
 			- 'max_cache_age' : max number of days to use a cached result
-			- 'clean_cache' = 1 : remove outdated cache entries
+			- 'clean_cache' (boolean|0|1) : set to true to remove outdated cache entries
 			- 'db_table' (string) : name of table for database caching
+			- 'skip_table_autocreate' (boolean|0|1) : set to true to skip auto-creating caching table
 		OUTPUT:
 		- associative array
 		*/
@@ -227,7 +229,7 @@ class geocoding {
 			$tablename = ($options['db_table'] ? $options['db_table'] : 'temp_cached_maxmind_ip2country');
 
 			// Ensure database table exists
-			if (!$_SESSION['_jfw_maxmindip2country_cache_table_created']) {  //only run this check once per session
+			if (!$options['skip_table_autocreate'] && !$_SESSION['_jfw_maxmindip2country_cache_table_created']) {  //only run this check once per session
 				$createtblSQL = "CREATE TABLE IF NOT EXISTS `". $tablename ."` (
 					`maxmipctry_ip` VARCHAR(40) NOT NULL,
 					`maxmipctry_country_iso` CHAR(2) NOT NULL,
