@@ -33,6 +33,23 @@ class imaging {
 		);
 	}
 
+	static public function png_has_transparency($filepath) {
+		/*
+		DESCRIPTION:
+		- detect if a PNG has alpha channel (transparency)
+		- source: http://stackoverflow.com/a/8750947/2404541
+		INPUT:
+		- $filepath
+		OUTPUT:
+		- boolean
+		*/
+		if (!file_exists($filepath)) {
+			core::system_error('File to check transparency for does not exist.');
+		}
+		$byte = ord(file_get_contents($filepath, null, null, 25, 1));
+		return ($byte == 6 || $byte == 4 ? true : false);
+	}
+
 	static public function resize_and_crop_calc($input_width, $input_height, $target_width, $target_height) {
 		/*
 		DESCRIPTION:
@@ -133,6 +150,7 @@ class imaging {
 		- $new_width (req.)
 		- $new_height (req.)
 		- $options (opt.) : associative array with any of the following keys:
+			- 'autodetect_transparency' : set to true to auto-detect transparency for PNG images. Needed if you want to retain transparency in the resized image. (can be set for JPG images as well but will have no effect)
 			- 'add_elements' : array with any number of elements to add (see code), or string with text to write in lower left corner of picture
 				- ARRAY METHOD NOT FULLY IMPLEMENTED
 			- 'quality' : set output quality. Has different meaning depending on image type:
@@ -148,6 +166,7 @@ class imaging {
 		*/
 		$err_msg = array();
 		$result_msg = array();
+		$has_transparency = false;
 
 		$ext = pathinfo($inputfilepath, PATHINFO_EXTENSION);
 		if ($ext == 'jpeg') $ext = 'jpg';
@@ -175,7 +194,14 @@ class imaging {
 					$err_msg[] = 'JPG quality must be between 0 and 99.';
 				}
 			} else {
+				// is png
 				$img_src = imagecreatefrompng($inputfilepath);
+				if ($options['autodetect_transparency']) {
+					$has_transparency = self::png_has_transparency($inputfilepath);
+					if ($has_transparency) {  //source: http://stackoverflow.com/a/313103/2404541
+						imagealphablending($img_src, true);
+					}
+				}
 				if (!is_numeric($options['quality'])) {
 					$options['quality'] = -1;
 				} elseif ($options['quality'] > 9) {
@@ -190,6 +216,10 @@ class imaging {
 
 		if (count($err_msg) == 0) {
 			$img_dst = imagecreatetruecolor($new_width, $new_height);
+			if ($has_transparency) {
+				imagealphablending($img_dst, false);
+				imagesavealpha($img_dst, true);
+			}
 			$result = imagecopyresampled($img_dst, $img_src, 0, 0, $options['src_x'], $options['src_y'], $new_width, $new_height, $curr_width, $curr_height);
 			if ($result == false) {
 				$err_msg[] = 'Failed to create destination image.';
