@@ -556,4 +556,29 @@ class network {
 			return 'allow';
 		}
 	}
+
+	public static function disconnect_client_but_continue_script($output_callback = null) {
+		/*
+		DESCRIPTION:
+		- close connection to the client/user but keep running the PHP script
+		- source: http://php.net/manual/en/features.connection-handling.php#93441
+		INPUT:
+		- $output_callback (opt.) : function that can be used for echoing data to the user
+		OUTPUT:
+		- nothing
+		*/
+		ob_end_clean();
+		header("Connection: close\r\n");
+		header("Content-Encoding: none\r\n");
+		ignore_user_abort(true); // optional
+		ob_start();
+		if (is_callable($output_callback)) {
+			$output_callback();  //it seems like any output here does not reach the browser though - when I tried the response was empty...
+		}
+		$size = ob_get_length();
+		header('Content-Length: '. $size);
+		ob_end_flush();     // Strange behaviour, will not work
+		flush();            // Unless both are called !
+		ob_end_clean();
+	}
 }
