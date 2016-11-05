@@ -573,7 +573,7 @@ class network {
 		ignore_user_abort(true); // optional
 		ob_start();
 		if (is_callable($output_callback)) {
-			$output_callback();  //it seems like any output here does not reach the browser though - when I tried the response was empty...
+			$output_callback();
 		}
 		$size = ob_get_length();
 		header('Content-Length: '. $size);
