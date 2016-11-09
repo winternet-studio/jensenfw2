@@ -984,19 +984,20 @@ class mail {
 		}
 	}
 
-	public static function scrample_email_addressHTML($email, $mode = false) {
+	public static function scrample_email_addressHTML($email, $options = []) {
 		/*
 		DESCRIPTION:
 		- scrample email addresses to protect against email harvesting by spammers
 		INPUT:
 		- $email (req.) : email address to scrample
-		- $mode (opt.) : optionally you can choose a different scrampling mode:
-			- 'plaintext' : will scrample it to eg.: johndoe at yahoo dot com
-			
+		- $options (opt.) : associative array with any of the following keys:
+			- 'mode' : specify scrampling mode. Available options are:
+				- 'plaintext' : will scrample it to eg.: johndoe at yahoo dot com
+			- 'text' : text to show as the link, instead of the email address itself
 		OUTPUT:
 		- a Javascript block to put in HTML code, OR according to scrample mode
 		*/
-		switch ($mode) {
+		switch ($options['mode']) {
 		case 'plaintext':
 			return str_replace(array('@', '.'), array(' at ', ' dot '), $email);
 			break;
@@ -1005,33 +1006,40 @@ class mail {
 			$randomno1 = 'n'. rand(10,999999);
 			$randomno2 = 'a'. rand(10,999999);
 			$html  = '<script type="text/javascript">'."\r\n";
-			$html .= '/* <![CDATA[ */'."\r\n";
+			$html .= '* <![CDATA[ */'."\r\n";
 			$html .= $randomno1 .'="'. $part1 .'";';
 			$html .= $randomno2 .'="'. $part2 .'";';
 			$html .= "document.write('<a hr'+'ef=\"mai'+'lto:'+". $randomno1 ."+eval('unes'+'cape(\'%40\')')+". $randomno2 ."+'\">');";
-			$html .= "document.write(". $randomno1 ."+eval('unes'+'cape(\'%40\')')+". $randomno2 ."+'</a>');"."\r\n";
+			$html .= "document.write(";
+			if ($options['text']) {
+				$html .= "'". js::esc($options['text']) ."'";
+			} else {
+				$html .= $randomno1 ."+eval('unes'+'cape(\'%40\')')+". $randomno2;
+			}
+			$html .= "+'</a>');"."\r\n";
 			$html .= '/* ]]> */'."\r\n";
 			$html .= '</script>';
 			return $html;
 		}
 	}
 
-	public static function scrample_all_email_addressesHTML($html, $mode = false) {
+	public static function scrample_all_email_addressesHTML($html, $options = []) {
 		/*
 		DESCRIPTION:
 		- scrample all email addresses in a piece of HTML code
 		INPUT:
 		- $html (req.) : HTML code
-		- $mode (opt.) : according to scrample_email_addressHTML() or one of these:
-			- 'remove_existing_links' : remove existing <a href="mailto:..."> tags before processing
+		- $options (opt.) : associative array with any of the following keys:
+			- any options according to scrample_email_addressHTML()
+			- 'remove_existing_links' : set to true to remove existing <a href="mailto:..."> tags before processing
 		OUTPUT:
 		- HTML code (incl. Javascript blocks for each email address), OR according to scrample mode
 		*/
-		if ($mode == 'remove_existing_links') {
+		if ($options['remove_existing_links']) {
 			//NOTE: removes existing <a href="mailto:..."></a> tags and leaves just the code remaining between the opening and closing tag
 			$html = preg_replace("|<a href=[\"']?mailto:[^\"' ]+[\"']?[^>]*>(.*)</a>|siU", '$1', $html);
 		}
-		return preg_replace_callback('|\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b|i', create_function('$matches', 'return \winternet\jensenfw2\mail::scrample_email_addressHTML($matches[0], \''. $mode .'\');'), $html);
+		return preg_replace_callback('|\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b|i', create_function('$matches', 'return \winternet\jensenfw2\mail::scrample_email_addressHTML($matches[0], '. var_export($options, true) .');'), $html);
 	}
 
 	public static function resend_email_from_raw_log($emaillog_rawID, $add_note = '') {
