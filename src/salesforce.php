@@ -1,6 +1,6 @@
 <?php
 /*
-This file contains functions related to Salesforce.com
+This file contains functions related to Salesforce.com via REST API
 */
 namespace winternet\jensenfw2;
 
