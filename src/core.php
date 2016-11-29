@@ -271,15 +271,27 @@ class core {
 		$data = array_slice($array, 1);
 		$sql = $array[0];
 		foreach ($data as $key => $value) {
+			// NOTE: convert even numbers to strings because comparing the string against number 0 in MySQL (also when written as -0 or 0.00) will always evaluate to true (http://stackoverflow.com/questions/9948389/mysql-string-conversion-return-0). Comparing numbers against numeric strings is no problem though, therefore always do that.
 			if (is_array($value)) {
-				self::system_error('Value for preparing SQL statement cannot be an array.', array('Value' => $value) );
-			}
-			if ($value === '::emptY-String') {
-				$valueSQL = "''";
-			} elseif ($value === '' || $value === false || $value === null) {
-				$valueSQL = 'NULL';
+				$valueSQL = [];
+				foreach ($value as $v) {
+					if ($v === '::emptY-String') {
+						$valueSQL[] = "''";
+					} elseif ($v === '' || $v === false || $v === null) {
+						$valueSQL[] = 'NULL';
+					} else {
+						$valueSQL[] = "'". self::sql_esc($v) ."'";
+					}
+				}
+				$valueSQL = implode(', ', $valueSQL);
 			} else {
-				$valueSQL = "'". self::sql_esc($value) ."'";  //convert even numbers to strings because comparing the string against number 0 in MySQL (also when written as -0 or 0.00) will always evaluate to true (http://stackoverflow.com/questions/9948389/mysql-string-conversion-return-0). Comparing numbers against numeric strings is no problem though, therefore always do that.
+				if ($value === '::emptY-String') {
+					$valueSQL = "''";
+				} elseif ($value === '' || $value === false || $value === null) {
+					$valueSQL = 'NULL';
+				} else {
+					$valueSQL = "'". self::sql_esc($value) ."'";
+				}
 			}
 			if (!is_numeric($key)) {
 				$sql = preg_replace("|\\?". $key ."\\b|".(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), $valueSQL, $sql);
