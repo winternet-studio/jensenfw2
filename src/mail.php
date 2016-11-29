@@ -1006,7 +1006,7 @@ class mail {
 			$randomno1 = 'n'. rand(10,999999);
 			$randomno2 = 'a'. rand(10,999999);
 			$html  = '<script type="text/javascript">'."\r\n";
-			$html .= '* <![CDATA[ */'."\r\n";
+			$html .= '/* <![CDATA[ */'."\r\n";
 			$html .= $randomno1 .'="'. $part1 .'";';
 			$html .= $randomno2 .'="'. $part2 .'";';
 			$html .= "document.write('<a hr'+'ef=\"mai'+'lto:'+". $randomno1 ."+eval('unes'+'cape(\'%40\')')+". $randomno2 ."+'\">');";
