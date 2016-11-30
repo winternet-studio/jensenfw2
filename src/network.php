@@ -26,7 +26,7 @@ class network {
 		- cURL functions
 		INPUT:
 		- $url : URL to get
-		- $post_data : associative array with keys as field names and values as... values!
+		- $post_data : associative array with keys as field names, and values as values or associative array
 			- or just a string if the flag 'raw_post' is set
 		- $flags (opt.) : string with any combination of these flags:
 			- 'raw_post' : do a raw POST, meaning sending the string $post_data as is and do not assume it to be key/value pairs
@@ -42,13 +42,7 @@ class network {
 		} else {
 			$post_string = '';
 			if (is_array($post_data)) {
-				foreach ($post_data as $key => $value) {
-					$post_string .= $key .'='. urlencode($value) .'&';
-					$at_least_one = true;
-				}
-				if ($at_least_one) {
-					$post_string = substr($post_string, 0, strlen($post_string) - 1);
-				}
+				$post_string = http_build_query($post_data);
 			}
 		}
 
