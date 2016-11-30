@@ -463,6 +463,25 @@ class network {
 		}
 	}
 
+	public static function ip_cidr_match($ip, $range) {
+		/*
+		DESCRIPTION:
+		- determine if an IP address is within the range of a given CIDR
+		- source: http://stackoverflow.com/q/594112/2404541
+		INPUT:
+		- $ip : IPv4 address, eg.: 10.2.0.57
+		- $range : CIDR range, eg.: 10.2.0.0/16
+		OUTPUT:
+		- boolean
+		*/
+		list ($subnet, $bits) = explode('/', $range);
+		$ip = ip2long($ip);
+		$subnet = ip2long($subnet);
+		$mask = -1 << (32 - $bits);
+		$subnet &= $mask; # nb: in case the supplied subnet wasn't correctly aligned
+		return ($ip & $mask) == $subnet;
+	}
+
 	public static function limit_ip_access($resource_id, $timeperiod, $timeperiod_unit, $allowed_hits, $flags = '') {
 		/*
 		DESCRIPTION:
