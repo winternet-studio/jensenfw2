@@ -802,9 +802,7 @@ class mail {
 
 		$emaillog_rawID = null;
 		if ($cfg['log_to_database']) {
-			$parentfunc = core::get_parent_function();
-			$dblog  = 'File/function: '. basename($_SERVER['SCRIPT_NAME']) . ($parentfunc ? ', '. $parentfunc .'()' : '') . "\r\n";
-			$dblog .= 'From: '. $fromname .' <'. $fromemail .'>' . "\r\n";
+			$dblog  = 'From: '. $fromname .' <'. $fromemail .'>' . "\r\n";
 			$dblog .= 'To  : '. $recipient_log . "\r\n";
 			if ($str_cc) {
 				$dblog .= 'CC  : '. $str_cc . "\r\n";
@@ -830,27 +828,19 @@ class mail {
 				$dblog .= "\r\n***** HTML version ************************************************************\r\n" . $htmlbody;
 			}
 
-			core::require_database($cfg['db_server_id']);
-			$sql = array();
-			$sql[] = "eml_timestamp = NOW()";
-			$sql[] = "eml_from = '". core::sql_esc(mb_substr($orig_fromemail, 0, 255)) ."'";
-			$sql[] = "eml_to = '". core::sql_esc(mb_substr($recipient_log, 0, 255)) ."'";
-			$sql[] = "eml_subj = '". core::sql_esc(mb_substr($fsubj, 0, 255)) ."'";
-			$sql[] = "eml_raw = '". core::sql_esc(preg_replace('/(?<!\\r)\\n/'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), "\r\n", mb_substr($dblog, 0, 65535))) ."'";  //enforce \r\n
 			if ($cfg['use_mailer'] == 'swiftmailer') {
 				$send_status = 'SuccessRecipCount:'. $success_recip_count .' FailedRecips:'. implode(', ', (array) $failed_recips);
 			} else {
 				$send_status = 'EmailWasSent:'. $email_was_sent .' MailResult:'. $mailresult .'';
 			}
-			$sql[] = "eml_send_status = '". core::sql_esc(mb_substr($send_status, 0, 255)) ."'";
-			$logSQL = "INSERT INTO `". $cfg['log_to_database'] ."`.`". $cfg['db_log_table'] ."` SET ". implode(', ', $sql);
-			$emaillog_rawID = core::database_result(array('server_id' => $cfg['db_server_id'], $logSQL), false, 'Database query for logging email to database failed.');
 
-			if ($cfg['purge_database_log_after'] && !$_SESSION['_purged_db_maillog_now']) {
-				$purgeSQL = "DELETE FROM `". $cfg['log_to_database'] ."`.`". $cfg['db_log_table'] ."` WHERE TO_DAYS(CURDATE()) - TO_DAYS(eml_timestamp) > ". (int) $cfg['purge_database_log_after'] ."";
-				$dbresult = core::database_result(array('server_id' => $cfg['db_server_id'], $purgeSQL), false, 'Database query for purging raw database mail log failed.');
-				$_SESSION['_purged_db_maillog_now'] = true;
-			}
+			$emaillog_rawID = self::log_email_db([
+				'from' => $orig_fromemail,
+				'to' => $recipient_log,
+				'subject' => $fsubj,
+				'body' => $dblog,
+				'send_status' => $send_status,
+			]);
 		}
 
 		$result = array(
@@ -1040,6 +1030,87 @@ class mail {
 			$html = preg_replace("|<a href=[\"']?mailto:[^\"' ]+[\"']?[^>]*>(.*)</a>|siU", '$1', $html);
 		}
 		return preg_replace_callback('|\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b|i', create_function('$matches', 'return \winternet\jensenfw2\mail::scrample_email_addressHTML($matches[0], '. var_export($options, true) .');'), $html);
+	}
+
+	public static function log_email_db($data = []) {
+		/*
+		DESCRIPTION:
+		- log sent email to the database
+		- database schema:
+			CREATE TABLE `temp_emaillog_raw` (
+				`emaillog_rawID` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+				`eml_timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+				`eml_from` VARCHAR(255) NOT NULL,
+				`eml_to` VARCHAR(255) NOT NULL,
+				`eml_subj` VARCHAR(255) NOT NULL,
+				`eml_raw` MEDIUMTEXT NOT NULL,
+				`eml_send_status` VARCHAR(255) NULL DEFAULT NULL,
+				PRIMARY KEY (`emaillog_rawID`)
+			)
+			COLLATE='utf8_general_ci';
+		INPUT:
+		- $data (req.) : array with associative subarrays having the following keys:
+			- 'from'
+			- 'to'
+			- 'subject'
+			- 'body'
+			- 'send_status' (opt.)
+			- 'intervowen_id' (opt.)
+		OUTPUT:
+		-
+		*/
+		$cfg = core::get_class_defaults(__CLASS__);
+
+		$parentfunc = core::get_parent_function(2);
+		$data['body'] = 'File/function: '. basename($_SERVER['SCRIPT_NAME']) . ($parentfunc ? ', '. $parentfunc .'()' : '') . "\r\n". $data['body'];
+
+		if (!is_string($data['from'])) {
+			$data['from'] = json_encode($data['from']);
+		}
+		if (!is_string($data['to'])) {
+			$data['to'] = json_encode($data['to']);
+		}
+
+		$sql  = "INSERT INTO `". $cfg['log_to_database'] ."`.`". $cfg['db_log_table'] ."` SET ";
+		$sql .= "eml_intervowen_id = ?id, ";
+		$sql .= "eml_timestamp = UTC_TIMESTAMP(), ";
+		$sql .= "eml_from = ?from, ";
+		$sql .= "eml_to = ?to, ";
+		$sql .= "eml_subj = ?subj, ";
+		$sql .= "eml_raw = ?raw, ";
+		$sql .= "eml_send_status = ?status ";
+		$sql = array($sql,
+			'from' => mb_substr($data['from'], 0, 255),
+			'to' => mb_substr($data['to'], 0, 255),
+			'subj' => mb_substr($data['subject'], 0, 255),
+			'raw' => preg_replace('/(?<!\\r)\\n/'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), "\r\n", mb_substr($data['body'], 0, 65535)),  //enforce \r\n
+			'status' => (array_key_exists('send_status', $data) ? mb_substr($data['send_status'], 0, 255) : null),
+			'id' => (array_key_exists('intervowen_id', $data) ? mb_substr($data['intervowen_id'], 0, 255) : null),
+		);
+		$sql = core::prepare_sql($sql);
+
+		if (YII_BEGIN_TIME) {
+			// Using Yii framework
+			\Yii::$app->db->createCommand($sql)->execute();
+			$emaillog_rawID = \Yii::$app->db->getLastInsertID();
+		} else {
+			// Not using Yii framework
+			core::require_database($cfg['db_server_id']);
+			$emaillog_rawID = core::database_result(array('server_id' => $cfg['db_server_id'], $sql), false, 'Database query for logging email to database failed.');
+		}
+
+		if ($cfg['purge_database_log_after'] && !$_SESSION['_purged_db_maillog_now']) {
+			$purgeSQL = "DELETE FROM `". $cfg['log_to_database'] ."`.`". $cfg['db_log_table'] ."` WHERE TO_DAYS(CURDATE()) - TO_DAYS(eml_timestamp) > ". (int) $cfg['purge_database_log_after'] ."";
+			if (YII_BEGIN_TIME) {
+				\Yii::$app->db->createCommand($purgeSQL)->execute();
+				\Yii::$app->session->set('_purged_db_maillog_now', true);
+			} else {
+				core::database_result(array('server_id' => $cfg['db_server_id'], $purgeSQL), false, 'Database query for purging raw database mail log failed.');
+				$_SESSION['_purged_db_maillog_now'] = true;
+			}
+		}
+
+		return $emaillog_rawID;
 	}
 
 	public static function resend_email_from_raw_log($emaillog_rawID, $add_note = '') {
