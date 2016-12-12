@@ -72,7 +72,8 @@ class core {
 		$class = call_user_func(array($class_name, 'class_defaults'));
 
 		if (self::$userconfig) {
-			$user = call_user_func(self::$userconfig, $class_name);
+			$class_name_short = ltrim(str_replace('winternet\jensenfw2\\', '', $class_name), '\\');  //when __CLASS__ is used the full namespace is included, so strip it. ltrim() is needed in case string starts with "\"
+			$user = call_user_func(self::$userconfig, $class_name_short);
 
 			$eff = array_merge($class, $user);
 		} else {
