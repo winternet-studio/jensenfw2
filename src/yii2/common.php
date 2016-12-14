@@ -1,5 +1,5 @@
 <?php
-namespace winternet\jensenfw2\yii;
+namespace winternet\jensenfw2\yii2;
 
 class common {
 	public static function add_result_errors($result, &$model, $options = []) {
