@@ -37,14 +37,18 @@ class mail {
 		/*
 		CREATE TABLE `temp_emaillog_raw` (
 			`emaillog_rawID` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+			`eml_intervowen_id` VARCHAR(40) NULL DEFAULT NULL,
 			`eml_timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			`eml_from` VARCHAR(255) NOT NULL,
 			`eml_to` VARCHAR(255) NOT NULL,
 			`eml_subj` VARCHAR(255) NOT NULL,
 			`eml_raw` TEXT NOT NULL,
 			`eml_send_status` VARCHAR(255) NULL DEFAULT NULL,
-			PRIMARY KEY (`emaillog_rawID`)
-		);
+			`eml_receive_status` VARCHAR(255) NULL DEFAULT NULL,
+			PRIMARY KEY (`emaillog_rawID`),
+			INDEX `eml_intervowen_id` (`eml_intervowen_id`)
+		)
+		COLLATE='utf8_general_ci'
 		*/
 		$cfg['purge_database_log_after'] = 60;  //days after which the database log is automatically purge for old entries (set to false or 0 to disable purging completely)
 
@@ -1036,18 +1040,7 @@ class mail {
 		/*
 		DESCRIPTION:
 		- log sent email to the database
-		- database schema:
-			CREATE TABLE `temp_emaillog_raw` (
-				`emaillog_rawID` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-				`eml_timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-				`eml_from` VARCHAR(255) NOT NULL,
-				`eml_to` VARCHAR(255) NOT NULL,
-				`eml_subj` VARCHAR(255) NOT NULL,
-				`eml_raw` MEDIUMTEXT NOT NULL,
-				`eml_send_status` VARCHAR(255) NULL DEFAULT NULL,
-				PRIMARY KEY (`emaillog_rawID`)
-			)
-			COLLATE='utf8_general_ci';
+		- see database schema in class_defaults() method in the beginning of this file
 		INPUT:
 		- $data (req.) : array with associative subarrays having the following keys:
 			- 'from'
