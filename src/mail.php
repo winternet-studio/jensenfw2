@@ -38,7 +38,7 @@ class mail {
 		CREATE TABLE `temp_emaillog_raw` (
 			`emaillog_rawID` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
 			`eml_intervowen_id` VARCHAR(40) NULL DEFAULT NULL,
-			`eml_timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			`eml_timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			`eml_from` VARCHAR(255) NOT NULL,
 			`eml_to` VARCHAR(255) NOT NULL,
 			`eml_subj` VARCHAR(255) NOT NULL,
