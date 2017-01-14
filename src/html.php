@@ -2,32 +2,71 @@
 namespace winternet\jensenfw2;
 
 class html {
-	public static function parse_to_flat_array($html) {
+	public static function parse_to_array($html) {
+		/*
+		DESCRIPTION:
+		- convert HTML string to a PHP array
+		- source: http://stackoverflow.com/questions/23062537/how-to-convert-html-to-json-using-php
+		INPUT:
+		- $html : string with HTML code
+		OUTPUT:
+		- array
+		*/
+		$dom = new \DOMDocument();
+		$dom->loadHTML($html);
+
 		$element_to_obj = function($element) use (&$element_to_obj) {
-		    $obj = array( 'tag' => $element->tagName );
-		    foreach ($element->attributes as $attribute) {
-		        $obj[$attribute->name] = $attribute->value;
-		    }
-		    $counter = -1;
-		    foreach ($element->childNodes as $subElement) {
-		    	$counter++;
-		        if ($subElement->nodeType == XML_TEXT_NODE) {
-		            $obj[$counter] = $subElement->wholeText;
-		        } else {
-		            $obj[$counter]['children'][] = $element_to_obj($subElement);
-		        }
-		    }
-		    return $obj;
+			$obj = array( 'tag' => $element->tagName );
+			foreach ($element->attributes as $attribute) {
+				$obj[$attribute->name] = $attribute->value;
+			}
+			foreach ($element->childNodes as $subElement) {
+				if ($subElement->nodeType == XML_TEXT_NODE) {
+					$obj['html'] = $subElement->wholeText;
+				} else {
+					$obj['children'][] = $element_to_obj($subElement);
+				}
+			}
+			return $obj;
+		};
+
+		return $element_to_obj($dom->documentElement);
+	}
+
+	public static function parse_to_flat_array($html) {
+		/*
+		DESCRIPTION:
+		- convert HTML string to a "flat" PHP array (flat meaning the hierarchy of the HTML structure has been removed)
+		INPUT:
+		- $html : string with HTML code
+		OUTPUT:
+		- array
+		*/
+		$element_to_obj = function($element) use (&$element_to_obj) {
+			$obj = array( 'tag' => $element->tagName );
+			foreach ($element->attributes as $attribute) {
+				$obj[$attribute->name] = $attribute->value;
+			}
+			$counter = -1;
+			foreach ($element->childNodes as $subElement) {
+				$counter++;
+				if ($subElement->nodeType == XML_TEXT_NODE) {
+					$obj[$counter] = $subElement->wholeText;
+				} else {
+					$obj[$counter]['children'][] = $element_to_obj($subElement);
+				}
+			}
+			return $obj;
 		};
 
 		$html_to_obj = function($html) use (&$element_to_obj) {
-		    $dom = new \DOMDocument();
-		    $dom->loadHTML('<?xml encoding="UTF-8">'. $html);
-		    // IGNORE ERRORS: @$dom->loadHTML($html);
-		    $obj = $element_to_obj($dom->documentElement);
-		    $return = $obj[0]['children'][0][0]['children'][0];
-		    unset($return['tag']);  //skip the <html> and <body> tags and remove the first tag that surrounds the entire text
-		    return $return;
+			$dom = new \DOMDocument();
+			$dom->loadHTML('<?xml encoding="UTF-8">'. $html);
+			// IGNORE ERRORS: @$dom->loadHTML($html);
+			$obj = $element_to_obj($dom->documentElement);
+			$return = $obj[0]['children'][0][0]['children'][0];
+			unset($return['tag']);  //skip the <html> and <body> tags and remove the first tag that surrounds the entire text
+			return $return;
 		};
 
 		$the_output = array();
