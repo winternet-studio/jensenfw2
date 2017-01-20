@@ -168,7 +168,7 @@ class imaging {
 		$result_msg = array();
 		$has_transparency = false;
 
-		$src_ext = pathinfo($inputfilepath, PATHINFO_EXTENSION);
+		$src_ext = strtolower(pathinfo($inputfilepath, PATHINFO_EXTENSION));
 		if ($src_ext == 'jpeg') $src_ext = 'jpg';
 		if ($src_ext != 'jpg' && $src_ext != 'png') {
 			$err_msg[] = 'Input file extension '. $src_ext .' is not supported.';
@@ -266,13 +266,13 @@ class imaging {
 
 		// Write to file
 		if (count($err_msg) == 0) {
-			$dest_ext = pathinfo($outputfilepath, PATHINFO_EXTENSION);
+			$dest_ext = strtolower(pathinfo($outputfilepath, PATHINFO_EXTENSION));
 
-			if (in_array(strtolower($dest_ext), array('jpg', 'jpeg'))) {
+			if (in_array($dest_ext), array('jpg', 'jpeg')) {
 				if (!imagejpeg($img_dst, $outputfilepath, $options['quality'])) {
 					$err_msg[] = 'Failed to write JPG file.';
 				}
-			} elseif (strtolower($dest_ext) == 'png') {
+			} elseif ($dest_ext == 'png') {
 				if (!imagepng($img_dst, $outputfilepath, $options['quality'])) {
 					$err_msg[] = 'Failed to write PNG file.';
 				}
