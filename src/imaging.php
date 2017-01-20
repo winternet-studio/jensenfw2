@@ -268,7 +268,7 @@ class imaging {
 		if (count($err_msg) == 0) {
 			$dest_ext = strtolower(pathinfo($outputfilepath, PATHINFO_EXTENSION));
 
-			if (in_array($dest_ext), array('jpg', 'jpeg')) {
+			if (in_array($dest_ext, array('jpg', 'jpeg'))) {
 				if (!imagejpeg($img_dst, $outputfilepath, $options['quality'])) {
 					$err_msg[] = 'Failed to write JPG file.';
 				}
