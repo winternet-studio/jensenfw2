@@ -20,6 +20,8 @@ class pdf {
 			'jpg_quality' => 90,
 			'suffix_pattern' => '-%d',  //suffix added to file name for each page of the converted PDF (%d indicates page number)
 			'ghostscript_path' => 'gs',
+			'TextAlphaBits' => 4,  //set these two to 0 to disable anti-aliasing
+			'GraphicsAlphaBits' => 4,
 		);
 		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 			$defaults['ghostscript_path'] = 'c:/programs/ghostscript/bin/gswin64c.exe';
@@ -35,7 +37,7 @@ class pdf {
 			core::system_error('Invalid output format for converting PDF to image.', ['Format' => $options['output_format']]);
 		}
 
-		$cmd = $options['ghostscript_path'] .' -q -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 -sDEVICE='. $sdevice .' -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r'. $options['resolution'] . ($options['output_format'] == 'jpg' ? ' -dJPEGQ='. $options['jpg_quality'] : '') .' -sOutputFile='. $image_path .' '. $pdf_path .' 2>&1';
+		$cmd = $options['ghostscript_path'] .' -q -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 -sDEVICE='. $sdevice .' -dTextAlphaBits='. $options['TextAlphaBits'] .' -dGraphicsAlphaBits='. $options['GraphicsAlphaBits'] .' -r'. $options['resolution'] . ($options['output_format'] == 'jpg' ? ' -dJPEGQ='. $options['jpg_quality'] : '') .' -sOutputFile='. $image_path .' '. $pdf_path .' 2>&1';
 		exec($cmd, $coutput, $returncode);
 
 		if (!empty($coutput)) {
