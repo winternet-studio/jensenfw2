@@ -20,7 +20,7 @@ class pdf {
 			'jpg_quality' => 90,
 			'suffix_pattern' => '-%d',  //suffix added to file name for each page of the converted PDF (%d indicates page number)
 			'ghostscript_path' => 'gs',
-			'TextAlphaBits' => 4,  //set these two to 0 to disable anti-aliasing
+			'TextAlphaBits' => 4,  //set these two to 1 to disable anti-aliasing
 			'GraphicsAlphaBits' => 4,
 		);
 		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
