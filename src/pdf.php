@@ -6,6 +6,7 @@ class pdf {
 		/*
 		DESCRIPTION:
 		- convert a PDF to an image
+		- direct GhostScript is faster than using ImageMagick: http://bertanguven.com/faster-conversions-from-pdf-to-pngjpeg-imagemagick-vs-ghostscript
 		INPUT:
 		- $pdf_path : full path and filename of the PDF to convert
 		- $image_path : full path and filename of the image to write to
