@@ -26,6 +26,7 @@ class js {
 		INPUT:
 		- $array : associate array where keys are the references that will later be used in Javascript to retrieve the corresponding values
 			- for translation system use the translation tag as the key and set to value to '_txt' in order for this function to retrieve the translation itself
+				- for Yii set the value 'yii-t', or eg. 'yii-t:app/admin' to designate a message in the 'app/admin' category
 		- $options : associative array with any of these flags:
 			- 'js_function_name' : use a different name for the Javascript function. Default is 'getphp'
 			- 'is_js_context' : set to true when the output is placed directly in a Javascript block (= skip the <script> tags)
@@ -43,8 +44,14 @@ class js {
 		}
 		$a = array();
 		foreach ($array as $ref => $value) {
-			if ($value === '_txt') {  //ensure boolean true doesn't match
-				$a[$ref] = txt($ref, '#');
+			if ($value === '_txt') {
+				$a[$ref] = core::txt($ref, '#');
+			} elseif ($value === 'yii-t' || (is_string($value) && substr($value, 0, 5) === 'yii-t')) {
+				if ($value !== 'yii-t') {
+					$a[$ref] = \Yii::t(substr($value, strpos($value, ':')+1), $ref);
+				} else {
+					$a[$ref] = \Yii::t('app', $ref);
+				}
 			} else {
 				$a[$ref] = $value;
 			}
