@@ -315,8 +315,6 @@ class network {
 		$buf = str_replace('</HEAD>', '</head>', $buf);
 		$headpos = strpos($buf, '</head>');
 		if (!$headpos) {
-		}
-		if (!$headpos) {
 			core::system_error('Page is invalid. Closing header tag not found.');
 		}
 		$GLOBALS['head_code_buffer'] = $buf;
