@@ -33,15 +33,31 @@ class html {
 		return $element_to_obj($dom->documentElement);
 	}
 
-	public static function parse_to_flat_array($html) {
+	public static function parse_to_flat_array($html, $options = []) {
 		/*
 		DESCRIPTION:
 		- convert HTML string to a "flat" PHP array (flat meaning the hierarchy of the HTML structure has been removed)
 		INPUT:
 		- $html : string with HTML code
+		- $options : associative array with any of these options:
+			- 'error_callback' : pass a function that is called in case there are errors or warnings, eg. about invalid HTML (instead of outputting them to screen)
+				- it is passed an array with 'load_result' and 'errors' (array of LibXMLError objects)
+				- sample error:
+					LibXMLError Object (
+					    [level] => 2
+					    [code] => 68
+					    [column] => 6893
+					    [message] => htmlParseEntityRef: no name
+					    [file] => 
+					    [line] => 1
+					)
+				- see also http://php.net/libxml_get_errors
+				- the function will have to raise an exception if script should be terminated
 		OUTPUT:
 		- array
 		*/
+		$options = (array) $options;
+
 		$element_to_obj = function($element) use (&$element_to_obj) {
 			$obj = array( 'tag' => $element->tagName );
 			foreach ($element->attributes as $attribute) {
@@ -59,10 +75,22 @@ class html {
 			return $obj;
 		};
 
-		$html_to_obj = function($html) use (&$element_to_obj) {
+		$html_to_obj = function($html) use (&$element_to_obj, &$options) {
+			if (is_callable($options['error_callback'])) {
+				libxml_use_internal_errors(true);
+			}
 			$dom = new \DOMDocument();
-			$dom->loadHTML('<?xml encoding="UTF-8">'. $html);
-			// IGNORE ERRORS: @$dom->loadHTML($html);
+			$res = $dom->loadHTML('<?xml encoding="UTF-8">'. $html);
+			// IGNORE ERRORS: see http://stackoverflow.com/a/12328343/2404541 - espacially the comment I upvoted
+			if (is_callable($options['error_callback'])) {
+				$errors = array();
+				foreach (libxml_get_errors() as $error) {  //NOTE: $res doesn't necessarily have to evaluate to false 
+					$errors[] = $error;
+				}
+				libxml_clear_errors();
+
+				call_user_func($options['error_callback'], array('load_result' => $res, 'errors' => $errors));
+			}
 			$obj = $element_to_obj($dom->documentElement);
 			$return = $obj[0]['children'][0][0]['children'][0];
 			unset($return['tag']);  //skip the <html> and <body> tags and remove the first tag that surrounds the entire text
