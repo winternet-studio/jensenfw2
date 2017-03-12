@@ -93,10 +93,10 @@ class geography {
 		*/
 		$new_latlng = [];
 		$distance = $distance / 6371;
-		$angle = self::ToRad($angle);
+		$angle = self::ToRadians($angle);
 
-		$lat1 = self::ToRad($lat);
-		$lng1 = self::ToRad($lng);
+		$lat1 = self::ToRadians($lat);
+		$lng1 = self::ToRadians($lng);
 
 		$new_lat = asin(sin($lat1) * cos($distance) +
 					  cos($lat1) * sin($distance) * cos($angle));
@@ -108,16 +108,16 @@ class geography {
 			return null;
 		}
 
-		$new_latlng[0] = self::ToDeg($new_lat);
-		$new_latlng[1] = self::ToDeg($new_lng);
+		$new_latlng[0] = self::ToDegrees($new_lat);
+		$new_latlng[1] = self::ToDegrees($new_lng);
 
 		return $new_latlng;
 	}
-	public static function ToRad($vInput) {
-		return $vInput * pi() / 180;
+	public static function ToRadians($input) {
+		return $input * pi() / 180;
 	}
-	public static function ToDeg($vInput) {
-		return $vInput * 180 / pi();
+	public static function ToDegrees($input) {
+		return $input * 180 / pi();
 	}
 
 	public static function bearing_greatcircle($lat1, $lng1, $lat2, $lng2) {
