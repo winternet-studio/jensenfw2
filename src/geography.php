@@ -77,49 +77,6 @@ class geography {
 		}
 	}
 
-	public static function point_from_bearing_distance($lat, $lng, $angle, $distance) {
-		/*
-		DESCRIPTION:
-		- calculate the point (latitude/longitude) given a point of origin, a bearing, and a distance
-		- source: http://www.etechpulse.com/2014/02/calculate-latitude-and-longitude-based.html
-		INPUT:
-		- $lat
-		- $lng
-		- $angle : bearing in degrees (0-360)
-		- $distance : distance from the point in kilometers
-		OUTPUT:
-		- array where first entry is the new latitude, second entry the new longitude
-		- example: array(60.6793281, 8.6953779)
-		*/
-		$new_latlng = [];
-		$distance = $distance / 6371;
-		$angle = self::ToRadians($angle);
-
-		$lat1 = self::ToRadians($lat);
-		$lng1 = self::ToRadians($lng);
-
-		$new_lat = asin(sin($lat1) * cos($distance) +
-					  cos($lat1) * sin($distance) * cos($angle));
-
-		$new_lng = $lng1 + atan2(sin($angle) * sin($distance) * cos($lat1),
-							  cos($distance) - sin($lat1) * sin($new_lat));
-
-		if (is_nan($new_lat) || is_nan($new_lng)) {
-			return null;
-		}
-
-		$new_latlng[0] = self::ToDegrees($new_lat);
-		$new_latlng[1] = self::ToDegrees($new_lng);
-
-		return $new_latlng;
-	}
-	public static function ToRadians($input) {
-		return $input * pi() / 180;
-	}
-	public static function ToDegrees($input) {
-		return $input * 180 / pi();
-	}
-
 	public static function bearing_greatcircle($lat1, $lng1, $lat2, $lng2) {
 		/*
 		DESCRIPTION:
@@ -197,6 +154,49 @@ class geography {
 		} else { // $bearing <= 337.5
 			return array('short' => 'NW', 'long' => 'North West');
 		}
+	}
+
+	public static function point_from_bearing_distance($lat, $lng, $angle, $distance) {
+		/*
+		DESCRIPTION:
+		- calculate the point (latitude/longitude) given a point of origin, a bearing, and a distance
+		- source: http://www.etechpulse.com/2014/02/calculate-latitude-and-longitude-based.html
+		INPUT:
+		- $lat
+		- $lng
+		- $angle : bearing in degrees (0-360)
+		- $distance : distance from the point in kilometers
+		OUTPUT:
+		- array where first entry is the new latitude, second entry the new longitude
+		- example: array(60.6793281, 8.6953779)
+		*/
+		$new_latlng = [];
+		$distance = $distance / 6371;
+		$angle = self::ToRadians($angle);
+
+		$lat1 = self::ToRadians($lat);
+		$lng1 = self::ToRadians($lng);
+
+		$new_lat = asin(sin($lat1) * cos($distance) +
+					  cos($lat1) * sin($distance) * cos($angle));
+
+		$new_lng = $lng1 + atan2(sin($angle) * sin($distance) * cos($lat1),
+							  cos($distance) - sin($lat1) * sin($new_lat));
+
+		if (is_nan($new_lat) || is_nan($new_lng)) {
+			return null;
+		}
+
+		$new_latlng[0] = self::ToDegrees($new_lat);
+		$new_latlng[1] = self::ToDegrees($new_lng);
+
+		return $new_latlng;
+	}
+	public static function ToRadians($input) {
+		return $input * pi() / 180;
+	}
+	public static function ToDegrees($input) {
+		return $input * 180 / pi();
 	}
 
 	public static function convert_coordinate_dms_to_decimal($degrees, $minutes, $seconds, $direction) {
