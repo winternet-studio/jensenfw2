@@ -172,10 +172,10 @@ class geography {
 		*/
 		$new_latlng = [];
 		$distance = $distance / 6371;
-		$angle = self::ToRadians($angle);
+		$angle = deg2rad($angle);
 
-		$lat1 = self::ToRadians($lat);
-		$lng1 = self::ToRadians($lng);
+		$lat1 = deg2rad($lat);
+		$lng1 = deg2rad($lng);
 
 		$new_lat = asin(sin($lat1) * cos($distance) +
 					  cos($lat1) * sin($distance) * cos($angle));
@@ -187,16 +187,10 @@ class geography {
 			return null;
 		}
 
-		$new_latlng[0] = self::ToDegrees($new_lat);
-		$new_latlng[1] = self::ToDegrees($new_lng);
+		$new_latlng[0] = rad2deg($new_lat);
+		$new_latlng[1] = rad2deg($new_lng);
 
 		return $new_latlng;
-	}
-	public static function ToRadians($input) {
-		return $input * pi() / 180;
-	}
-	public static function ToDegrees($input) {
-		return $input * 180 / pi();
 	}
 
 	public static function convert_coordinate_dms_to_decimal($degrees, $minutes, $seconds, $direction) {
