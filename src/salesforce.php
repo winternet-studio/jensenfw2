@@ -179,7 +179,7 @@ class salesforce {
 		- $id : ID of record to update
 		- $fields : associative array with fieldname/value pairs
 		OUTPUT:
-		- array
+		- nothing (Salesforce gives no response data on success)
 		*/
 		$this->authenticate();
 
@@ -188,16 +188,14 @@ class salesforce {
 		curl_setopt($this->curl, CURLOPT_HTTPHEADER, array('Authorization: OAuth '. $this->auth_response['access_token'], 'Content-Type: application/json'));
 		curl_setopt($this->curl, CURLOPT_POST, true);
 		curl_setopt($this->curl, CURLOPT_POSTFIELDS, json_encode($fields));
-		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, null);
+		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'PATCH');
 
 		$json_response = curl_exec($this->curl);
 
 		$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
-		if ($status != 201) {
+		if ($status != 204) {
 			core::system_error('Updating Salesforce object failed.', ['URL' => $url, 'Status' => $status, 'Response' => $json_response, 'cURL error' => curl_error($this->curl), 'cURL errno' => curl_errno($this->curl) ]);
 		}
-
-		return json_decode($json_response, true);
 	}
 
 	public function update_multiple($object_name, $array_of_records = array() ) {
