@@ -405,4 +405,52 @@ class imaging {
 			return $int;
 		}
 	}
+
+	// Source: https://pngquant.org/php.html
+	/**
+	 * Optimizes PNG file with pngquant 1.8 or later (reduces file size of 24-bit/32-bit PNG images).
+	 *
+	 * You need to install pngquant 1.8 on the server (ancient version 1.0 won't work).
+	 * There's package for Debian/Ubuntu and RPM for other distributions on http://pngquant.org
+	 *
+	 * @param $input_file_png string - path to any PNG file, e.g. $_FILE['file']['tmp_name']
+	 * @param $max_quality int - conversion quality, useful values from 60 to 100 (smaller number = smaller file)
+	 * @return string - content of PNG file after conversion
+	 */
+	function compress_png($input_file_png, $options = []) {
+		$defaults = [
+			'min_quality' => 60,  //guarantee that quality won't be worse than that.
+			'max_quality' => 90,
+			'save_to_file' => false,  //path to file where the new PNG will be saved to (if not set the function will return the file content)
+			'allow_overwrite' => false,  //allow output file path to be the same as the input file path?
+		];
+		$options = array_merge($defaults, $options);
+
+		if (!file_exists($input_file_png)) {
+			core::system_error('PNG file to compress does not exist.', ['File' => $input_file_png]);
+		}
+
+		// '-' makes it use stdout, required to save to $compressed_png_content variable
+		// '<' makes it read from the given file path
+		// escapeshellarg() makes this safe to use with any path
+		if ($options['save_to_file']) {
+			$cmd = 'pngquant --quality='. $options['min_quality'] .'-'. $options['max_quality'] .' --output='. escapeshellarg($options['save_to_file']) . ($options['allow_overwrite'] ? ' --force' : '') .' '. escapeshellarg($input_file_png) .' 2>&1';  //redirect stderr to stdout in order to see error messages
+			$output = array();
+			$exitcode = null;
+			exec($cmd, $output, $exitcode);
+
+			if ($exitcode != 0) {
+				core::system_error('Conversion to compressed PNG failed. Is pngquant 1.8+ installed?', ['File' => $input_file_png, 'Exit code' => $exitcode, 'Output' => $output]);
+			}
+		} else {
+			$cmd = 'pngquant --quality='. $options['min_quality'] .'-'. $options['max_quality'] .' - < '. escapeshellarg($input_file_png);
+			$compressed_png_content = shell_exec($cmd);
+
+			if (!$compressed_png_content) {
+				core::system_error('Conversion to compressed PNG failed. Is pngquant 1.8+ installed?', ['File' => $input_file_png]);
+			}
+
+			return $compressed_png_content;
+		}
+	}
 }
