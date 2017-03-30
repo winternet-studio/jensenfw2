@@ -542,6 +542,107 @@ class filesystem {
 		}
 	}
 
+	public static function is_signature_valid($filepath, $extension = false) {
+		/*
+		DESCRIPTION:
+		- check if a file matches its extension by checking its header bytes
+		- https://en.wikipedia.org/wiki/List_of_file_signatures
+		INPUT:
+		- $filepath (string) : path to file
+		- $extension (string) (opt.) : extension of the file. If not provided it is auto-detected.
+		OUTPUT:
+		- true : valid
+		- false : not valid
+		- 'unknown' : don't know the file type's signature
+		- 'nosig' : has no signature
+		*/
+		if (!$extension) {
+			$extension = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
+		} else {
+			$extension = strtolower($extension);
+		}
+
+		// NOTES:
+		// - if multiple arrays (= "patterns") are given for a file type they must ALWAYS have equal length (requirement could actually be removed if we just find the longest one before reading from file)
+		//    - if patterns do have different length put shortest patterns first and fill with '*'
+		// - if a given byte in the sequence is not part of the signature use '*' to indicate that any byte is allowed
+
+		$headers = null;
+		switch ($extension) {
+		case 'jpg':
+		case 'jpeg':
+			$headers = array(
+				[255, 216, 255, 219, '*', '*', '*', '*', '*', '*', '*', '*'],  //JPEG raw - hex: FF D8 FF DB
+				[255, 216, 255, 224, '*', '*',  74,  70,  73,  70,   0,   1],  //JFIF - hex: FF D8 FF E0 nn nn 4A 46 49 46 00 01
+				[255, 216, 255, 225, '*', '*',  69, 120, 105, 102,   0,   0],  //Exif - hex: FF D8 FF E1 nn nn 45 78 69 66 00 00
+			);
+			break;
+		case 'png':
+			$headers = array([137, 80, 78, 71, 13, 10, 26, 10]);  //hex: 89 50 4E 47 0D 0A 1A 0A
+			break;
+		case 'tif':
+		case 'tiff':
+			$headers = array(
+				[73, 73, 42, 0],  //little endian - hex: 49 49 2A 00
+				[77, 77, 0, 42],  //big endian    - hex: 4D 4D 00 2A
+			);
+			break;
+		case 'pdf':
+			$headers = array([37, 80, 68, 70]);  //hex: 25 50 44 46
+			break;
+		case 'txt':
+		case 'js':
+		case 'css':
+			return 'nosig';
+			break;
+		}
+
+
+		if ($headers !== null) {
+	 		if (!file_exists($filepath)) {
+				core::system_error('File to check signature on does not exist.', ['Folder' => $filepath]);
+	 		}
+
+			$f = fopen($filepath, 'r');
+
+			$bytes = [];
+			// inspiration: http://www.codeaid.net/php/check-if-the-file-is-a-png-image-file-by-reading-its-signature
+			for ($byteindx = 0; $byteindx < count($headers[0]); $byteindx++) {
+				$bytes[] = ord(fread($f, 1));  // convert current byte to its ASCII value
+			}
+			fclose($f);
+
+			$found_valid_header = false;
+			$header_count = count($headers);
+			foreach ($headers as $header) {
+				$failed_match = false;
+				foreach ($bytes as $indx => $ascii) {
+					if ($header[$indx] !== '*' && $ascii !== $header[$indx]) {
+						$failed_match = true;
+						if ($header_count == 1) {  //no alternatives to check, provide result immediately
+							return false;
+						} else {
+							break;  //check no further bytes for this header alternative
+						}
+					}
+				}
+
+				if (!$failed_match) {
+					$found_valid_header = true;
+					break;  //check no further as we have found a valid signature
+				}
+			}
+
+			if (!$found_valid_header) {
+				return false;
+			} else {
+				return true;
+			}
+		}
+
+		return 'unknown';
+	}
+
 	public static function is_binary_file($file) {
 		/*
 		DESCRIPTION:
