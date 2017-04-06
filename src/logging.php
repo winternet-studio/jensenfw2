@@ -4,7 +4,7 @@ This file contains functions related to logging
 */
 namespace winternet\jensenfw2;
 
-class network {
+class logging {
 	public static function class_defaults() {
 		$cfg = array();
 
@@ -22,7 +22,7 @@ class network {
 		- example: logging::log_action('', false, array('for_name' => '', 'for_userID' => 1), array('' => 1)  );
 		- requires the table 'log_actions' in the database:  (table name can be changed in config)
 			CREATE TABLE `log_actions` (
-				`log_operationID` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+				`log_actionID` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
 				`log_timestamp` DATETIME NULL DEFAULT NULL,
 				`log_by_userID` INT(10) UNSIGNED NULL DEFAULT NULL,
 				`log_by_name` VARCHAR(100) NULL DEFAULT NULL,
@@ -34,7 +34,7 @@ class network {
 				`log_parameters` MEDIUMTEXT NULL,
 				`log_ip` VARCHAR(50) NULL DEFAULT NULL,
 				`log_visitID` INT(10) UNSIGNED NULL DEFAULT NULL,
-				PRIMARY KEY (`log_operationID`),
+				PRIMARY KEY (`log_actionID`),
 				INDEX `tempindx` (`log_action`, `log_for_userID`, `log_subaction`)
 			);
 		INPUT:
@@ -79,7 +79,7 @@ class network {
 		core::require_database();
 
 		$logSQL = "INSERT INTO `". $cfg['log_actions_db_name'] ."`.`". $cfg['log_actions_db_table'] ."` SET ";
-		$logSQL .= "log_thetime = '". gmdate('Y-m-d H:i:s') ."', ";
+		$logSQL .= "log_timestamp = '". gmdate('Y-m-d H:i:s') ."', ";
 		foreach ($primary_parms as $key => $value) {
 			if ($value !== '' && $value !== null && $value !== false) {
 				$logSQL .= "`log_". $key ."` = '". core::sql_esc($value) ."', ";
