@@ -15,7 +15,7 @@ class logging {
 		return $cfg;
 	}
 
-	public static function log_action($action, $subaction = false, $primary_parms = false, $secondary_parms = false, $options = array() ) {
+	public static function log_action($action, $subaction = false, $primary_parms = [], $secondary_parms = false, $options = array() ) {
 		/*
 		DESCRIPTION:
 		- log an action that happens in the system (eg. by a user or by some automated process)
@@ -61,6 +61,9 @@ class logging {
 
 		// Don't register duplicate entries if requested
 		if (is_numeric($options['duplicate_window'])) {
+			if (YII_BEGIN_TIME) {
+				\Yii::$app->session->open();  //ensure session has been started
+			}
 			$session_varname = '_logentry_dedupe_'. md5($action .'-'. $subaction .'-'. json_encode($primary_parms) .'-'. json_encode($secondary_parms));
 			if (!$_SESSION[$session_varname] || time()-$options['duplicate_window'] > $_SESSION[$session_varname]) {
 				// Do register the log entry => continue
@@ -76,31 +79,51 @@ class logging {
 		}
 
 		$cfg = core::get_class_defaults(__CLASS__);
-		core::require_database();
+
+		$logSQL_vars = array();
 
 		$logSQL = "INSERT INTO `". $cfg['log_actions_db_name'] ."`.`". $cfg['log_actions_db_table'] ."` SET ";
 		$logSQL .= "log_timestamp = '". gmdate('Y-m-d H:i:s') ."', ";
+		$counter = 0;
 		foreach ($primary_parms as $key => $value) {
 			if ($value !== '' && $value !== null && $value !== false) {
-				$logSQL .= "`log_". $key ."` = '". core::sql_esc($value) ."', ";
+				$counter++;
+				$logSQL .= "`log_". $key ."` = :prim". $counter .", ";
+				$logSQL_vars['prim'. $counter] = $value;
 			}
 		}
-		$logSQL .= "log_ip = '". core::sql_esc($_SERVER['REMOTE_ADDR']) ."', ";
-		$logSQL .= "log_action = '". core::sql_esc($action) ."', ";
+		$logSQL .= "log_ip = :ip, ";
+		$logSQL_vars['ip'] = $_SERVER['REMOTE_ADDR'];
+		$logSQL .= "log_action = :action, ";
+		$logSQL_vars['action'] = $action;
 		if ($subaction) {
-			$logSQL .= "log_subaction = '". core::sql_esc($subaction) ."', ";
+			$logSQL .= "log_subaction = :subaction, ";
+			$logSQL_vars['subaction'] = $subaction;
 		}
 		// Prepare secondary parameters for database
 		if (is_array($secondary_parms)) {  //transform array into plain text
 			if (count($secondary_parms) > 0) {
-				$logSQL .= "log_parameters = '". core::sql_esc(json_encode($secondary_parms)) ."', ";
+				$logSQL .= "log_parameters = :parms, ";
+				$logSQL_vars['parms'] = json_encode($secondary_parms);
 			}
 		} elseif ($secondary_parms) {  //insert as plain text
-			$logSQL .= "log_parameters = '". core::sql_esc($secondary_parms) ."', ";
+			$logSQL .= "log_parameters = :parms, ";
+			$logSQL_vars['parms'] = $secondary_parms;
 		}
 		$logSQL = substr($logSQL, 0, strlen($logSQL)-2);
 
-		$new_operationID = core::database_result($logSQL, false, 'Database query failed for making a log entry.');
+		if (YII_BEGIN_TIME) {
+			// Using Yii framework
+			\Yii::$app->db->createCommand($logSQL, $logSQL_vars)->execute();
+			$new_operationID = \Yii::$app->db->getLastInsertID();
+		} else {
+			// Not using Yii framework
+			core::require_database($cfg['db_server_id']);
+			$logSQL = preg_replace("/ = :\\b/", ' = ?', $logSQL);
+			$logSQL = core::prepare_sql($logSQL, $logSQL_vars);
+			$new_operationID = core::database_result(array('server_id' => $cfg['db_server_id'], $logSQL), false, 'Database query failed for making a log entry.');
+		}
+
 		return $new_operationID;
 	}
 }
