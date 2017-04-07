@@ -1065,14 +1065,14 @@ class mail {
 		}
 
 		$sql  = "INSERT INTO `". $cfg['log_to_database'] ."`.`". $cfg['db_log_table'] ."` SET ";
-		$sql .= "eml_intervowen_id = ?id, ";
+		$sql .= "eml_intervowen_id = :id, ";
 		$sql .= "eml_timestamp = UTC_TIMESTAMP(), ";
-		$sql .= "eml_from = ?from, ";
-		$sql .= "eml_to = ?to, ";
-		$sql .= "eml_subj = ?subj, ";
-		$sql .= "eml_raw = ?raw, ";
-		$sql .= "eml_send_status = ?status ";
-		$sql = array($sql,
+		$sql .= "eml_from = :from, ";
+		$sql .= "eml_to = :to, ";
+		$sql .= "eml_subj = :subj, ";
+		$sql .= "eml_raw = :raw, ";
+		$sql .= "eml_send_status = :status ";
+		$sql_vars = array(
 			'from' => mb_substr($data['from'], 0, 255),
 			'to' => mb_substr($data['to'], 0, 255),
 			'subj' => mb_substr($data['subject'], 0, 255),
@@ -1080,15 +1080,16 @@ class mail {
 			'status' => (array_key_exists('send_status', $data) ? mb_substr($data['send_status'], 0, 255) : null),
 			'id' => (array_key_exists('intervowen_id', $data) ? mb_substr($data['intervowen_id'], 0, 255) : null),
 		);
-		$sql = core::prepare_sql($sql);
 
 		if (YII_BEGIN_TIME) {
 			// Using Yii framework
-			\Yii::$app->db->createCommand($sql)->execute();
+			\Yii::$app->db->createCommand($sql, $sql_vars)->execute();
 			$emaillog_rawID = \Yii::$app->db->getLastInsertID();
 		} else {
 			// Not using Yii framework
 			core::require_database($cfg['db_server_id']);
+			$sql = str_replace(':', '?', $sql);
+			$sql = core::prepare_sql($sql, $sql_vars);
 			$emaillog_rawID = core::database_result(array('server_id' => $cfg['db_server_id'], $sql), false, 'Database query for logging email to database failed.');
 		}
 

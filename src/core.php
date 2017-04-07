@@ -254,7 +254,7 @@ class core {
 		}
 	}
 
-	public static function prepare_sql($array) {
+	public static function prepare_sql($array, $parms = null) {
 		/*
 		DESCRIPTION:
 		- prepare an SQL statement by safely inserting variables into the SQL
@@ -266,11 +266,19 @@ class core {
 			- all subsequent elements are each one piece of data that will be inserted into the SQL at the position holders with the first data element being inserted at the first ?-mark found and so on
 				- the data will be escaped and put in quotes automatically
 				- to use named positions the key for each data element must match exactly the name used in the SQL
+		ALTERNATIVE FORMAT (matches Yii2):
+		- $parms : instead of providing everything in $array you can also provide the base SQL in $array as a string and
+		           provide all the data in $parms as an associative array (using numeric keys has not been tested)
 		OUTPUT:
 		- string with generated SQL statement
 		*/
-		$data = array_slice($array, 1);
-		$sql = $array[0];
+		if ($parms === null) {
+			$data = array_slice($array, 1);
+			$sql = $array[0];
+		} else {
+			$data =& $parms;
+			$sql  =& $array;
+		}
 		foreach ($data as $key => $value) {
 			// NOTE: convert even numbers to strings because comparing the string against number 0 in MySQL (also when written as -0 or 0.00) will always evaluate to true (http://stackoverflow.com/questions/9948389/mysql-string-conversion-return-0). Comparing numbers against numeric strings is no problem though, therefore always do that.
 			if (is_array($value)) {
