@@ -19,8 +19,11 @@ class common {
 		if ($options['form']) {
 			// Apply the server-side generated errors to the form fields
 			$js .= "var form = $(_clickedButton).parents('form');
-if (typeof rsp.err_msg_ext != 'undefined') { form.yiiActiveForm('updateMessages', rsp.err_msg_ext); }
-var errorCount = form.find('.has-error').length;";
+var errorCount = 0;
+if (typeof rsp.err_msg_ext != 'undefined') {
+	for (var x in rsp.err_msg_ext) {if (rsp.err_msg_ext.hasOwnProperty(x)){errorCount++;}}
+	form.yiiActiveForm('updateMessages', rsp.err_msg_ext);
+}";  // NOTE: errorCount MUST be determined before form.yiiActiveForm() because it modifies rsp.err_msg_ext!
 		} else {
 			$js .= "var form, errorCount;";
 			$js .= "if (rsp.err_msg) errorCount = rsp.err_msg.length;";
@@ -66,7 +69,7 @@ var errorCount = form.find('.has-error').length;";
 				$model_name = mb_strtolower(substr($model_name, strrpos($model_name, '\\')+1));
 			}
 
-			$result['err_msg_ext'][$model_name .'-'. $attr] = array_merge($errors, $errors);
+			$result['err_msg_ext'][$model_name .'-'. $attr] = $errors;
 		}
 
 
@@ -77,7 +80,7 @@ var errorCount = form.find('.has-error').length;";
 		}
 
 		// Ensure correct status
-		if (!empty($result['err_msg'])) {
+		if (!empty($result['err_msg']) || !empty($result['err_msg_ext'])) {
 			$result['status'] = 'error';
 		}
 
