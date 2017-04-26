@@ -5,7 +5,7 @@ class common {
 	public static function process_ajax_submit($options = []) {
 		/*
 		DESCRIPTION:
-		- 
+		- generate Javascript code for handling response of an Ajax request that produces standard result/output JSON object with 'status', 'result_msg', and 'err_msg' keys in an array
 		INPUT:
 		- $options : associative array with any of these keys:
 			- 'form' : ActiveForm object
@@ -13,7 +13,7 @@ class common {
 			- 'on_success' : name of callback function when submission succeeded
 			- 'on_complete' : name of callback function that will always be called
 		OUTPUT:
-		- 
+		- Javascript expression
 		*/
 		$js = "function(rsp) {";
 		if ($options['form']) {
@@ -35,6 +35,26 @@ if (typeof rsp.err_msg_ext != 'undefined') {
 		if ($options['on_complete']) {
 			$js .= $options['on_complete'] .'({form:form, rsp:rsp, errorCount:errorCount});';
 		}
+		$js .= "}";
+		return new \yii\web\JsExpression($js);
+	}
+
+	public static function process_ajax_submit_error($options = []) {
+		/*
+		DESCRIPTION:
+		- generate Javascript code for handling a failed Ajax request with a JSON response, eg. a 500 Internal Server Error
+		INPUT:
+		- $options : associative array with any of these keys:
+			- none yet!
+		OUTPUT:
+		- Javascript expression
+		*/
+		$js = "function(xhr, textStatus, errorThrown) {";
+		$js .= "var \$bg = \$('<div/>').addClass('jfw-yii2-ajax-error-bg').css({position: 'fixed', top: '0px', left: '0px', width: '100%', backgroundColor: '#595959'}).height(\$(window).height());";
+		$js .= "var \$modal = \$('<div/>').addClass('msg').css({position: 'fixed', top: '100px', left: '50%', transform: 'translateX(-50%)', width: '70%', marginLeft: 'auto', marginRight: 'auto', backgroundColor: '#EEEEEE', padding: '30px', boxShadow: '0px 0px 28px 5px #232323'});";
+		$js .= "\$modal.html('<h3>'+ errorThrown +'</h3>'+ xhr.responseJSON.message +'<div><button class=\"btn btn-primary\" onclick=\"\$(this).parent().parent().parent().remove();\">OK</button></div>');";
+		$js .= "\$bg.append(\$modal);";
+		$js .= "\$('body').append(\$bg);";
 		$js .= "}";
 		return new \yii\web\JsExpression($js);
 	}
