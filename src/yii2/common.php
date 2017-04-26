@@ -45,17 +45,23 @@ if (typeof rsp.err_msg_ext != 'undefined') {
 		- generate Javascript code for handling a failed Ajax request with a JSON response, eg. a 500 Internal Server Error
 		INPUT:
 		- $options : associative array with any of these keys:
-			- none yet!
+			- 'minimal' : set to true to generate very minimal code
 		OUTPUT:
 		- Javascript expression
 		*/
-		$js = "function(xhr, textStatus, errorThrown) {";
-		$js .= "var \$bg = \$('<div/>').addClass('jfw-yii2-ajax-error-bg').css({position: 'fixed', top: '0px', left: '0px', width: '100%', backgroundColor: '#595959'}).height(\$(window).height());";
-		$js .= "var \$modal = \$('<div/>').addClass('msg').css({position: 'fixed', top: '100px', left: '50%', transform: 'translateX(-50%)', width: '70%', marginLeft: 'auto', marginRight: 'auto', backgroundColor: '#EEEEEE', padding: '30px', boxShadow: '0px 0px 28px 5px #232323'});";
-		$js .= "\$modal.html('<h3>'+ errorThrown +'</h3>'+ xhr.responseJSON.message +'<div><button class=\"btn btn-primary\" onclick=\"\$(this).parent().parent().parent().remove();\">OK</button></div>');";
-		$js .= "\$bg.append(\$modal);";
-		$js .= "\$('body').append(\$bg);";
-		$js .= "}";
+		if ($options['minimal']) {
+			$js = "function(r,t,e) {";
+			$js .= "alert(e+\"\\n\\n\"+\$('<div/>').html(r.responseJSON.message).text());";
+			$js .= "}";
+		} else {
+			$js = "function(xhr, textStatus, errorThrown) {";
+			$js .= "var \$bg = \$('<div/>').addClass('jfw-yii2-ajax-error-bg').css({position: 'fixed', top: '0px', left: '0px', width: '100%', backgroundColor: '#595959'}).height(\$(window).height());";
+			$js .= "var \$modal = \$('<div/>').addClass('msg').css({position: 'fixed', top: '100px', left: '50%', transform: 'translateX(-50%)', width: '70%', marginLeft: 'auto', marginRight: 'auto', backgroundColor: '#EEEEEE', padding: '30px', boxShadow: '0px 0px 28px 5px #232323'});";
+			$js .= "\$modal.html('<h3>'+ errorThrown +'</h3>'+ xhr.responseJSON.message +'<div><button class=\"btn btn-primary\" onclick=\"\$(this).parent().parent().parent().remove();\">OK</button></div>');";
+			$js .= "\$bg.append(\$modal);";
+			$js .= "\$('body').append(\$bg);";
+			$js .= "}";
+		}
 		return new \yii\web\JsExpression($js);
 	}
 
