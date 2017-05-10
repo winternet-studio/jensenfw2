@@ -854,7 +854,7 @@ class mail {
 		return $result;
 	}
 
-	public static function prepare_mail_template($templatefile, $mailtags, $templatefile_var_is_the_content = false) {
+	public static function prepare_mail_template($templatefile, $mailtags, $templatefile_var_is_the_content = false, $tag_format = '%%') {
 		/*
 		DESCRIPTION:
 		- load a mail template and replace the dynamic tags with real values
@@ -868,6 +868,13 @@ class mail {
 			- second item : body of the mail
 		- you can use "list($mailsubj, $mailbody) = prepare_mail..." to easily fetch the two
 		*/
+
+		if ($tag_format == '%%') {
+			$tag_start = $tag_end = '%%';
+		} elseif ($tag_format == '{}') {
+			$tag_start = '{';
+			$tag_end = '}';
+		}
 
 		// Load the file/template
 		if ($templatefile_var_is_the_content === false) {
@@ -902,7 +909,7 @@ class mail {
 			//replace tags
 			$keys = array_keys($mailtags);
 			foreach ($keys as $currvalue) {
-				$searchtag = '%%' . $currvalue . '%%';
+				$searchtag = $tag_start . $currvalue . $tag_end;
 				$replacetag = $mailtags[$currvalue];
 				$body    = str_replace($searchtag, $replacetag, $body);  //TODO: by time (when we have moved on to PHP 5.x) we can change this to case-insensitive by using the function str_ireplace()
 				$subject = str_replace($searchtag, $replacetag, $subject);
