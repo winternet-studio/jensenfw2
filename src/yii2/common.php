@@ -95,7 +95,7 @@ if (typeof rsp.err_msg_ext != 'undefined') {
 				$model_name = mb_strtolower(substr($model_name, strrpos($model_name, '\\')+1));
 			}
 
-			$result['err_msg_ext'][$model_name .'-'. $attr] = $errors;
+			$result['err_msg_ext'][$model_name .'-'. mb_strtolower($attr) ] = $errors;
 		}
 
 
