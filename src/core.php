@@ -669,6 +669,50 @@ class core {
 		}
 	}
 
+	public static function parse_multipart_translation($template, $translation) {
+		/*
+		DESCRIPTION:
+		- insert a multipart translation into it's template
+		INPUT:
+		- $template : string with the final template where fields of the format #FIELDNAME# are to be replaced with the translation
+			- example:
+				<h1>#TITLE#</h1>
+				<p>#PARAGRAPH1#</p>
+				<p style="margin: 2em 0 2em 0;padding: 0;color: #606060;font-family: monospace, Courier New, Courier;font-size: 20px;line-height: 150%;text-align: center;">
+					<span style="border: 1px solid #E4E4E4; border-radius: 3px; font-weight: bold; padding: 5px 30px"><a href="%%resetpwURL%%">#RESET-BUTTON#</a></span>
+				</p>
+		- $translation : string with the fields in the format #FIELDNAME: followed by the translation of the text for that field (whitespace around the fields and values is automatically trimmed)
+			- example:
+				#TITLE:
+				Reset Password
+				#PARAGRAPH1:
+				Someone requested a password reset for this email address (%%email%%%%userID_text%%) at the website. Hopefully it was you.
+				If not, please make sure no one else has access to your email address - then you can safely ignore this email.
+				#PARAGRAPH2:
+				To set the new password please click below.
+				#RESET-BUTTON:
+				Reset Password
+		OUTPUT:
+		- string
+		*/
+		if (preg_match_all("/#[A-Z0-9\\-]+:/", $translation, $matches, PREG_OFFSET_CAPTURE) > 0) {
+			foreach ($matches[0] as $key => $match) {
+				$fieldname = trim($match[0], '#:');
+				$start_pos = $match[1] + mb_strlen($match[0]);
+				if ($matches[0][$key+1]) {
+					$length = $matches[0][$key+1][1] - $start_pos;
+				} else {
+					$length = null;
+				}
+				$text = trim(mb_substr($translation, $start_pos, $length));
+
+				// Insert text into template
+				$template = str_replace('#'. $fieldname .'#', $text, $template);
+			}
+		}
+		return $template;
+	}
+
 	public static function get_system_setting($name, $flags = '') {
 		/*
 		DESCRIPTION:
