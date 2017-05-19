@@ -19,11 +19,11 @@ class common {
 		if ($options['form']) {
 			// Apply the server-side generated errors to the form fields
 			$js .= "var form = $(_clickedButton).parents('form');
-var errorCount = 0;
+var errorCount = 0, a = [];
 if (typeof rsp.err_msg_ext != 'undefined') {
 	for (var x in rsp.err_msg_ext) {if (rsp.err_msg_ext.hasOwnProperty(x)){errorCount++;}}
-	form.yiiActiveForm('updateMessages', rsp.err_msg_ext);
-}";  // NOTE: errorCount MUST be determined before form.yiiActiveForm() because it modifies rsp.err_msg_ext!
+	a = rsp.err_msg_ext;
+}form.yiiActiveForm('updateMessages', a);";  // NOTE: errorCount MUST be determined before form.yiiActiveForm() because it modifies rsp.err_msg_ext! NOTE: updateMessages should always be called so that in case there are no error any previously set errors are cleared.
 		} else {
 			$js .= "var form, errorCount;";
 			$js .= "if (rsp.err_msg) errorCount = rsp.err_msg.length;";
