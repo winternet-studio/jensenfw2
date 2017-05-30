@@ -51,7 +51,7 @@ class js {
 		$a = array();
 		foreach ($array as $ref => $value) {
 			if ($value === '_txt') {  //ensure boolean true doesn't match
-				$a[$ref] = txt($ref, '#');
+				$a[$ref] = core::txt($ref, '#');
 			} else {
 				$a[$ref] = $value;
 			}

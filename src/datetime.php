@@ -5,11 +5,11 @@ This file contains functions related to date and time handling
 namespace winternet\jensenfw2;
 
 class datetime {
-	public var $scripttimer_start = null;
-	public var $scripttimer_meantimecount = null;
-	public var $scripttimer_lastmeantime = null;
+	public $scripttimer_start = null;
+	public $scripttimer_meantimecount = null;
+	public $scripttimer_lastmeantime = null;
 
-	function format_datetime_local($format, $date_unix) {
+	public static function format_datetime_local($format, $date_unix) {
 		/*
 		DESCRIPTION:
 		- format dates and/or times according to locale settings (currently just according to strftime() )
@@ -56,7 +56,7 @@ class datetime {
 		return $output;
 	}
 
-	function to_mysql_datetime($datetime, $dateformat, $timeformat = false, $returnonfail = false) {
+	public static function to_mysql_datetime($datetime, $dateformat, $timeformat = false, $returnonfail = false) {
 		/*
 		DESCRIPTION:
 		- convert several date formats (except Unix) to MySQL format
@@ -197,7 +197,7 @@ class datetime {
 		}
 	}
 
-	function time_add($time, $adjust_by, $interval) {
+	public static function time_add($time, $adjust_by, $interval) {
 		/*
 		DESCRIPTION:
 		- add or subtract a specified period from a date
@@ -248,7 +248,7 @@ class datetime {
 		return $newtime;
 	}
 
-	function time_diff($time1, $time2, $interval = 'days', $return_absolute = false) {
+	public static function time_diff($time1, $time2, $interval = 'days', $return_absolute = false) {
 		/*
 		DESCRIPTION:
 		- get the difference between two times expressed in a certain interval
@@ -304,7 +304,7 @@ class datetime {
 		return $diff_target;
 	}
 
-	function time_period_all_units($time, $include_zeros = false) {
+	public static function time_period_all_units($time, $include_zeros = false) {
 		/*
 		DESCRIPTION:
 		- textually write a time period/duration, like in a countdown or "time since". Days, hours, minutes, and seconds
@@ -348,11 +348,11 @@ class datetime {
 		);
 	}
 
-	function time_period_single_unit($time, $unit_names = 'short', $decimals = 0, $include_weeks = false) {
+	public static function time_period_single_unit($time, $unit_names = 'short', $decimals = 0, $include_weeks = false) {
 		/*
 		DESCRIPTION:
 		- textually write a time period/duration with a single unit, either days, hours, minutes, seconds - depending on how long the duration is
-		- the function also returns a value ('general_guide') where the appropiate unit is automatically determined, based on what is meaningful for the reader to know (this will of course not be the exact time, but only a general guide)
+		- the function also returns a value ('general_guide') where the appropriate unit is automatically determined, based on what is meaningful for the reader to know (this will of course not be the exact time, but only a general guide)
 		- this differs from time_period_all_units() in that this only returns a single unit, time_period_all_units() returns ALL units
 			- see time_period_all_units() for further explanation
 		- maybe it would be useful even to make one a function returning two units - for better precision when you want it!
@@ -365,27 +365,27 @@ class datetime {
 			- most often you would probably want to use the days up until you have one month
 		OUTPUT:
 		- associative array: see below
-		- the unit for the 'general_guide' is specified in 'appropiate_unit'
+		- the unit for the 'general_guide' is specified in 'appropriate_unit'
 		*/
 		//determine unit names
 		switch ($unit_names) {
 		case 'short':
-			$lbl_secs_one = txt('second_short', 'sec.', '#'); $lbl_secs_more = txt('seconds_short', 'sec.', '#');
-			$lbl_mins_one = txt('minute_short', 'min.', '#'); $lbl_mins_more = txt('minutes_short', 'min.', '#');
-			$lbl_hours_one = txt('hour_short', 'hr', '#'); $lbl_hours_more = txt('hours_short', 'hrs', '#');
-			$lbl_days_one = txt('day_short', 'day', '#'); $lbl_days_more = txt('days_short', 'days', '#');
-			$lbl_weeks_one = txt('week_short', 'week', '#'); $lbl_weeks_more = txt('weeks_short', 'weeks', '#');
-			$lbl_mnths_one = txt('month_short', 'month', '#'); $lbl_mnths_more = txt('months_short', 'months', '#');
-			$lbl_years_one = txt('year_short', 'year', '#'); $lbl_years_more = txt('years_short', 'yrs', '#');
+			$lbl_secs_one = core::txt('second_short', 'sec.', '#'); $lbl_secs_more = core::txt('seconds_short', 'sec.', '#');
+			$lbl_mins_one = core::txt('minute_short', 'min.', '#'); $lbl_mins_more = core::txt('minutes_short', 'min.', '#');
+			$lbl_hours_one = core::txt('hour_short', 'hr', '#'); $lbl_hours_more = core::txt('hours_short', 'hrs', '#');
+			$lbl_days_one = core::txt('day_short', 'day', '#'); $lbl_days_more = core::txt('days_short', 'days', '#');
+			$lbl_weeks_one = core::txt('week_short', 'week', '#'); $lbl_weeks_more = core::txt('weeks_short', 'weeks', '#');
+			$lbl_mnths_one = core::txt('month_short', 'month', '#'); $lbl_mnths_more = core::txt('months_short', 'months', '#');
+			$lbl_years_one = core::txt('year_short', 'year', '#'); $lbl_years_more = core::txt('years_short', 'yrs', '#');
 			break;
 		case 'long':
-			$lbl_secs_one = txt('second', 'second', '#'); $lbl_secs_more = txt('seconds', 'seconds', '#');
-			$lbl_mins_one = txt('minute', 'minute', '#'); $lbl_mins_more = txt('minutes', 'minutes', '#');
-			$lbl_hours_one = txt('hour', 'hour', '#'); $lbl_hours_more = txt('hours', 'hours', '#');
-			$lbl_days_one = txt('day', 'day', '#'); $lbl_days_more = txt('days', 'days', '#');
-			$lbl_weeks_one = txt('week', 'week', '#'); $lbl_weeks_more = txt('weeks', 'weeks', '#');
-			$lbl_mnths_one = txt('month', 'month', '#'); $lbl_mnths_more = txt('months', 'months', '#');
-			$lbl_years_one = txt('year', 'year', '#'); $lbl_years_more = txt('years', 'years', '#');
+			$lbl_secs_one = core::txt('second', 'second', '#'); $lbl_secs_more = core::txt('seconds', 'seconds', '#');
+			$lbl_mins_one = core::txt('minute', 'minute', '#'); $lbl_mins_more = core::txt('minutes', 'minutes', '#');
+			$lbl_hours_one = core::txt('hour', 'hour', '#'); $lbl_hours_more = core::txt('hours', 'hours', '#');
+			$lbl_days_one = core::txt('day', 'day', '#'); $lbl_days_more = core::txt('days', 'days', '#');
+			$lbl_weeks_one = core::txt('week', 'week', '#'); $lbl_weeks_more = core::txt('weeks', 'weeks', '#');
+			$lbl_mnths_one = core::txt('month', 'month', '#'); $lbl_mnths_more = core::txt('months', 'months', '#');
+			$lbl_years_one = core::txt('year', 'year', '#'); $lbl_years_more = core::txt('years', 'years', '#');
 			break;
 		default:
 			core::system_error('Configuration error. Unit format not defined.', array('Unit name' => $unit_names) );
@@ -401,36 +401,36 @@ class datetime {
 		$times['years']    = $times['days'] / 365;
 		if (abs($times['seconds']) < 60) {  //NOTE: use abs() so we also handle negative periods correctly
 			$times['general_guide'] = ($times['seconds'] == 1 ? '1 '. $lbl_secs_one : $times['seconds'] .' '. $lbl_secs_more);
-			$times['appropiate_unit'] = 'seconds';
+			$times['appropriate_unit'] = 'seconds';
 		} elseif (round(abs($times['minutes']), $decimals) < 60) {
 			$rounded = round($times['minutes'], $decimals);
 			$times['general_guide'] = ($rounded == 1 ? '1 '. $lbl_mins_one : $rounded .' '. $lbl_mins_more);
-			$times['appropiate_unit'] = 'minutes';
+			$times['appropriate_unit'] = 'minutes';
 		} elseif (round(abs($times['hours']), $decimals) < 24) {
 			$rounded = round($times['hours'], $decimals);
 			$times['general_guide'] = ($rounded == 1 ? '1 '. $lbl_hours_one : $rounded .' '. $lbl_hours_more);
-			$times['appropiate_unit'] = 'hours';
+			$times['appropriate_unit'] = 'hours';
 		} elseif ( (!$include_weeks && abs($times['days_rounded']) < 30)  ||  ($include_weeks && abs($times['days_rounded']) < 7) ) {  //if weeks are used, the period of using days is shorter
 			$times['general_guide'] = ($times['days_rounded'] == 1 ? '1 '. $lbl_days_one : $times['days_rounded'] .' '. $lbl_days_more);
-			$times['appropiate_unit'] = 'days';
+			$times['appropriate_unit'] = 'days';
 		} elseif ($include_weeks && round(abs($times['weeks']), $decimals) < 5 && abs($times['days']) < 30) {  //skip to month if 30 or more days
 			$rounded = round($times['weeks'], $decimals);
 			$times['general_guide'] = ($rounded == 1 ? '1 '. $lbl_weeks_one : $rounded .' '. $lbl_weeks_more);
-			$times['appropiate_unit'] = 'weeks';
+			$times['appropriate_unit'] = 'weeks';
 		} elseif (round(abs($times['months']), $decimals) < 12) {
 			$rounded = round($times['months'], $decimals);
 			$times['general_guide'] = ($rounded == 1 ? '1 '. $lbl_mnths_one : $rounded .' '. $lbl_mnths_more);
-			$times['appropiate_unit'] = 'months';
+			$times['appropriate_unit'] = 'months';
 		} else {
 			//else write in years
 			$rounded = round(abs($times['years']), $decimals);
 			$times['general_guide'] = ($rounded == 1 ? '1 '. $lbl_years_one : $rounded .' '. $lbl_years_more);
-			$times['appropiate_unit'] = 'years';
+			$times['appropriate_unit'] = 'years';
 		}
 		return $times;
 	}
 
-	function time_period_custom_units($time, $unit_names = 'short', $no_of_units = 2) {
+	public static function time_period_custom_units($time, $unit_names = 'short', $no_of_units = 2) {
 		/*
 		DESCRIPTION:
 		- textually write a time period/duration with a custom defined number of units
@@ -456,7 +456,7 @@ class datetime {
 		return implode(', ', $output);
 	}
 
-	function format_timeperiod($fromdate, $todate, $flags = false) {
+	public static function format_timeperiod($fromdate, $todate, $flags = false) {
 		/*
 		DESCRIPTION:
 		- formats a time period nicely
@@ -524,7 +524,7 @@ class datetime {
 		return $output;
 	}
 
-	function change_timestamp_timezone($datetime, $curr_timezone, $new_timezone, $format = false) {
+	public static function change_timestamp_timezone($datetime, $curr_timezone, $new_timezone, $format = false) {
 		/*
 		DESCRIPTION:
 		- change the timezone of a given timestamp
@@ -553,7 +553,7 @@ class datetime {
 		}
 	}
 
-	function calculate_age($at_date, $birthyear, $birthmonth, $birthday) {
+	public static function calculate_age($at_date, $birthyear, $birthmonth, $birthday) {
 		/*
 		DESCRIPTION:
 		- determine a person's age at a given date, when knowing their birth year and month
@@ -618,11 +618,11 @@ class datetime {
 		return $age;
 	}
 
-	function scripttimer_start() {
+	public static function scripttimer_start() {
 		self::$scripttimer_start = microtime(true); 
 		return self::$scripttimer_start;
 	}
-	function scripttimer_meantime($writetext = false) {
+	public static function scripttimer_meantime($writetext = false) {
 		if (!self::$scripttimer_start) {
 			echo '<div style="color: orangered"><b>Timer was not started!</b></div>';
 			return;
@@ -635,7 +635,7 @@ class datetime {
 		self::$scripttimer_lastmeantime = $scripttimer_meantime;
 		return $duration;
 	}
-	function scripttimer_stop($writetext = false) {
+	public static function scripttimer_stop($writetext = false) {
 		if (!self::$scripttimer_start) {
 			echo '<div style="color: orangered"><b>Timer was not started!</b></div>';
 			return null;

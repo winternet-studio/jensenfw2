@@ -632,6 +632,16 @@ class core {
 		}
 	}
 
+	public static function txt($tag, $default, $other = null) {
+		if (YII_BEGIN_TIME) {
+			// Can't do translation here as it won't be picked up by the text collector. Must be done manually where the text is used.
+			return $default;
+		} else {
+			// Just return default for now!
+			return $default;
+		}
+	}
+
 	public static function txtdb($str) {
 		/*
 		DESCRIPTION:
