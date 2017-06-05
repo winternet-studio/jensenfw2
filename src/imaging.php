@@ -305,7 +305,7 @@ class imaging {
 		- convert RGB image to CMYK
 		- requires Imagick extension
 		INPUT:
-		- $image_path_rgb : full path required
+		- $image_path_rgb : full path required (if $use_image_own_profile = true: is only used if image doesn't contain it's own profile)
 		- $image_path_cmyk : full path required
 		OUTPUT:
 		-
@@ -331,9 +331,21 @@ class imaging {
 
 		$img = new Imagick($image_path_rgb);
 
+		$use_image_own_profile = true;
+
+		if ($use_image_own_profile) {
+			$profiles = $img->getImageProfiles('*', false); //possibly contains: icc, iptc, exif, xmp, 8bim
+		}
+
 		$img->setImageColorspace(Imagick::COLORSPACE_SRGB);
-		$icc_rgb = file_get_contents($options['rgb_icc_profile_path']);
-		$img->profileImage('icc', $icc_rgb);
+		if ($use_image_own_profile && in_array('icc', $profiles)) {  //use image's own ICC profile if it has one
+			$img->profileImage('icc', $img->getImageProfile('icc'));
+		} else {
+			// TODO: use sRGB as default instead - Lars says almost all photos use this instead of the Adobe RGB (Allowed to use? c:\Program Files (x86)\Common Files\Adobe\Color\Profiles\Recommended\sRGB Color Space Profile.icm)
+			// 											Otherwise maybe use the new v4 found online?
+			$icc_rgb = file_get_contents($options['rgb_icc_profile_path']);
+			$img->profileImage('icc', $icc_rgb);
+		}
 		unset($icc_rgb);
 
 		$icc_cmyk = file_get_contents($options['cmyk_icc_profile_path']);
