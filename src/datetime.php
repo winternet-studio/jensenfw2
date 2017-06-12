@@ -545,8 +545,8 @@ class datetime {
 			}
 		}
 		if ($datetime) {
-			$timestamp = new DateTime($datetime, new DateTimeZone($curr_timezone));
-			$timestamp->setTimezone(new DateTimeZone($new_timezone));
+			$timestamp = new \DateTime($datetime, new \DateTimeZone($curr_timezone));
+			$timestamp->setTimezone(new \DateTimeZone($new_timezone));
 			return $timestamp->format($format);
 		} else {
 			return '';
