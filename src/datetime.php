@@ -304,6 +304,33 @@ class datetime {
 		return $diff_target;
 	}
 
+	public static function time_ago($mysql_or_unix_timestamp, $unit_names = 'short', $decimals = 0, $include_weeks = false) {
+		/*
+		DESCRIPTION:
+		- textually write how long time ago a given timestamp was
+		- very similar to time_period_single_unit() but always subtracts the timestamp from current time
+		INPUT:
+		- identical to time_period_single_unit() except $mysql_or_unix_timestamp is a MySQL timestamp or Unix timestamp
+			- a MySQL timestamp is assumed to be in UTC unless otherwise specified like this: '2017-03-21 14:24:03 Europe/Copenhagen'
+		OUTPUT:
+		- identical to time_period_single_unit() or empty array if timestamp was empty/null/false
+		*/
+		if ($mysql_or_unix_timestamp) {
+			if (is_numeric($mysql_or_unix_timestamp)) {
+				$ts =& $mysql_or_unix_timestamp;
+			} else {
+				// MySQL timestamp
+				if (stripos($mysql_or_unix_timestamp, 'UTC') === false && strpos($mysql_or_unix_timestamp, '/') === false) {
+					$mysql_or_unix_timestamp = $mysql_or_unix_timestamp .' UTC';
+				}
+				$ts = strtotime($mysql_or_unix_timestamp);
+			}
+			return self::time_period_single_unit(time() - $ts, $unit_names, $decimals, $include_weeks);
+		} else {
+			return [];
+		}
+	}
+
 	public static function time_period_all_units($time, $include_zeros = false) {
 		/*
 		DESCRIPTION:
