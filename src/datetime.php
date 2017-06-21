@@ -304,28 +304,80 @@ class datetime {
 		return $diff_target;
 	}
 
-	public static function time_ago($mysql_or_unix_timestamp, $unit_names = 'short', $decimals = 0, $include_weeks = false) {
+	public static function time_ago($mysql_or_unix_timestamp, $options = []) {
 		/*
 		DESCRIPTION:
 		- textually write how long time ago a given timestamp was
 		- very similar to time_period_single_unit() but always subtracts the timestamp from current time
 		INPUT:
-		- identical to time_period_single_unit() except $mysql_or_unix_timestamp is a MySQL timestamp or Unix timestamp
+		- $mysql_or_unix_timestamp : a MySQL timestamp or Unix timestamp
 			- a MySQL timestamp is assumed to be in UTC unless otherwise specified like this: '2017-03-21 14:24:03 Europe/Copenhagen'
+		- $options (array) : associative array with any of these options:
+			- 'unit_names' : default 'short'
+			- 'decimals' : default 0
+			- 'include_weeks' : default false
+			- 'smart_general_guide' : for the general guide use expressions like 'today' and 'yesterday' instead of hours/days
+				- also adds the word 'ago' after the units or 'in' before if time is in the future
+			- 'output_timezone' : time zone to use for determining 'today' and 'yesterday' when smart_general_guide is enabled
+			- 'input_timezone' : time zone a MySQL timestamp in $mysql_or_unix_timestamp is in
+			- 'hour_adjustment' : hours to add to MySQL date-only timestamps for making a general guide that feels more correct. Default is 12 (= make it noon)
+				- set to false to not apply any adjustment
 		OUTPUT:
 		- identical to time_period_single_unit() or empty array if timestamp was empty/null/false
+		- if smart_general_guide=true an additional key 'relative_guide' is added
 		*/
+
+		$unit_names = 'short'; $decimals = 0; $include_weeks = false;
+		if ($options['unit_names']) {
+			$unit_names = $options['unit_names'];
+		}
+		if (is_numeric($options['decimals'])) {
+			$decimals = $options['decimals'];
+		}
+		if ($options['include_weeks']) {
+			$include_weeks = true;
+		}
+
 		if ($mysql_or_unix_timestamp) {
 			if (is_numeric($mysql_or_unix_timestamp)) {
 				$ts =& $mysql_or_unix_timestamp;
 			} else {
 				// MySQL timestamp
-				if (stripos($mysql_or_unix_timestamp, 'UTC') === false && strpos($mysql_or_unix_timestamp, '/') === false) {
+				if ($options['smart_general_guide'] && strlen($mysql_or_unix_timestamp) <= 10 && $options['hour_adjustment'] !== false) {
+					$mysql_or_unix_timestamp .= ' '. ($options['hour_adjustment'] ? $options['hour_adjustment'] : 12) .':00:00';   //set a date like "2017-06-17" to be at eg. noon instead of midnight so that the general guide usually feels more correct
+				}
+				if ($options['input_timezone']) {
+					$mysql_or_unix_timestamp = $mysql_or_unix_timestamp .' '. $options['input_timezone'];
+				} elseif (stripos($mysql_or_unix_timestamp, 'UTC') === false && strpos($mysql_or_unix_timestamp, '/') === false) {
 					$mysql_or_unix_timestamp = $mysql_or_unix_timestamp .' UTC';
 				}
 				$ts = strtotime($mysql_or_unix_timestamp);
 			}
-			return self::time_period_single_unit(time() - $ts, $unit_names, $decimals, $include_weeks);
+
+			$now_ts = time();
+
+			$return = self::time_period_single_unit($now_ts - $ts, $unit_names, $decimals, $include_weeks);
+
+			if ($options['smart_general_guide']) {
+				$last_midnight = (new \DateTime('today midnight', new \DateTimeZone(($options['output_timezone'] ? $options['output_timezone'] : 'UTC'))))->getTimestamp();
+				if ($ts < $last_midnight - 24*3600) {
+					$return['general_guide'] = $return['general_guide'] .' '. core::txt('ago', 'ago', '#');
+					$return['relative_guide'] = 'ago';
+				} elseif ($ts < $last_midnight) {
+					$return['general_guide'] = core::txt('yesterday', 'yesterday', '#');
+					$return['relative_guide'] = 'yesterday';
+				} elseif ($ts < $last_midnight + 24*3600) {
+					$return['general_guide'] = core::txt('today', 'today', '#');
+					$return['relative_guide'] = 'today';
+				} elseif ($ts < $last_midnight + 48*3600) {
+					$return['general_guide'] = core::txt('tomorrow', 'tomorrow', '#');
+					$return['relative_guide'] = 'tomorrow';
+				} else {
+					$return['general_guide'] = core::txt('in', 'in', '#') .' '. ltrim($return['general_guide'], '-');  //remove leading minus
+					$return['relative_guide'] = 'in';
+				}
+			}
+			return $return;
 		} else {
 			return [];
 		}
@@ -565,11 +617,7 @@ class datetime {
 		- MySQL formatted timestamp or according to $format if specified
 		*/
 		if (!$format) {
-			if (preg_match("|^\\d{4}-\\d{1,2}-\\d{1,2}$|", $datetime, $match)) {
-				$format = 'Y-m-d';
-			} else {
-				$format = 'Y-m-d H:i:s';
-			}
+			$format = 'Y-m-d H:i:s';
 		}
 		if ($datetime) {
 			$timestamp = new \DateTime($datetime, new \DateTimeZone($curr_timezone));
