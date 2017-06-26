@@ -152,6 +152,7 @@ class imaging {
 		- $options (opt.) : associative array with any of the following keys:
 			- 'autodetect_transparency' : set to true to auto-detect transparency for PNG images. Needed if you want to retain transparency in the resized image. (can be set for JPG images as well but will have no effect)
 			- 'compress_png' : set to true to compress PNG images (using pngquant)
+			- 'calc_png_compression_savings' : set to true to calculate how much space we save by compressing PNG files
 			- 'add_elements' : array with any number of elements to add (see code), or string with text to write in lower left corner of picture
 				- ARRAY METHOD NOT FULLY IMPLEMENTED
 			- 'quality' : set output quality. Has different meaning depending on image type:
@@ -278,7 +279,14 @@ class imaging {
 					$err_msg[] = 'Failed to write PNG file.';
 				} else {
 					if ($options['compress_png']) {
+						if ($options['calc_png_compression_savings']) {
+							$size_before = filesize($outputfilepath);
+						}
 						self::compress_png($outputfilepath, ['save_to_file' => $outputfilepath, 'allow_overwrite' => true, 'ignore_exitcodes' => [99 /*ignore if compression fails due to minimum quality not being met*/]]);
+						if ($options['calc_png_compression_savings']) {
+							clearstatcache();
+							$size_after = filesize($outputfilepath);
+						}
 					}
 				}
 			} else {
@@ -300,6 +308,10 @@ class imaging {
 				'err_msg' => array(),
 				'result_msg' => $result_msg,
 			);
+		}
+		if ($options['calc_png_compression_savings'] && $size_before) {
+			$result['png_compression_savings'] = $size_before - $size_after;
+			$result['png_compression_savings_perc'] = $result['png_compression_savings'] / $size_before * 100;
 		}
 		return $result;
 	}
