@@ -151,6 +151,7 @@ class imaging {
 		- $new_height (req.)
 		- $options (opt.) : associative array with any of the following keys:
 			- 'autodetect_transparency' : set to true to auto-detect transparency for PNG images. Needed if you want to retain transparency in the resized image. (can be set for JPG images as well but will have no effect)
+			- 'compress_png' : set to true to compress PNG images (using pngquant)
 			- 'add_elements' : array with any number of elements to add (see code), or string with text to write in lower left corner of picture
 				- ARRAY METHOD NOT FULLY IMPLEMENTED
 			- 'quality' : set output quality. Has different meaning depending on image type:
@@ -275,6 +276,10 @@ class imaging {
 			} elseif ($dest_ext == 'png') {
 				if (!imagepng($img_dst, $outputfilepath, $options['quality'])) {
 					$err_msg[] = 'Failed to write PNG file.';
+				} else {
+					if ($options['compress_png']) {
+						self::compress_png($outputfilepath, ['save_to_file' => $outputfilepath, 'allow_overwrite' => true, 'ignore_exitcodes' => [99 /*ignore if compression fails due to minimum quality not being met*/]]);
+					}
 				}
 			} else {
 				$err_msg[] = 'Output file extension '. $dest_ext .' is not supported.';
@@ -418,23 +423,25 @@ class imaging {
 		}
 	}
 
-	// Source: https://pngquant.org/php.html
-	/**
-	 * Optimizes PNG file with pngquant 1.8 or later (reduces file size of 24-bit/32-bit PNG images).
-	 *
-	 * You need to install pngquant 1.8 on the server (ancient version 1.0 won't work).
-	 * There's package for Debian/Ubuntu and RPM for other distributions on http://pngquant.org
-	 *
-	 * @param $input_file_png string - path to any PNG file, e.g. $_FILE['file']['tmp_name']
-	 * @param $max_quality int - conversion quality, useful values from 60 to 100 (smaller number = smaller file)
-	 * @return string - content of PNG file after conversion
-	 */
 	function compress_png($input_file_png, $options = []) {
+		/*
+		DESCRIPTION:
+		- Optimizes PNG file with pngquant 1.8 or later (reduces file size of 24-bit/32-bit PNG images)
+		- You need to install pngquant 1.8 on the server (ancient version 1.0 won't work).
+		- There's package for Debian/Ubuntu and RPM for other distributions on http://pngquant.org
+		- source: https://pngquant.org/php.html
+		INPUT:
+		- $input_file_png : path to a PNG file
+		- $options : associative array with keys according to code (see $defaults)
+		OUTPUT:
+		- depending on options: either nothing when it writes output to file, or a string with content of PNG file after conversion
+		*/
 		$defaults = [
 			'min_quality' => 60,  //guarantee that quality won't be worse than that.
-			'max_quality' => 90,
+			'max_quality' => 90,  //conversion quality, useful values from 60 to 100 (smaller number = smaller file)
 			'save_to_file' => false,  //path to file where the new PNG will be saved to (if not set the function will return the file content)
 			'allow_overwrite' => false,  //allow output file path to be the same as the input file path?
+			'ignore_exitcodes' => [],  //array of exit codes for which we don't want to raise an error (or make first entry '*' to ignore all)
 		];
 		$options = array_merge($defaults, $options);
 
@@ -451,7 +458,7 @@ class imaging {
 			$exitcode = null;
 			exec($cmd, $output, $exitcode);
 
-			if ($exitcode != 0) {
+			if ($exitcode != 0 && !in_array($exitcode, $options['ignore_exitcodes']) && $options['ignore_exitcodes'][0] !== '*') {
 				core::system_error('Conversion to compressed PNG failed. Is pngquant 1.8+ installed?', ['File' => $input_file_png, 'Exit code' => $exitcode, 'Output' => $output]);
 			}
 		} else {
