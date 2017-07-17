@@ -30,6 +30,7 @@ class geocoding {
 			- 'country' : name is probably preferred, but 2-letter ISO-3166 codes can also be used
 		- $parms : associative array with any of the following keys:
 			- 'google_api_key' : Google API key (provide to allow more free requets per day) (do not restrict it to IP addresses in case you want to use this function's proxy_url feature)
+			- 'skip_database_caching' : set to true to skip caching results in database (not recommended)
 			- 'db_name' : name of database that should be used for caching. Default is the one currently selected by the database connection.
 			- 'table_name' : name of database table that should be used for caching. Default is 'temp_cached_address_latlon'
 			- 'skip_table_autocreate' (boolean|0|1) : set to true to skip auto-creating caching table
@@ -44,7 +45,9 @@ class geocoding {
 			- eg. if query limit reached it will be: 'ERROR:OVER_QUERY_LIMIT'
 		- the raw API response (decoded JSON string) is available through $GLOBALS['_jfw_google_address_geocoder_raw_response'] whenever the request required a call to the Google API (not using cache)
 		*/
-		core::require_database($parms['server_id']);
+		if (!$parms['skip_database_caching']) {
+			core::require_database($parms['server_id']);
+		}
 
 		if (empty($location)) {
 			core::system_error('Cannot geocode an empty address.');
@@ -66,7 +69,7 @@ class geocoding {
 		unset($GLOBALS['_jfw_google_addr_geocoder_url']);
 
 		// Ensure database table exists
-		if (!$parms['skip_table_autocreate'] && !$_SESSION['_jfw_address_geocoding_cache_table_created']) {  //only run this check once per session
+		if (!$parms['skip_database_caching'] && !$parms['skip_table_autocreate'] && !$_SESSION['_jfw_address_geocoding_cache_table_created']) {  //only run this check once per session
 			$createtblSQL = "CREATE TABLE IF NOT EXISTS ". $tableSQL ." (
 				`cached_addr_latlonID` INT(3) UNSIGNED NOT NULL AUTO_INCREMENT,
 				`geoaddr_address` VARCHAR(255) NOT NULL,
@@ -84,7 +87,7 @@ class geocoding {
 
 		// Generate API URL
 		if (!is_array($location)) {
-			$q = 'http://maps.googleapis.com/maps/api/geocode/json?sensor=false&address='. rawurlencode($location);
+			$q = 'https://maps.googleapis.com/maps/api/geocode/json?sensor=false&address='. rawurlencode($location);
 		} else {
 			// Differentiate between US and European/world address formats
 			$tmp = mb_strtoupper((string) $location['country']);
@@ -99,7 +102,7 @@ class geocoding {
 				// Rest of the world
 				$str_location = $location['address'] .', '. $location['zip'] .' '. $location['city'] . ($location['state'] ? ', '. $location['state'] : '') .', '. $location['country'];
 			}
-			$q = 'http://maps.googleapis.com/maps/api/geocode/json?sensor=false&address='. rawurlencode($str_location);
+			$q = 'https://maps.googleapis.com/maps/api/geocode/json?sensor=false&address='. rawurlencode($str_location);
 			$components = array();
 			if ($location['country']) {
 				$components[] = 'country:'. urlencode($location['country']);
@@ -114,10 +117,12 @@ class geocoding {
 			$location = $str_location;
 		}
 
-		// Register result in database
-		$checkcacheSQL = "SELECT cached_addr_latlonID, geoaddr_latitude, geoaddr_longitude FROM ". $tableSQL ." WHERE geoaddr_address = '". core::sql_esc($location) ."'";
-		$db_checkcache =& core::database_query(($parms['server_id'] !== '' ? array($parms['server_id'], $checkcacheSQL, array()) : $checkcacheSQL), 'Database query for checking lat/lon cache failed.');
-		if (mysqli_num_rows($db_checkcache) > 0) {
+		if (!$parms['skip_database_caching']) {
+			// Register result in database
+			$checkcacheSQL = "SELECT cached_addr_latlonID, geoaddr_latitude, geoaddr_longitude FROM ". $tableSQL ." WHERE geoaddr_address = '". core::sql_esc($location) ."'";
+			$db_checkcache =& core::database_query(($parms['server_id'] !== '' ? array($parms['server_id'], $checkcacheSQL, array()) : $checkcacheSQL), 'Database query for checking lat/lon cache failed.');
+		}
+		if (!$parms['skip_database_caching'] && mysqli_num_rows($db_checkcache) > 0) {
 			$checkcache = mysqli_fetch_assoc($db_checkcache);
 
 			// Register that it was retrieved (so that we have an idea of it this address is no longer relevant and we can purge it from the cache)
@@ -164,12 +169,14 @@ class geocoding {
 
 			if ($json['status'] == 'OK' || $json['status'] == 'ZERO_RESULTS') {
 				if ($json['results'][0]['geometry']['location']['lat'] && $json['results'][0]['geometry']['location']['lng']) {
-					$addtocacheSQL = "INSERT INTO ". $tableSQL ." SET geoaddr_address = '". core::sql_esc($location) ."', geoaddr_latitude = '". core::sql_esc($json['results'][0]['geometry']['location']['lat']) ."', geoaddr_longitude = '". core::sql_esc($json['results'][0]['geometry']['location']['lng']) ."', geoaddr_date_added = NOW()";
-					if ($json['results'][0]['partial_match']) {
-						$addtocacheSQL .= ", geoaddr_is_partial = 1";
-					}
-					if ($json['results'][0]['geometry']['location_type']) {
-						$addtocacheSQL .= ", geoaddr_loc_type = '". core::sql_esc(mb_substr($json['results'][0]['geometry']['location_type'], 0, 20)) ."'";
+					if (!$parms['skip_database_caching']) {
+						$addtocacheSQL = "INSERT INTO ". $tableSQL ." SET geoaddr_address = '". core::sql_esc($location) ."', geoaddr_latitude = '". core::sql_esc($json['results'][0]['geometry']['location']['lat']) ."', geoaddr_longitude = '". core::sql_esc($json['results'][0]['geometry']['location']['lng']) ."', geoaddr_date_added = NOW()";
+						if ($json['results'][0]['partial_match']) {
+							$addtocacheSQL .= ", geoaddr_is_partial = 1";
+						}
+						if ($json['results'][0]['geometry']['location_type']) {
+							$addtocacheSQL .= ", geoaddr_loc_type = '". core::sql_esc(mb_substr($json['results'][0]['geometry']['location_type'], 0, 20)) ."'";
+						}
 					}
 					$return = array(
 						'latitude' => $json['results'][0]['geometry']['location']['lat'],
@@ -177,11 +184,15 @@ class geocoding {
 						'source' => 'google_api',
 					);
 				} else {
-					// Also register those that could not be geocoded so that we don't waste time looking them up again
-					$addtocacheSQL = "INSERT INTO ". $tableSQL ." SET geoaddr_address = '". core::sql_esc($location) ."', geoaddr_latitude = -1, geoaddr_longitude = -1, geoaddr_date_added = NOW()";
+					if (!$parms['skip_database_caching']) {
+						// Also register those that could not be geocoded so that we don't waste time looking them up again
+						$addtocacheSQL = "INSERT INTO ". $tableSQL ." SET geoaddr_address = '". core::sql_esc($location) ."', geoaddr_latitude = -1, geoaddr_longitude = -1, geoaddr_date_added = NOW()";
+					}
 					$return = false;
 				}
-				$db_addtocache =& core::database_query(($parms['server_id'] !== '' ? array($parms['server_id'], $addtocacheSQL, array()) : $addtocacheSQL), 'Database update for caching lat/lon for an address failed.');
+				if (!$parms['skip_database_caching']) {
+					$db_addtocache =& core::database_query(($parms['server_id'] !== '' ? array($parms['server_id'], $addtocacheSQL, array()) : $addtocacheSQL), 'Database update for caching lat/lon for an address failed.');
+				}
 				return $return;
 			} else {
 				return 'ERROR:'. $json['status'];
