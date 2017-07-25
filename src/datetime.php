@@ -5,9 +5,9 @@ This file contains functions related to date and time handling
 namespace winternet\jensenfw2;
 
 class datetime {
-	public $scripttimer_start = null;
-	public $scripttimer_meantimecount = null;
-	public $scripttimer_lastmeantime = null;
+	public static $scripttimer_start = null;
+	public static $scripttimer_meantimecount = null;
+	public static $scripttimer_lastmeantime = null;
 
 	public static function format_datetime_local($format, $date_unix) {
 		/*
@@ -699,26 +699,46 @@ class datetime {
 	}
 	public static function scripttimer_meantime($writetext = false) {
 		if (!self::$scripttimer_start) {
-			echo '<div style="color: orangered"><b>Timer was not started!</b></div>';
+			$html = '<div style="color: orangered"><b>Timer was not started!</b></div>';
+			if (PHP_SAPI == 'cli') {
+				echo strip_tags($html);
+			} else {
+				echo $html;
+			}
 			return;
 		}
 		$scripttimer_meantime = microtime(true); 
 		$duration = number_format($scripttimer_meantime - self::$scripttimer_start, 3);
 		if ($writetext) {
-			echo '<div style="color: orangered"><b>Meantime #'. ++self::$scripttimer_meantimecount .': '. $duration .''. (self::$scripttimer_lastmeantime ? ' ('. number_format($scripttimer_meantime - self::$scripttimer_lastmeantime, 3) .')' : '') .'</b></div>';
+			$html = '<div style="color: orangered"><b>Meantime #'. ++self::$scripttimer_meantimecount .': '. $duration .''. (self::$scripttimer_lastmeantime ? ' ('. number_format($scripttimer_meantime - self::$scripttimer_lastmeantime, 3) .')' : '') .'</b></div>';
+			if (PHP_SAPI == 'cli') {
+				echo strip_tags($html);
+			} else {
+				echo $html;
+			}
 		}
 		self::$scripttimer_lastmeantime = $scripttimer_meantime;
 		return $duration;
 	}
 	public static function scripttimer_stop($writetext = false) {
 		if (!self::$scripttimer_start) {
-			echo '<div style="color: orangered"><b>Timer was not started!</b></div>';
+			$html = '<div style="color: orangered"><b>Timer was not started!</b></div>';
+			if (PHP_SAPI == 'cli') {
+				echo strip_tags($html);
+			} else {
+				echo $html;
+			}
 			return null;
 		}
 		$scripttimer_end = microtime(true); 
 		$duration = number_format($scripttimer_end - self::$scripttimer_start, 3);
 		if ($writetext) {
-			echo '<div style="color: orangered"><b>Duration: '. $duration .' seconds.'. (self::$scripttimer_meantimecount ? ' Meantimes average: '. number_format($duration / self::$scripttimer_meantimecount, 3) : '') .'</b></div>';
+			$html = '<div style="color: orangered"><b>Duration: '. $duration .' seconds.'. (self::$scripttimer_meantimecount ? ' Meantimes average: '. number_format($duration / self::$scripttimer_meantimecount, 3) : '') .'</b></div>';
+			if (PHP_SAPI == 'cli') {
+				echo strip_tags($html);
+			} else {
+				echo $html;
+			}
 		}
 		self::$scripttimer_meantimecount = false;  //clear it
 		self::$scripttimer_lastmeantime = false;  //clear it
