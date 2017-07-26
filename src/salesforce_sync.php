@@ -23,7 +23,7 @@ class salesforce_sync {
 	var $security_token;
 	var $login_uri;
 	var $api_version;
-	var $token_storage_class;
+	var $token_storage_instance;
 	var $SforceEnterpriseClient_path;
 	var $enterprise_wsdl_path;
 
@@ -31,14 +31,14 @@ class salesforce_sync {
 	var $debug = false;
 	var $soap_connection = null;
 	var $rest_connection = null;
-	var $logging_class = null;
+	var $logging_instance = null;
 
-	public function __construct($client_id, $client_secret, $username, $password, $security_token, $login_uri, $api_version, $SforceEnterpriseClient_path, $enterprise_wsdl_path, $token_storage_class = null) {
+	public function __construct($client_id, $client_secret, $username, $password, $security_token, $login_uri, $api_version, $SforceEnterpriseClient_path, $enterprise_wsdl_path, $token_storage_instance = null) {
 		/*
 		DESCRIPTION:
 		- 
 		INPUT:
-		- $token_storage_class : class with these static methods:
+		- $token_storage_instance : class with these methods:
 			- saveToken($access_token, $instance_url) which returns nothing
 			- getToken() which returns eg. array('access_token' => 'rELHinuBmp9i98HBV4h7mMWVh', 'instance_url' => 'https://na30.salesforce.com')
 		OUTPUT:
@@ -51,12 +51,12 @@ class salesforce_sync {
 		$this->security_token = $security_token;
 		$this->login_uri = $login_uri;
 		$this->api_version = $api_version;
-		$this->token_storage_class = $token_storage_class;
+		$this->token_storage_instance = $token_storage_instance;
 		$this->SforceEnterpriseClient_path = $SforceEnterpriseClient_path;
 		$this->enterprise_wsdl_path = $enterprise_wsdl_path;
 
-		if ($token_storage_class !== null) {
-			$token = $token_storage_class::getToken();
+		if ($token_storage_instance !== null) {
+			$token = $token_storage_instance->getToken();
 			if (!empty($token)) {
 				// assume that the token is valid
 				$this->auth_response['access_token'] = $token['access_token'];
@@ -71,7 +71,7 @@ class salesforce_sync {
 			if ($this->debug == 2) {
 				core::$is_dev = true;
 			}
-			$this->rest_connection = new salesforce($this->client_id, $this->client_secret, $this->username, $this->password, $this->security_token, $this->login_uri, $this->api_version, $this->token_storage_class);
+			$this->rest_connection = new salesforce($this->client_id, $this->client_secret, $this->username, $this->password, $this->security_token, $this->login_uri, $this->api_version, $this->token_storage_instance);
 			$this->rest_connection->authenticate();
 		}
 
@@ -94,7 +94,7 @@ class salesforce_sync {
 		return $this->soap_connection;
 	}
 
-	public function send_to_salesforce($config_class, $action, $our_table, $our_id, $previous_values = [], $new_values = []) {
+	public function send_to_salesforce($config_instance, $action, $our_table, $our_id, $previous_values = [], $new_values = []) {
 		/*
 		DESCRIPTION:
 		- send a single record to Salesforce to be added/updated/deleted there
@@ -122,7 +122,7 @@ class salesforce_sync {
 		if ($previous_values === null) {
 			$fields = $new_values;
 		} else {
-			$fields = $this->fields_updated($config_class, $our_table, $previous_values, $new_values);
+			$fields = $this->fields_updated($config_instance, $our_table, $previous_values, $new_values);
 			if (empty($fields)) {
 				// No changes found in the fields that we are synchronizing with Salesforce => do nothing
 				return;
@@ -130,7 +130,7 @@ class salesforce_sync {
 		}
 
 
-		$object_map = $config_class::object_config();
+		$object_map = $config_instance->object_config();
 
 		if (empty($object_map[$our_table])) {
 			core::system_error('Our table not configured for sending data to Salesforce.', false, ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
@@ -165,7 +165,7 @@ class salesforce_sync {
 				}
 			}
 
-			$field_map = $config_class::field_conversion_to_salesforce($this, $our_table, $fk_records);
+			$field_map = $config_instance->field_conversion_to_salesforce($this, $our_table, $fk_records);
 
 			if ($this->debug) {
 				file_put_contents('dump.txt', print_r($fields, true) ."\r\n--------------------- line ". __LINE__ ." in ". __FILE__ ." at ". date('Y-m-d H:i:s') ."\r\n\r\n\r\n", FILE_APPEND);
@@ -200,22 +200,22 @@ class salesforce_sync {
 			if ($action == 'insert') {
 				$o = $sf->create($object_map[$our_table]['sf_object'], $sf_fields);
 				// $o is associative array: ['id' => 'a153600000527ubAAA', 'success' => true, 'errors' => []]
-				if ($this->logging_class) {
-					$this->logging_class::save('to_salesforce', 'insert', $our_table, $our_id, $sf_fields);
+				if ($this->logging_instance) {
+					$this->logging_instance->save('to_salesforce', 'insert', $our_table, $our_id, $sf_fields);
 				}
 			} elseif ($action == 'update') {
 				if (!empty($sf_fields)) {  //in case we only modify fields that aren't replicated to Salesforce
 					$o = $sf->update($object_map[$our_table]['sf_object'], $sf_id, $sf_fields);
 					// $o is null (nothing is returned)
-					if ($this->logging_class) {
-						$this->logging_class::save('to_salesforce', 'update', $our_table, $our_id, $sf_fields);
+					if ($this->logging_instance) {
+						$this->logging_instance->save('to_salesforce', 'update', $our_table, $our_id, $sf_fields);
 					}
 				}
 			} elseif ($action == 'delete') {
 				$o = $sf->delete($object_map[$our_table]['sf_object'], $sf_id);
 				// $o is a boolean
-				if ($this->logging_class) {
-					$this->logging_class::save('to_salesforce', 'delete', $our_table, $our_id);
+				if ($this->logging_instance) {
+					$this->logging_instance->save('to_salesforce', 'delete', $our_table, $our_id);
 				}
 			} else {
 				core::system_error('Invalid action for sending data to Salesforce', false, ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
@@ -241,7 +241,7 @@ class salesforce_sync {
 
 	}
 
-	public function sync_entire_table_to_salesforce($config_class, $our_table, $field_map, $existing_records) {
+	public function sync_entire_table_to_salesforce($config_instance, $our_table, $field_map, $existing_records) {
 		/*
 		DESCRIPTION:
 		- synchronize an entire table of ours to Salesforce
@@ -260,7 +260,7 @@ class salesforce_sync {
 		}
 
 
-		$object_map = $config_class::object_config();
+		$object_map = $config_instance->object_config();
 		if (empty($object_map[$our_table])) {
 			core::system_error('Our table not configured for syncing entire table to Salesforce.');
 			return;
@@ -430,8 +430,8 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		echo  PHP_EOL ."Non-updated records: ". $nonupdated_count;
 	}
 
-	public function set_logging($logging_class) {
-		$this->logging_class = $logging_class;
+	public function set_logging($logging_instance) {
+		$this->logging_instance = $logging_instance;
 	}
 
 	private function do_salesforce_addupdate_request($action, $sf_object, $records) {
@@ -518,10 +518,10 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		return $existing;
 	}
 
-	public function fields_updated($config_class, $our_table, $oldinfo, $newinfo) {
+	public function fields_updated($config_instance, $our_table, $oldinfo, $newinfo) {
 		$changes = array();
 
-		$fields = $config_class::fields_to_sync($our_table);
+		$fields = $config_instance->fields_to_sync($our_table);
 		foreach ($fields as $field) {
 			if ($oldinfo === null || (string) $oldinfo[$field] !== (string) $newinfo[$field]) {
 				$changes[$field] = $newinfo[$field];

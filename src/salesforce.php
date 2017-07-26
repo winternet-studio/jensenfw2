@@ -13,19 +13,19 @@ class salesforce {
 	var $security_token;
 	var $login_uri;
 	var $api_version;
-	var $token_storage_class;
+	var $token_storage_instance;
 
 	// Runtime variables
 	var $is_authenticated = false;
 	var $auth_response = null;
 	var $curl = null;
 
-	public function __construct($client_id, $client_secret, $username, $password, $security_token, $login_uri, $api_version, $token_storage_class = null) {
+	public function __construct($client_id, $client_secret, $username, $password, $security_token, $login_uri, $api_version, $token_storage_instance = null) {
 		/*
 		DESCRIPTION:
 		- 
 		INPUT:
-		- $token_storage_class : class with these static methods:
+		- $token_storage_instance : class with these methods:
 			- saveToken($access_token, $instance_url) which returns nothing
 			- getToken() which returns eg. array('access_token' => 'rELHinuBmp9i98HBV4h7mMWVh', 'instance_url' => 'https://na30.salesforce.com')
 		OUTPUT:
@@ -38,10 +38,10 @@ class salesforce {
 		$this->security_token = $security_token;
 		$this->login_uri = $login_uri;
 		$this->api_version = $api_version;
-		$this->token_storage_class = $token_storage_class;
+		$this->token_storage_class = $token_storage_instance;
 
-		if ($token_storage_class !== null) {
-			$token = $token_storage_class::getToken();
+		if ($token_storage_instance !== null) {
+			$token = $token_storage_instance->getToken();
 			if (!empty($token)) {
 				// assume that the token is valid
 				$this->auth_response['access_token'] = $token['access_token'];
