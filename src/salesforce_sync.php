@@ -1,6 +1,6 @@
 <?php
 /*
-This file contains functions related to Salesforce.com via REST API
+This file contains functions related to syncing data between Salesforce.com and another database
 NOTE: the term "our" refers to our own data and database whereas "their" or "sf" refers to Salesforce data and objects
 
 Main methods to use are:
