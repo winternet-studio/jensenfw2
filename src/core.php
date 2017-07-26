@@ -618,9 +618,13 @@ class core {
 								$arr_args = array();
 								foreach ($b['args'] as $xarg) {
 									if (is_array($xarg) || is_object($xarg)) {
-										$vartmp = var_export($xarg, true);
-										$vartmp = str_replace('array (', ' array(', $vartmp);
-										$arr_args[] = $vartmp;
+										try {
+											$vartmp = var_export($xarg, true);
+											$vartmp = str_replace('array (', ' array(', $vartmp);
+										} catch (\Exception $e) {
+											// use print_r instead when variable has circular references (which var_export does not handle)
+											$vartmp = print_r($xarg, true);
+										}
 									} else {
 										$arr_args[] = var_export($xarg, true);
 									}
@@ -724,15 +728,15 @@ class core {
 					$_SESSION['_jfw_error_table_created'] = true;
 				}
 				$sql = array();
-				$sql[] = "`errorinfo` = '". sql_esc(mb_substr($errordata, 0, 65000)) ."'";
-				$sql[] = "`err_msg` = '". sql_esc(mb_substr($msg, 0, 255)) ."'";
-				$sql[] = "`url` = '". sql_esc(substr($_SERVER['REQUEST_URI'], 0, 255)) ."'";
+				$sql[] = "`errorinfo` = '". self::sql_esc(mb_substr($errordata, 0, 65000)) ."'";
+				$sql[] = "`err_msg` = '". self::sql_esc(mb_substr($msg, 0, 255)) ."'";
+				$sql[] = "`url` = '". self::sql_esc(substr($_SERVER['REQUEST_URI'], 0, 255)) ."'";
 				if ($userinfo['logged_in']) {
 					if ($userinfo['fullname']) {
-						$sql[] = "`fullname` = '". sql_esc(mb_substr($userinfo['fullname'], 0, 100)) ."'";
+						$sql[] = "`fullname` = '". self::sql_esc(mb_substr($userinfo['fullname'], 0, 100)) ."'";
 					}
 					if ($userinfo['userID']) {
-						$sql[] = "`localID` = '". sql_esc($userinfo['userID']) ."'";
+						$sql[] = "`localID` = '". self::sql_esc($userinfo['userID']) ."'";
 					}
 				}
 				if ($expire) {
