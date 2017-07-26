@@ -580,7 +580,7 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		} elseif ($field_cfg['conversion'] == 'tinyint_checkbox') {  //conversion of 1 and 0 to true and false
 			$value = ($db_record[ $field_cfg['our_field'] ] ? true : false);
 		} elseif ($field_cfg['conversion'] == 'date_to_checkbox') {
-			$value = ($db_record[ $field_cfg['our_field'] ] ? true : false);  //TODO: check this
+			$value = ($db_record[ $field_cfg['our_field'] ] ? true : false);
 		} elseif ($field_cfg['conversion'] == 'date_to_utc') {
 			$value = datetime::change_timestamp_timezone($db_record[ $field_cfg['our_field'] ], $field_cfg['timezone'], 'UTC', 'c');
 		} elseif ($field_cfg['fixed_value']) {
