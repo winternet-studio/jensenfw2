@@ -26,11 +26,12 @@ class salesforce_sync {
 	var $token_storage_class;
 	var $SforceEnterpriseClient_path;
 	var $enterprise_wsdl_path;
-	var $debug = false;
 
 	// Runtime variables
+	var $debug = false;
 	var $soap_connection = null;
 	var $rest_connection = null;
+	var $logging_class = null;
 
 	public function __construct($client_id, $client_secret, $username, $password, $security_token, $login_uri, $api_version, $SforceEnterpriseClient_path, $enterprise_wsdl_path, $token_storage_class = null) {
 		/*
@@ -199,14 +200,23 @@ class salesforce_sync {
 			if ($action == 'insert') {
 				$o = $sf->create($object_map[$our_table]['sf_object'], $sf_fields);
 				// $o is associative array: ['id' => 'a153600000527ubAAA', 'success' => true, 'errors' => []]
+				if ($this->logging_class) {
+					$this->logging_class::save('to_salesforce', 'insert', $our_table, $our_id, $sf_fields);
+				}
 			} elseif ($action == 'update') {
 				if (!empty($sf_fields)) {  //in case we only modify fields that aren't replicated to Salesforce
 					$o = $sf->update($object_map[$our_table]['sf_object'], $sf_id, $sf_fields);
 					// $o is null (nothing is returned)
+					if ($this->logging_class) {
+						$this->logging_class::save('to_salesforce', 'update', $our_table, $our_id, $sf_fields);
+					}
 				}
 			} elseif ($action == 'delete') {
 				$o = $sf->delete($object_map[$our_table]['sf_object'], $sf_id);
 				// $o is a boolean
+				if ($this->logging_class) {
+					$this->logging_class::save('to_salesforce', 'delete', $our_table, $our_id);
+				}
 			} else {
 				core::system_error('Invalid action for sending data to Salesforce', false, ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
 				return;
@@ -418,6 +428,10 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 
 		echo  PHP_EOL ."Updated records: ". $updated_count;
 		echo  PHP_EOL ."Non-updated records: ". $nonupdated_count;
+	}
+
+	public function set_logging($logging_class) {
+		$this->logging_class = $logging_class;
 	}
 
 	private function do_salesforce_addupdate_request($action, $sf_object, $records) {
