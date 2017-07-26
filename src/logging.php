@@ -61,7 +61,7 @@ class logging {
 
 		// Don't register duplicate entries if requested
 		if (is_numeric($options['duplicate_window'])) {
-			if (YII_BEGIN_TIME) {
+			if (@constant('YII_BEGIN_TIME')) {
 				\Yii::$app->session->open();  //ensure session has been started
 			}
 			$session_varname = '_logentry_dedupe_'. md5($action .'-'. $subaction .'-'. json_encode($primary_parms) .'-'. json_encode($secondary_parms));
@@ -112,7 +112,7 @@ class logging {
 		}
 		$logSQL = substr($logSQL, 0, strlen($logSQL)-2);
 
-		if (YII_BEGIN_TIME) {
+		if (@constant('YII_BEGIN_TIME')) {
 			// Using Yii framework
 			\Yii::$app->db->createCommand($logSQL, $logSQL_vars)->execute();
 			$new_operationID = \Yii::$app->db->getLastInsertID();
