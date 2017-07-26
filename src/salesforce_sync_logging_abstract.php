@@ -9,6 +9,10 @@ abstract class salesforce_sync_logging_abstract {
 	abstract public static function save($direction, $action, $table, $id, $fields = null);
 
 	public static function fields_to_string($fields) {
-		return json_encode($fields);
+		if ($fields === null) {
+			return null;
+		} else {
+			return json_encode($fields);
+		}
 	}
 }
