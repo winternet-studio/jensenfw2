@@ -19,6 +19,7 @@ class salesforce {
 	var $is_authenticated = false;
 	var $auth_response = null;
 	var $curl = null;
+	var $exec_curl_log_callback = null;
 
 	public function __construct($client_id, $client_secret, $username, $password, $security_token, $login_uri, $api_version, $token_storage_instance = null) {
 		/*
@@ -68,7 +69,7 @@ class salesforce {
 			curl_setopt($this->curl, CURLOPT_POSTFIELDS, http_build_query($params));
 			curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, null);
 
-			$json_response = curl_exec($this->curl);
+			$json_response = $this->exec_curl('POST');
 
 			$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
 			if ($status != 200) {
@@ -103,7 +104,7 @@ class salesforce {
 		curl_setopt($this->curl, CURLOPT_POST, false);
 		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, null);
 
-		$json_response = curl_exec($this->curl);
+		$json_response = $this->exec_curl('GET');
 
 		$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
 		if ($status != 200) {
@@ -132,7 +133,7 @@ class salesforce {
 		curl_setopt($this->curl, CURLOPT_POSTFIELDS, json_encode($fields));
 		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, null);
 
-		$json_response = curl_exec($this->curl);
+		$json_response = $this->exec_curl('POST');
 
 		$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
 		if ($status != 201) {
@@ -188,7 +189,7 @@ class salesforce {
 		curl_setopt($this->curl, CURLOPT_POSTFIELDS, json_encode($fields));
 		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'PATCH');
 
-		$json_response = curl_exec($this->curl);
+		$json_response = $this->exec_curl('PATCH');
 
 		$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
 		if ($status != 204) {
@@ -244,7 +245,7 @@ class salesforce {
 		curl_setopt($this->curl, CURLOPT_POSTFIELDS, null);
 		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'DELETE');
 
-		$json_response = curl_exec($this->curl);
+		$json_response = $this->exec_curl('DELETE');
 
 		$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
 		if ($status == 404) {
@@ -347,10 +348,33 @@ class salesforce {
 		curl_setopt($this->curl, CURLOPT_POSTFIELDS, json_encode($batch_requests));
 		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, null);
 
-		$json_response = curl_exec($this->curl);
+		$json_response = $this->exec_curl('POST');
 
 		$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
 		$result = json_decode($json_response, true);
 		return $result;
+	}
+
+	private function exec_curl($type = null) {
+		if (is_callable($this->exec_curl_log_callback)) {
+			$starttime = microtime(true);
+		}
+
+		$response = curl_exec($this->curl);
+
+		if (is_callable($this->exec_curl_log_callback)) {
+			$data = [
+				'url' => curl_getinfo($this->curl, CURLINFO_EFFECTIVE_URL),
+				'type' => $type,
+				'duration' => round(microtime(true) - $starttime, 3),
+				'http_code' => curl_getinfo($this->curl, CURLINFO_HTTP_CODE),
+				'request_size' => curl_getinfo($this->curl, CURLINFO_REQUEST_SIZE),
+				'response_size' => curl_getinfo($this->curl, CURLINFO_SIZE_DOWNLOAD),
+				'source' => 'REST',
+			];
+			call_user_func($this->exec_curl_log_callback, $data);
+		}
+
+		return $response;
 	}
 }
