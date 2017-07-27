@@ -23,13 +23,11 @@ class salesforce {
 	public function __construct($client_id, $client_secret, $username, $password, $security_token, $login_uri, $api_version, $token_storage_instance = null) {
 		/*
 		DESCRIPTION:
-		- 
+		- constructor
 		INPUT:
 		- $token_storage_instance : class with these methods:
 			- saveToken($access_token, $instance_url) which returns nothing
 			- getToken() which returns eg. array('access_token' => 'rELHinuBmp9i98HBV4h7mMWVh', 'instance_url' => 'https://na30.salesforce.com')
-		OUTPUT:
-		- 
 		*/
 		$this->client_id = $client_id;
 		$this->client_secret = $client_secret;
@@ -104,7 +102,7 @@ class salesforce {
 		curl_setopt($this->curl, CURLOPT_HTTPHEADER, array('Authorization: OAuth '. $this->auth_response['access_token']));
 		curl_setopt($this->curl, CURLOPT_POST, false);
 		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, null);
-		
+
 		$json_response = curl_exec($this->curl);
 
 		$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
