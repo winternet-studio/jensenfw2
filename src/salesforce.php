@@ -109,7 +109,7 @@ class salesforce {
 
 		$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
 		if ($status != 200) {
-			core::system_error('Salesforce SOQL execution failed.', ['URL' => $url, 'Status' => $status, 'Response' => $json_response, 'cURL error' => curl_error($this->curl), 'cURL errno' => curl_errno($this->curl) ]);
+			core::system_error('Salesforce SOQL execution failed.', ['URL' => $url, 'SOQL' => $SOQL, 'Status' => $status, 'Response' => $json_response, 'cURL error' => curl_error($this->curl), 'cURL errno' => curl_errno($this->curl) ]);
 		}
 
 		return json_decode($json_response, true);
@@ -138,7 +138,7 @@ class salesforce {
 
 		$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
 		if ($status != 201) {
-			core::system_error('Creating Salesforce object failed.', ['URL' => $url, 'Status' => $status, 'Response' => $json_response, 'cURL error' => curl_error($this->curl), 'cURL errno' => curl_errno($this->curl) ]);
+			core::system_error('Creating Salesforce object failed.', ['URL' => $url, 'Fields' => $fields, 'Status' => $status, 'Response' => $json_response, 'cURL error' => curl_error($this->curl), 'cURL errno' => curl_errno($this->curl) ]);
 		}
 
 		return json_decode($json_response, true);
@@ -194,7 +194,7 @@ class salesforce {
 
 		$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
 		if ($status != 204) {
-			core::system_error('Updating Salesforce object failed.', ['URL' => $url, 'Status' => $status, 'Response' => $json_response, 'cURL error' => curl_error($this->curl), 'cURL errno' => curl_errno($this->curl) ]);
+			core::system_error('Updating Salesforce object failed.', ['URL' => $url, 'Fields' => $fields, 'Status' => $status, 'Response' => $json_response, 'cURL error' => curl_error($this->curl), 'cURL errno' => curl_errno($this->curl) ]);
 		}
 	}
 
