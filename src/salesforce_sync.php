@@ -32,6 +32,8 @@ class salesforce_sync {
 	var $soap_connection = null;
 	var $rest_connection = null;
 	var $logging_instance = null;
+	var $exec_curl_log_callback = null;
+	var $cached_existing_records = [];
 
 	public function __construct($client_id, $client_secret, $username, $password, $security_token, $login_uri, $api_version, $SforceEnterpriseClient_path, $enterprise_wsdl_path, $token_storage_instance = null) {
 		/*
@@ -72,6 +74,9 @@ class salesforce_sync {
 				core::$is_dev = true;
 			}
 			$this->rest_connection = new salesforce($this->client_id, $this->client_secret, $this->username, $this->password, $this->security_token, $this->login_uri, $this->api_version, $this->token_storage_instance);
+			if ($this->exec_curl_log_callback) {
+				$this->rest_connection->exec_curl_log_callback = $this->exec_curl_log_callback;
+			}
 			$this->rest_connection->authenticate();
 		}
 
@@ -87,8 +92,23 @@ class salesforce_sync {
 
 			require_once($this->SforceEnterpriseClient_path);
 			$this->soap_connection = new \SforceEnterpriseClient();
+			if (is_callable($this->exec_curl_log_callback)) {
+				$starttime = microtime(true);
+			}
 			$this->soap_connection->createConnection($this->enterprise_wsdl_path);
 			$this->soap_connection->login($this->username, $this->password . $this->security_token);
+			if (is_callable($this->exec_curl_log_callback)) {
+				$data = [
+					'url' => 'authenticate',
+					// 'type' => null,
+					'duration' => round(microtime(true) - $starttime, 3),
+					// 'http_code' => null,
+					'request_size' => strlen($this->soap_connection->getLastRequest()),
+					'response_size' => strlen($this->soap_connection->getLastResponse()),
+					'source' => 'SOAP',
+				];
+				call_user_func($this->exec_curl_log_callback, $data);
+			}
 		}
 
 		return $this->soap_connection;
@@ -119,13 +139,15 @@ class salesforce_sync {
 
 
 
-		if ($previous_values === null) {
-			$fields = $new_values;
-		} else {
-			$fields = $this->fields_updated($config_instance, $our_table, $previous_values, $new_values);
-			if (empty($fields)) {
-				// No changes found in the fields that we are synchronizing with Salesforce => do nothing
-				return;
+		if ($action != 'delete') {
+			if ($previous_values === null) {
+				$fields = $new_values;
+			} else {
+				$fields = $this->fields_updated($config_instance, $our_table, $previous_values, $new_values);
+				if (empty($fields)) {
+					// No changes found in the fields that we are synchronizing with Salesforce => do nothing
+					return;
+				}
 			}
 		}
 
@@ -139,22 +161,30 @@ class salesforce_sync {
 
 		$sf = $this->connect_salesforce_rest();
 
+		$is_contact = $sf_accountId = false;
+		if ($object_map[$our_table]['sf_object'] == 'Contact') {
+			$is_contact = true;
+		}
+
 		// Get the Salesforce ID of the record to deal with
 		if ($action !== 'insert') {
-			$id = $sf->execute_soql('SELECT Id FROM '. $object_map[$our_table]['sf_object'] .' WHERE '. $object_map[$our_table]['our_primkey_sf_field'] .' = '. (int) $our_id);
-			if (empty($id)) {
-				core::system_error('Failed to get Salesforce record ID when sending data to Salesforce.', ['SOQL result' => $id], ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
+			$result = $sf->execute_soql('SELECT Id'. ($is_contact ? ', AccountId' : '') .' FROM '. $object_map[$our_table]['sf_object'] .' WHERE '. $object_map[$our_table]['our_primkey_sf_field'] .' = '. (int) $our_id);
+			if (empty($result)) {
+				core::system_error('Failed to get Salesforce record ID when sending data to Salesforce.', ['SOQL result' => $result], ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
 				return;
-			} elseif ((int) $id['totalSize'] == 0) {
+			} elseif ((int) $result['totalSize'] == 0) {
 				// NOTE: in case $action = 'delete' this error doesn't matter actually - could even skip raising it if we experience it more
-				core::system_error('Failed to get Salesforce record ID when sending data to Salesforce. No record having our primary key value was found.', ['SOQL result' => $id], ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
+				core::system_error('Failed to get Salesforce record ID when sending data to Salesforce. No record having our primary key value was found.', ['SOQL result' => $result], ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
 				return;
-			} elseif ((int) $id['totalSize'] > 1) {
-				core::system_error('Failed to get Salesforce record ID when sending data to Salesforce. Multiple records have our primary key value!', ['SOQL result' => $id], ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
+			} elseif ((int) $result['totalSize'] > 1) {
+				core::system_error('Failed to get Salesforce record ID when sending data to Salesforce. Multiple records have our primary key value!', ['SOQL result' => $result], ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
 				return;
 			}
 
-			$sf_id = $id['records'][0]['Id'];
+			$sf_id = $result['records'][0]['Id'];
+			if ($is_contact) {
+				$sf_accountId = $result['records'][0]['AccountId'];
+			}
 		}
 
 		if ($action != 'delete') {
@@ -168,7 +198,7 @@ class salesforce_sync {
 			$field_map = $config_instance->field_conversion_to_salesforce($this, $our_table, $fk_records);
 
 			if ($this->debug) {
-				file_put_contents('dump.txt', print_r($fields, true) ."\r\n--------------------- line ". __LINE__ ." in ". __FILE__ ." at ". date('Y-m-d H:i:s') ."\r\n\r\n\r\n", FILE_APPEND);
+				file_put_contents('dump_sf_fields.txt', print_r($fields, true) ."\r\n--------------------- line ". __LINE__ ." in ". __FILE__ ." at ". date('Y-m-d H:i:s') ."\r\n\r\n\r\n", FILE_APPEND);
 			}
 
 			$sf_fields = array();
@@ -192,7 +222,7 @@ class salesforce_sync {
 			}
 
 			if ($this->debug) {
-				file_put_contents('dump.txt', print_r($fields, true) ."\r\n--------------------- line ". __LINE__ ." in ". __FILE__ ." at ". date('Y-m-d H:i:s') ."\r\n\r\n\r\n", FILE_APPEND);
+				file_put_contents('dump_sf_fields.txt', print_r($fields, true) ."\r\n--------------------- line ". __LINE__ ." in ". __FILE__ ." at ". date('Y-m-d H:i:s') ."\r\n\r\n\r\n", FILE_APPEND);
 			}
 		}
 
@@ -201,6 +231,7 @@ class salesforce_sync {
 				$o = $sf->create($object_map[$our_table]['sf_object'], $sf_fields);
 				// $o is associative array: ['id' => 'a153600000527ubAAA', 'success' => true, 'errors' => []]
 				if ($this->logging_instance) {
+					$sf_fields['___SALESFORCE_ID'] = $o['id'];
 					$this->logging_instance->save('to_salesforce', 'insert', $our_table, $our_id, $sf_fields);
 				}
 			} elseif ($action == 'update') {
@@ -208,14 +239,25 @@ class salesforce_sync {
 					$o = $sf->update($object_map[$our_table]['sf_object'], $sf_id, $sf_fields);
 					// $o is null (nothing is returned)
 					if ($this->logging_instance) {
+						$sf_fields['___SALESFORCE_ID'] = $sf_id;
 						$this->logging_instance->save('to_salesforce', 'update', $our_table, $our_id, $sf_fields);
 					}
 				}
 			} elseif ($action == 'delete') {
 				$o = $sf->delete($object_map[$our_table]['sf_object'], $sf_id);
 				// $o is a boolean
-				if ($this->logging_instance) {
-					$this->logging_instance->save('to_salesforce', 'delete', $our_table, $our_id);
+				if ($o) {
+					// If deleting a Contact, also delete the Account if it has no other Contacts
+					if ($is_contact && $sf_accountId) {
+						$contacts_count = $sf->execute_soql("SELECT count() FROM Contact WHERE AccountId = '". $sf_accountId ."'");
+						if ($contacts_count['totalSize'] == 0) {  //if no other Contacts...
+							$o2 = $sf->delete('Account', $sf_accountId);
+						}
+					}
+
+					if ($this->logging_instance) {
+						$this->logging_instance->save('to_salesforce', 'delete', $our_table, $our_id, $sf_id);
+					}
 				}
 			} else {
 				core::system_error('Invalid action for sending data to Salesforce', false, ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
@@ -417,7 +459,23 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 				$updated_count++;
 			}
 
+			if (is_callable($this->exec_curl_log_callback)) {
+				$starttime = microtime(true);
+			}
 			$response = $this->soap_connection->delete($delete_IDs);
+			if (is_callable($this->exec_curl_log_callback)) {
+				$data = [
+					'url' => 'delete-'. json_encode($delete_IDs),
+					// 'type' => null,
+					'duration' => round(microtime(true) - $starttime, 3),
+					// 'http_code' => null,
+					'request_size' => strlen($this->soap_connection->getLastRequest()),
+					'response_size' => strlen($this->soap_connection->getLastResponse()),
+					'source' => 'SOAP',
+				];
+				call_user_func($this->exec_curl_log_callback, $data);
+			}
+
 			foreach ($response as $result) {
 				if ( ! $result->success) {
 					core::system_error('Failed to delete '. $sf_object .' from Salesforce.', array('Salesforce ID' => $result->id, 'Err msg' => print_r($result->errors, true)) );
@@ -438,12 +496,44 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		if ($action == 'add') {
 			// NOTE: enable this to debug the XML sent to Salesforce
 			// try {
+
+				if (is_callable($this->exec_curl_log_callback)) {
+					$starttime = microtime(true);
+				}
 				$rsp = $this->soap_connection->create($records, $sf_object);
+				if (is_callable($this->exec_curl_log_callback)) {
+					$data = [
+						'url' => 'create-'. $sf_object,
+						// 'type' => null,
+						'duration' => round(microtime(true) - $starttime, 3),
+						// 'http_code' => null,
+						'request_size' => strlen($this->soap_connection->getLastRequest()),
+						'response_size' => strlen($this->soap_connection->getLastResponse()),
+						'source' => 'SOAP',
+					];
+					call_user_func($this->exec_curl_log_callback, $data);
+				}
+
 			// } catch (\Exception $e) {
 			// 	file_put_contents('dump.txt', print_r($this->soap_connection->getLastRequest(), true) . PHP_EOL ."--------------------- line ". __LINE__ ." in ". __FILE__ ." at ". date('Y-m-d H:i:s') . PHP_EOL . PHP_EOL . PHP_EOL, FILE_APPEND);
 			// }
 		} elseif ($action == 'update') {
+			if (is_callable($this->exec_curl_log_callback)) {
+				$starttime = microtime(true);
+			}
 			$rsp = $this->soap_connection->update($records, $sf_object);
+			if (is_callable($this->exec_curl_log_callback)) {
+				$data = [
+					'url' => 'update-'. $sf_object,
+					// 'type' => null,
+					'duration' => round(microtime(true) - $starttime, 3),
+					// 'http_code' => null,
+					'request_size' => strlen($this->soap_connection->getLastRequest()),
+					'response_size' => strlen($this->soap_connection->getLastResponse()),
+					'source' => 'SOAP',
+				];
+				call_user_func($this->exec_curl_log_callback, $data);
+			}
 		}
 
 		$success_count = 0;
@@ -476,6 +566,13 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		// REMEMBER! New custom fields must be added to the WSDL (= regenerated) before they are visible here!
 		$query = "SELECT Id, ". $sf_primkey .", ". $sf_lastmodified ." FROM ". $sf_object;  // SF field: LastModifiedDate
 		if ($onlyIDs !== null) {
+
+			// Use cached data if available
+			$cache_key = $sf_object .'--'. $sf_primkey .'--'. json_encode($onlyIDs);
+			if ($this->cached_existing_records[$cache_key]) {
+				return $this->cached_existing_records[$cache_key];
+			}
+
 			$query .= " WHERE";
 			foreach ($onlyIDs as $id) {
 				if (is_numeric($id)) {
@@ -489,7 +586,22 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 
 		$this->connect_salesforce_soap();
 
+		if (is_callable($this->exec_curl_log_callback)) {
+			$starttime = microtime(true);
+		}
 		$response = $this->soap_connection->query($query);
+		if (is_callable($this->exec_curl_log_callback)) {
+			$data = [
+				'url' => 'query : '. $query,
+				// 'type' => null,
+				'duration' => round(microtime(true) - $starttime, 3),
+				// 'http_code' => null,
+				'request_size' => strlen($this->soap_connection->getLastRequest()),
+				'response_size' => strlen($this->soap_connection->getLastResponse()),
+				'source' => 'SOAP',
+			];
+			call_user_func($this->exec_curl_log_callback, $data);
+		}
 
 		$existing = array();
 		foreach ($response->records as $record) {
@@ -503,7 +615,22 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 
 		// They return max 2000 records at a time, so call queryMore() until we got it all
 		while ($response->done != true) {
+			if (is_callable($this->exec_curl_log_callback)) {
+				$starttime = microtime(true);
+			}
 			$response = $this->soap_connection->queryMore($response->queryLocator);   //docs: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_calls_querymore.htm
+			if (is_callable($this->exec_curl_log_callback)) {
+				$data = [
+					'url' => 'queryMore',
+					// 'type' => null,
+					'duration' => round(microtime(true) - $starttime, 3),
+					// 'http_code' => null,
+					'request_size' => strlen($this->soap_connection->getLastRequest()),
+					'response_size' => strlen($this->soap_connection->getLastResponse()),
+					'source' => 'SOAP',
+				];
+				call_user_func($this->exec_curl_log_callback, $data);
+			}
 
 			foreach ($response->records as $record) {
 				if (is_numeric($record->{$sf_primkey})) {  //don't touch records that don't have a ShareHim personID
@@ -513,6 +640,11 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 					);
 				}
 			}
+		}
+
+		if ($onlyIDs !== null) {  //didn't dare to try caching full table recordsets because don't they potentially get big?
+			// Cache the result
+			$this->cached_existing_records[$cache_key] = $existing;
 		}
 
 		return $existing;
