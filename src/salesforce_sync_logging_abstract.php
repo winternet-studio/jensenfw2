@@ -11,6 +11,8 @@ abstract class salesforce_sync_logging_abstract {
 	public function fields_to_string($fields) {
 		if ($fields === null) {
 			return null;
+		} elseif (is_string($fields)) {
+			return $fields;
 		} else {
 			return json_encode($fields);
 		}
