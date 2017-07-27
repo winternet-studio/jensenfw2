@@ -587,7 +587,15 @@ class core {
 		// Get specifically provided values
 		$keys = array_keys($varinfo);
 		foreach ($keys as $k) {
-			$errordata .= $k .': '. $varinfo[$k] ."\r\n";
+			if (is_array($varinfo[$k]) || is_object($varinfo[$k])) {
+				ob_start();
+				var_dump($varinfo[$k]);  //NOTE: not using var_export() because it can result in recursive death (http://stackoverflow.com/a/5039497/2404541)
+				$val = ob_get_clean();
+			} else {
+				$val = $varinfo[$k];
+			}
+			$val = str_replace("\0", '', $val);
+			$errordata .= $k .': '. $val ."\r\n";
 		}
 
 		// Write error occurance number
