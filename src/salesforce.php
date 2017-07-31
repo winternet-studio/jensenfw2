@@ -229,6 +229,7 @@ class salesforce {
 		/*
 		DESCRIPTION:
 		- delete a single record
+		- supports cascading deletions to ensure referential integrity - at least stated in SOAP doc, assume it's the same for REST: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_calls_delete.htm
 		INPUT:
 		- $object_name : string with name of object to delete, eg. "Account", "Contact", etc.
 		- $id : ID of record to delete
@@ -353,6 +354,39 @@ class salesforce {
 		$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
 		$result = json_decode($json_response, true);
 		return $result;
+	}
+
+	public function describe_object($object_name) {
+		/*
+		DESCRIPTION:
+		- describe a Salesforce object (= get schema)
+		INPUT:
+		- $object_name : string with name of object to update, eg. "Account", "Contact", etc.
+		OUTPUT:
+		- associative array
+		*/
+		$this->authenticate();
+
+		$url = $this->auth_response['instance_url'] .'/services/data/'. $this->api_version .'/sobjects/'. $object_name .'/describe';
+		curl_setopt($this->curl, CURLOPT_URL, $url);
+		curl_setopt($this->curl, CURLOPT_HTTPHEADER, array('Authorization: OAuth '. $this->auth_response['access_token']));
+		curl_setopt($this->curl, CURLOPT_POST, false);
+		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, null);
+
+		$json_response = $this->exec_curl('GET');
+
+		$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
+		if ($status != 200) {
+			core::system_error('Describing Salesforce object failed.', ['URL' => $url,'Status' => $status, 'Response' => $json_response, 'cURL error' => curl_error($this->curl), 'cURL errno' => curl_errno($this->curl) ]);
+		}
+
+		$response = json_decode($json_response, true);
+
+		if ($response === null) {
+			core::system_error('Response for describing Salesforce object is invalid.');
+		}
+
+		return $response;
 	}
 
 	private function exec_curl($type = null) {
