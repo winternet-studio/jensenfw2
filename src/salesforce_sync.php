@@ -119,7 +119,7 @@ class salesforce_sync {
 		DESCRIPTION:
 		- send a single record to Salesforce to be added/updated/deleted there
 		INPUT:
-		- $action ('insert'|'update'|'delete')
+		- $action ('insert'|'update'|'delete'|'replace') : type of operation. Replace will insert if record doesn't already exist, otherwise update.
 		- $our_table : full database table name (in our database) of record(s) to send to Salesforce
 		- $our_id : our primary key value for the given record to send
 		- $previous_values : associative array with the previous record values, keys being our table column names and the values being their value
@@ -137,6 +137,13 @@ class salesforce_sync {
 		// Do not terminate script when using system_error() but make sure notification is sent to developer instead AND exit the function so that the rest of the code is not executed
 		// Since this is never a critical issue for our site, we don't want to terminate other actions following the call to this function
 
+
+		if (!in_array($action, ['insert', 'update', 'delete', 'replace'], true)) {
+			core::system_error('Invalid action for sending data to Salesforce.', false, ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
+			return;
+		}
+
+		$not_found = false;
 
 
 		if ($action != 'delete') {
@@ -174,16 +181,27 @@ class salesforce_sync {
 				return;
 			} elseif ((int) $result['totalSize'] == 0) {
 				// NOTE: in case $action = 'delete' this error doesn't matter actually - could even skip raising it if we experience it more
-				core::system_error('Failed to get Salesforce record ID when sending data to Salesforce. No record having our primary key value was found.', ['SOQL result' => $result], ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
-				return;
+				if ($action == 'replace') {
+					$action = 'insert';
+					$not_found = true;
+				} else {
+					core::system_error('Failed to get Salesforce record ID when sending data to Salesforce. No record having our primary key value was found.', ['SOQL result' => $result], ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
+					return;
+				}
 			} elseif ((int) $result['totalSize'] > 1) {
 				core::system_error('Failed to get Salesforce record ID when sending data to Salesforce. Multiple records have our primary key value!', ['SOQL result' => $result], ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
 				return;
 			}
 
-			$sf_id = $result['records'][0]['Id'];
-			if ($is_contact) {
-				$sf_accountId = $result['records'][0]['AccountId'];
+			if ($action == 'replace') {  //if we get here and this condition is true it means that the record exists and we just need to do an update
+				$action = 'update';
+			}
+
+			if (!$not_found) {
+				$sf_id = $result['records'][0]['Id'];
+				if ($is_contact) {
+					$sf_accountId = $result['records'][0]['AccountId'];
+				}
 			}
 		}
 
