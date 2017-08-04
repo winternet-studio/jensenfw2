@@ -710,7 +710,8 @@ class datetime {
 		$scripttimer_meantime = microtime(true); 
 		$duration = number_format($scripttimer_meantime - self::$scripttimer_start, 3);
 		if ($writetext) {
-			$html = '<div style="color: orangered"><b>Meantime #'. ++self::$scripttimer_meantimecount .': '. $duration .''. (self::$scripttimer_lastmeantime ? ' ('. number_format($scripttimer_meantime - self::$scripttimer_lastmeantime, 3) .')' : '') .'</b></div>';
+			$backtrace = debug_backtrace();
+			$html = '<div style="color: orangered" title="'. $backtrace[0]['file'] .':'. $backtrace[0]['line'] .'"><b>Meantime #'. ++self::$scripttimer_meantimecount .': '. $duration .''. (self::$scripttimer_lastmeantime ? ' ('. number_format($scripttimer_meantime - self::$scripttimer_lastmeantime, 3) .')' : '') .'</b></div>';
 			if (PHP_SAPI == 'cli') {
 				echo strip_tags($html);
 			} else {
@@ -733,7 +734,8 @@ class datetime {
 		$scripttimer_end = microtime(true); 
 		$duration = number_format($scripttimer_end - self::$scripttimer_start, 3);
 		if ($writetext) {
-			$html = '<div style="color: orangered"><b>Duration: '. $duration .' seconds.'. (self::$scripttimer_meantimecount ? ' Meantimes average: '. number_format($duration / self::$scripttimer_meantimecount, 3) : '') .'</b></div>';
+			$backtrace = debug_backtrace();
+			$html = '<div style="color: orangered" title="'. $backtrace[0]['file'] .':'. $backtrace[0]['line'] .'"><b>Duration: '. $duration .' seconds.'. (self::$scripttimer_meantimecount ? ' Meantimes average: '. number_format($duration / self::$scripttimer_meantimecount, 3) : '') .'</b></div>';
 			if (PHP_SAPI == 'cli') {
 				echo strip_tags($html);
 			} else {
