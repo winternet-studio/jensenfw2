@@ -65,7 +65,7 @@ class system {
 		INPUT:
 		- $key : number or string with the key
 		- $value : number or string with the value to store
-		- $expiration : the expiration date of this value in MySQL format (yyyy-mm-dd)
+		- $expiration : the expiration date (UTC) of this value in MySQL format (yyyy-mm-dd or yyyy-mm-dd hh:mm:ss)
 			- or number of hours to expire (eg. 6 hours: '6h')
 			- or days to expire (eg. 14 days: '14d')
 			- or 'NOW' in order to delete a buffer value before current expiration (when overwriting an existing one)
@@ -78,21 +78,21 @@ class system {
 		// Auto-overwrite any record with the same key
 		$sql = "REPLACE INTO `". $cfg['db_name'] ."`.`". $cfg['db_table_buffer'] ."` SET tmpd_key = '". core::sql_esc($key) ."', tmpd_value = '". core::sql_esc($value) ."'";
 		if ($expiration) {
-			if (preg_match('|^\\d{2,4}-\\d{1,2}-\\d{1,2}$|', $expiration)) {
+			if (preg_match('|^\\d{2,4}-\\d{1,2}-\\d{1,2}$|', $expiration) || preg_match('|^\\d{2,4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}$|', $expiration)) {
 				//do nothing, use raw value
 			} elseif (preg_match('/^(\\d+)(h|d)$/', $expiration, $match)) {
 				switch ($match[2]) {
 				case 'h':
-					$expiration = date('Y-m-d H:i:s', time() + $match[1]*60*60);
+					$expiration = gmdate('Y-m-d H:i:s', time() + $match[1]*60*60);
 					break;
 				case 'd':
-					$expiration = date('Y-m-d H:i:s', time() + $match[1]*24*60*60);
+					$expiration = gmdate('Y-m-d H:i:s', time() + $match[1]*24*60*60);
 					break;
 				default:
 					core::system_error('Undefined unit for expiration date for setting a buffer value.', array('Unit' => $unit) );
 				}
 			} elseif ($expiration == 'NOW') {
-				$expiration = '2000-01-01';
+				$expiration = '2000-01-01 00:00:00';
 			} else {
 				core::system_error('Invalid expiration date for setting a value in temporary buffer table.');
 			}
@@ -117,13 +117,13 @@ class system {
 
 		// Clean up the buffer once per session
 		if (!$_SESSION['_jfw_cleaned_buffer']) {
-			$sql = "DELETE FROM `". $cfg['db_name'] ."`.`". $cfg['db_table_buffer'] ."` WHERE tmpd_date_expire IS NOT NULL AND tmpd_date_expire < CURDATE()";
+			$sql = "DELETE FROM `". $cfg['db_name'] ."`.`". $cfg['db_table_buffer'] ."` WHERE tmpd_date_expire IS NOT NULL AND tmpd_date_expire < UTC_TIMESTAMP()";
 			core::database_result($sql, false, 'Database query for cleaning temporary buffer table failed.');
 			$_SESSION['_jfw_cleaned_buffer'] = true;
 		}
 
 		// Get the value
-		$sql = "SELECT tmpd_value FROM `". $cfg['db_name'] ."`.`". $cfg['db_table_buffer'] ."` WHERE tmpd_key = '". core::sql_esc($key) ."' AND (tmpd_date_expire IS NULL OR tmpd_date_expire > NOW())";
+		$sql = "SELECT tmpd_value FROM `". $cfg['db_name'] ."`.`". $cfg['db_table_buffer'] ."` WHERE tmpd_key = '". core::sql_esc($key) ."' AND (tmpd_date_expire IS NULL OR tmpd_date_expire > UTC_TIMESTAMP())";
 		return core::database_result($sql, 'onevalue', 'Database query for getting value from temporary buffer table failed.');
 	}
 
