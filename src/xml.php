@@ -5,7 +5,7 @@ This file contains functions related to XML
 namespace winternet\jensenfw2;
 
 class xml {
-	function xml_tag($tag, $content, $flags = '') {
+	public static function xml_tag($tag, $content, $flags = '') {
 		/*
 		DESCRIPTION:
 		- generate an XML element, eg.: <firstName>Regina</firstName>
@@ -38,7 +38,7 @@ class xml {
 		}
 	}
 
-	function xml_entities($string) {
+	public static function xml_entities($string) {
 		/*
 		DESCRIPTION:
 		- convert a string to use XML entities
@@ -79,7 +79,7 @@ class xml {
 		return $string;
 	}
 
-	function parse_xml_into_array($xml_string, $options = []) {
+	public static function parse_xml_into_array($xml_string, $options = []) {
 		/*
 		DESCRIPTION:
 		- parse an XML string into an array
