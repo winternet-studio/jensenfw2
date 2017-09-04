@@ -717,6 +717,7 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 				- set to '*' to always set this value when inserting or updating a record
 			- 'sf_field' (req.) : name of field in Salesforce
 			- 'our_field' (req.) : name of field in our database (can actually be left out if 'conversion' is a callback function or 'fixed_value' is set)
+				- if the same as trigger_field field it can be set to '>trigger'
 			- 'fixed_value' (opt.) : string with a fixed value to be set
 			- 'conversion' (opt.) : method of how to convert our value to a Salesforce valid value. Possible options:
 				- 'null_if_empty_string' : convert empty string ("") to NULL, otherwise return original value
@@ -732,6 +733,10 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		*/
 		if ($action == 'update' && $field_cfg['no_update']) {
 			return '__skip_field';
+		}
+
+		if ($field_cfg['our_field'] == '>trigger') {
+			$field_cfg['our_field'] = $field_cfg['trigger_field'];
 		}
 
 		if ($field_cfg['conversion'] && is_callable($field_cfg['conversion'])) {
