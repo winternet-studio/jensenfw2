@@ -832,9 +832,9 @@ class core {
 			if (!$terminate) {
 				//if not terminating don't do anything concerning the output
 			} else {
-				echo PHP_EOL .'ERROR: '. $msg;
+				echo PHP_EOL .'ERROR: '. $msg . PHP_EOL;
 				if ($cfg['debug_level']) {
-					echo PHP_EOL .'   DEBUG: '. print_r($_SESSION['sys_errordata_mail'], true) . PHP_EOL;
+					echo '   DEBUG: '. print_r($_SESSION['sys_errordata_mail'], true) . PHP_EOL;
 				}
 				exit;
 			}
