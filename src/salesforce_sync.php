@@ -585,7 +585,11 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		*/
 		// Field list is found in WSDL (or standard fields: https://na14.salesforce.com/p/setup/layout/LayoutFieldList?type=Contact&setupid=ContactFields&retURL=%2Fui%2Fsetup%2FSetup%3Fsetupid%3DContact)
 		// REMEMBER! New custom fields must be added to the WSDL (= regenerated) before they are visible here!
-		$query = "SELECT Id, ". $sf_primkey .", ". $sf_lastmodified ." FROM ". $sf_object;  // SF field: LastModifiedDate
+		$query  = "SELECT Id, ". $sf_primkey;
+		if ($sf_lastmodified) {
+			$query .= ", ". $sf_lastmodified;
+		}
+		$query .= " FROM ". $sf_object;  // SF field: LastModifiedDate
 		if ($onlyIDs !== null) {
 
 			// Use cached data if available
@@ -628,10 +632,17 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		$existing = array();
 		foreach ($results as $record) {  //the iterator automatically do additional calls to fetch all records when the total is more than 2000
 			if (is_numeric($record->{$sf_primkey})) {  //don't touch records that don't have a ShareHim personID
-				$existing[$record->{$sf_primkey}] = array(
-					'our_last_modified' => ($our_timestamp_timezone != 'system' && $our_timestamp_timezone != date_default_timezone_get() ? datetime::change_timestamp_timezone($record->$sf_lastmodified->format('Y-m-d H:i:s'), date_default_timezone_get(), $our_timestamp_timezone) : $record->$sf_lastmodified->format('Y-m-d H:i:s')),   //get the timestamp in our own timezone (OBS!! Phpforce\SoapClient automatically converts timestamp to the system timezone!)
-					'salesforce_id' => $record->Id,
-				);
+				if ($record->$sf_lastmodified) {
+					$existing[$record->{$sf_primkey}] = array(
+						'our_last_modified' => ($our_timestamp_timezone != 'system' && $our_timestamp_timezone != date_default_timezone_get() ? datetime::change_timestamp_timezone($record->$sf_lastmodified->format('Y-m-d H:i:s'), date_default_timezone_get(), $our_timestamp_timezone) : $record->$sf_lastmodified->format('Y-m-d H:i:s')),   //get the timestamp in our own timezone (OBS!! Phpforce\SoapClient automatically converts timestamp to the system timezone!)
+						'salesforce_id' => $record->Id,
+					);
+				} else {
+					$existing[$record->{$sf_primkey}] = array(
+						'our_last_modified' => null,
+						'salesforce_id' => $record->Id,
+					);
+				}
 			}
 		}
 
@@ -666,6 +677,10 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		OUTPUT:
 		- 
 		*/
+		if (empty($our_ID)) {
+			core::system_error('Missing our ID for finding Salesforce ID.'. json_encode($existing_records[0]));
+		}
+
 		foreach ($existing_records as $curr_our_ID => $r) {
 			if ($curr_our_ID == $our_ID) {
 				return $r['salesforce_id'];
