@@ -10,9 +10,9 @@ Main methods to use are:
 */
 namespace winternet\jensenfw2;
 
-use \winternet\jensenfw2\core;
-use \winternet\jensenfw2\datetime;
-use \winternet\jensenfw2\salesforce;
+use winternet\jensenfw2\core;
+use winternet\jensenfw2\datetime;
+use winternet\jensenfw2\salesforce;
 
 class salesforce_sync {
 	// Config variables
@@ -24,7 +24,6 @@ class salesforce_sync {
 	var $login_uri;
 	var $api_version;
 	var $token_storage_instance;
-	var $SforceEnterpriseClient_path;
 	var $enterprise_wsdl_path;
 
 	// Runtime variables
@@ -35,7 +34,7 @@ class salesforce_sync {
 	var $exec_curl_log_callback = null;
 	var $cached_existing_records = [];
 
-	public function __construct($client_id, $client_secret, $username, $password, $security_token, $login_uri, $api_version, $SforceEnterpriseClient_path, $enterprise_wsdl_path, $token_storage_instance = null) {
+	public function __construct($client_id, $client_secret, $username, $password, $security_token, $login_uri, $api_version, $enterprise_wsdl_path, $token_storage_instance = null) {
 		/*
 		DESCRIPTION:
 		- 
@@ -54,7 +53,6 @@ class salesforce_sync {
 		$this->login_uri = $login_uri;
 		$this->api_version = $api_version;
 		$this->token_storage_instance = $token_storage_instance;
-		$this->SforceEnterpriseClient_path = $SforceEnterpriseClient_path;
 		$this->enterprise_wsdl_path = $enterprise_wsdl_path;
 
 		if ($token_storage_instance !== null) {
@@ -90,21 +88,26 @@ class salesforce_sync {
 				core::system_error('Salesforce credentials have not been defined.');
 			}
 
-			require_once($this->SforceEnterpriseClient_path);
-			$this->soap_connection = new \SforceEnterpriseClient();
 			if (is_callable($this->exec_curl_log_callback)) {
 				$starttime = microtime(true);
 			}
-			$this->soap_connection->createConnection($this->enterprise_wsdl_path);
-			$this->soap_connection->login($this->username, $this->password . $this->security_token);
+
+			if (!class_exists('\Phpforce\SoapClient\ClientBuilder', true)) {
+				system_error('Salesforce SOAP API Client is not available. Please install composer package phpforce/soap-client.', array() );
+			}
+
+			$builder = new \Phpforce\SoapClient\ClientBuilder($this->enterprise_wsdl_path, $this->username, $this->password, $this->security_token);
+			$this->soap_connection = $builder->build();
+			$this->soap_connection->login($this->username, $this->password, $this->security_token);
+
 			if (is_callable($this->exec_curl_log_callback)) {
 				$data = [
 					'url' => 'authenticate',
 					// 'type' => null,
 					'duration' => round(microtime(true) - $starttime, 3),
 					// 'http_code' => null,
-					'request_size' => strlen($this->soap_connection->getLastRequest()),
-					'response_size' => strlen($this->soap_connection->getLastResponse()),
+					// 'request_size' => strlen($this->soap_connection->soapClient->__getLastRequest()),   //CAN'T USE THIS UNTIL THE LIBRARY CHANGES soapClient TO PUBLIC INSTEAD OF PROTECTED
+					// 'response_size' => strlen($this->soap_connection->soapClient->__getLastResponse()),   //CAN'T USE THIS UNTIL THE LIBRARY CHANGES soapClient TO PUBLIC INSTEAD OF PROTECTED
 					'source' => 'SOAP',
 				];
 				call_user_func($this->exec_curl_log_callback, $data);
@@ -374,7 +377,7 @@ class salesforce_sync {
 						$log_msg = ' ALWAYS UPDATE';
 					} elseif ($dbrecord[$our_lastmodified] != $existing_records[$primkeyID]['our_last_modified']) {
 						$action = 'update';
-						$log_msg = ' ('. $dbrecord[$our_lastmodified] .' <> '. $existing_records[$primkeyID]['our_last_modified'] .')';
+						$log_msg = ' (Our:'. $dbrecord[$our_lastmodified] .' <> SF:'. $existing_records[$primkeyID]['our_last_modified'] .')';
 					} else {
 						$action = false;
 						$log_msg = ' ('. $dbrecord[$our_lastmodified] .' = '. $existing_records[$primkeyID]['our_last_modified'] .')';
@@ -487,15 +490,15 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 					// 'type' => null,
 					'duration' => round(microtime(true) - $starttime, 3),
 					// 'http_code' => null,
-					'request_size' => strlen($this->soap_connection->getLastRequest()),
-					'response_size' => strlen($this->soap_connection->getLastResponse()),
+					// 'request_size' => strlen($this->soap_connection->soapClient->__getLastRequest()),
+					// 'response_size' => strlen($this->soap_connection->soapClient->__getLastResponse()),
 					'source' => 'SOAP',
 				];
 				call_user_func($this->exec_curl_log_callback, $data);
 			}
 
 			foreach ($response as $result) {
-				if ( ! $result->success) {
+				if ( ! $result->isSuccess()) {
 					core::system_error('Failed to delete '. $sf_object .' from Salesforce.', array('Salesforce ID' => $result->id, 'Err msg' => print_r($result->errors, true)) );
 				}
 			}
@@ -525,15 +528,15 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 						// 'type' => null,
 						'duration' => round(microtime(true) - $starttime, 3),
 						// 'http_code' => null,
-						'request_size' => strlen($this->soap_connection->getLastRequest()),
-						'response_size' => strlen($this->soap_connection->getLastResponse()),
+						// 'request_size' => strlen($this->soap_connection->soapClient->__getLastRequest()),
+						// 'response_size' => strlen($this->soap_connection->soapClient->__getLastResponse()),
 						'source' => 'SOAP',
 					];
 					call_user_func($this->exec_curl_log_callback, $data);
 				}
 
 			// } catch (\Exception $e) {
-			// 	file_put_contents('dump.txt', print_r($this->soap_connection->getLastRequest(), true) . PHP_EOL ."--------------------- line ". __LINE__ ." in ". __FILE__ ." at ". date('Y-m-d H:i:s') . PHP_EOL . PHP_EOL . PHP_EOL, FILE_APPEND);
+			// 	file_put_contents('dump.txt', print_r($this->soap_connection->soapClient->__getLastRequest(), true) . PHP_EOL ."--------------------- line ". __LINE__ ." in ". __FILE__ ." at ". date('Y-m-d H:i:s') . PHP_EOL . PHP_EOL . PHP_EOL, FILE_APPEND);
 			// }
 		} elseif ($action == 'update') {
 			if (is_callable($this->exec_curl_log_callback)) {
@@ -546,8 +549,8 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 					// 'type' => null,
 					'duration' => round(microtime(true) - $starttime, 3),
 					// 'http_code' => null,
-					'request_size' => strlen($this->soap_connection->getLastRequest()),
-					'response_size' => strlen($this->soap_connection->getLastResponse()),
+					// 'request_size' => strlen($this->soap_connection->soapClient->__getLastRequest()),
+					// 'response_size' => strlen($this->soap_connection->soapClient->__getLastResponse()),
 					'source' => 'SOAP',
 				];
 				call_user_func($this->exec_curl_log_callback, $data);
@@ -557,7 +560,7 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		$success_count = 0;
 		$errors = [];
 		foreach ($rsp as $curr_record) {
-			if ( ! $curr_record->success) {
+			if ( ! $curr_record->isSuccess()) {
 				$errors[] = array('msg' => $curr_record->errors);
 			} else {
 				$success_count++;
@@ -607,56 +610,28 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		if (is_callable($this->exec_curl_log_callback)) {
 			$starttime = microtime(true);
 		}
-		$response = $this->soap_connection->query($query);
+
+		$results = $this->soap_connection->query($query);
 		if (is_callable($this->exec_curl_log_callback)) {
 			$data = [
 				'url' => 'query : '. $query,
 				// 'type' => null,
 				'duration' => round(microtime(true) - $starttime, 3),
 				// 'http_code' => null,
-				'request_size' => strlen($this->soap_connection->getLastRequest()),
-				'response_size' => strlen($this->soap_connection->getLastResponse()),
+				// 'request_size' => strlen($this->soap_connection->soapClient->__getLastRequest()),
+				// 'response_size' => strlen($this->soap_connection->soapClient->__getLastResponse()),
 				'source' => 'SOAP',
 			];
 			call_user_func($this->exec_curl_log_callback, $data);
 		}
 
 		$existing = array();
-		foreach ($response->records as $record) {
+		foreach ($results as $record) {  //the iterator automatically do additional calls to fetch all records when the total is more than 2000
 			if (is_numeric($record->{$sf_primkey})) {  //don't touch records that don't have a ShareHim personID
 				$existing[$record->{$sf_primkey}] = array(
-					'our_last_modified' => ($our_timestamp_timezone ? datetime::change_timestamp_timezone($record->$sf_lastmodified, 'UTC', $our_timestamp_timezone) : $record->$sf_lastmodified),
+					'our_last_modified' => ($our_timestamp_timezone != 'system' && $our_timestamp_timezone != date_default_timezone_get() ? datetime::change_timestamp_timezone($record->$sf_lastmodified->format('Y-m-d H:i:s'), date_default_timezone_get(), $our_timestamp_timezone) : $record->$sf_lastmodified->format('Y-m-d H:i:s')),   //get the timestamp in our own timezone (OBS!! Phpforce\SoapClient automatically converts timestamp to the system timezone!)
 					'salesforce_id' => $record->Id,
 				);
-			}
-		}
-
-		// They return max 2000 records at a time, so call queryMore() until we got it all
-		while ($response->done != true) {
-			if (is_callable($this->exec_curl_log_callback)) {
-				$starttime = microtime(true);
-			}
-			$response = $this->soap_connection->queryMore($response->queryLocator);   //docs: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_calls_querymore.htm
-			if (is_callable($this->exec_curl_log_callback)) {
-				$data = [
-					'url' => 'queryMore',
-					// 'type' => null,
-					'duration' => round(microtime(true) - $starttime, 3),
-					// 'http_code' => null,
-					'request_size' => strlen($this->soap_connection->getLastRequest()),
-					'response_size' => strlen($this->soap_connection->getLastResponse()),
-					'source' => 'SOAP',
-				];
-				call_user_func($this->exec_curl_log_callback, $data);
-			}
-
-			foreach ($response->records as $record) {
-				if (is_numeric($record->{$sf_primkey})) {  //don't touch records that don't have a ShareHim personID
-					$existing[$record->{$sf_primkey}] = array(
-						'our_last_modified' => ($our_timestamp_timezone ? datetime::change_timestamp_timezone($record->$sf_lastmodified, 'UTC', $our_timestamp_timezone) : $record->$sf_lastmodified),
-						'salesforce_id' => $record->Id,
-					);
-				}
 			}
 		}
 
@@ -722,10 +697,10 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 			- 'conversion' (opt.) : method of how to convert our value to a Salesforce valid value. Possible options:
 				- 'null_if_empty_string' : convert empty string ("") to NULL, otherwise return original value
 				- 'date_to_checkbox' : convert a timestamp to a checkbox value in Salesforce
-				- 'date_to_utc' : convert timestamp field from our timezone to UTC ('timezone' must then be set)
+				- 'date_to_iso8601' : convert timestamp field from our timezone to UTC ('timezone' must then be set)
 				- a callback function that receives one argument with the record in question and returns the value to be set in Salesforce
 					- to skip the record entirely return the string '__dont_sync_to_salesforce'
-			- 'timezone' : PHP timezone value of this field (used by conversion=date_to_utc)
+			- 'timezone' : PHP timezone value of this field or 'system' to use server timezone (used by conversion=date_to_iso8601)
 			- 'no_update' : set this on fields that are foreign keys to not update it's value and cause an error in Salesforce
 		- $db_record : associative array with our record, eg.: array('legal_firstname' => 'Allan', 'legal_lastname' => 'Jensen')
 		OUTPUT:
@@ -750,8 +725,16 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 			$value = ($db_record[ $field_cfg['our_field'] ] ? true : false);
 		} elseif ($field_cfg['conversion'] == 'date_to_checkbox') {
 			$value = ($db_record[ $field_cfg['our_field'] ] ? true : false);
-		} elseif ($field_cfg['conversion'] == 'date_to_utc') {
-			$value = datetime::change_timestamp_timezone($db_record[ $field_cfg['our_field'] ], $field_cfg['timezone'], 'UTC', 'c');
+		} elseif ($field_cfg['conversion'] == 'date_to_iso8601') {
+			$value = $db_record[ $field_cfg['our_field'] ];
+
+			// OBS!! Phpforce\SoapClient automatically convert timestamps to the system timezone!
+			if ($field_cfg['timezone'] && $field_cfg['timezone'] != 'system' && $field_cfg['timezone'] != date_default_timezone_get()) {
+				$value = datetime::change_timestamp_timezone($value, $field_cfg['timezone'], date_default_timezone_get(), 'c');
+			} else {
+				// only convert to ISO-8601
+				$value = date(DATE_ATOM, strtotime($value));  // DATE_ATOM = 'c'
+			}
 		} elseif ($field_cfg['fixed_value']) {
 			$value = $field_cfg['fixed_value'];
 		} else {
