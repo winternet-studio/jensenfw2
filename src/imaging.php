@@ -158,6 +158,7 @@ class imaging {
 			- 'quality' : set output quality. Has different meaning depending on image type:
 				- jpg (0-99) : amount of compression resulting in different file sizes and image qualities. Default 90
 				- png (0-9)  : amount of compression resulting in different file sizes and amount of time required (png is always lossless). Default 9
+			- 'adj_brightness' : adjust image brightness. Values range from -255 to 255. Sometimes needed when resizing to avoid image looking pale.
 			- 'src_x' : according to imagecopyresampled()
 			- 'src_y' : according to imagecopyresampled()
 		OUTPUT:
@@ -225,6 +226,12 @@ class imaging {
 			$result = imagecopyresampled($img_dst, $img_src, 0, 0, $options['src_x'], $options['src_y'], $new_width, $new_height, $curr_width, $curr_height);
 			if ($result == false) {
 				$err_msg[] = 'Failed to create destination image.';
+			}
+		}
+
+		if (count($err_msg) == 0) {
+			if ($options['adj_brightness']) {
+				imagefilter($img_dst, IMG_FILTER_BRIGHTNESS, $options['adj_brightness']);
 			}
 		}
 
