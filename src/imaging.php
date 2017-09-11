@@ -158,7 +158,7 @@ class imaging {
 			- 'quality' : set output quality. Has different meaning depending on image type:
 				- jpg (0-99) : amount of compression resulting in different file sizes and image qualities. Default 90
 				- png (0-9)  : amount of compression resulting in different file sizes and amount of time required (png is always lossless). Default 9
-			- 'adj_brightness' : adjust image brightness. Values range from -255 to 255. Sometimes needed when resizing to avoid image looking pale.
+			- 'fix_gamma' (boolean) : fix gamma issue in GD2 when resizing (see https://web.archive.org/web/20120208120928/http://www.4p8.com/eric.brasseur/gamma.html#PHP)
 			- 'src_x' : according to imagecopyresampled()
 			- 'src_y' : according to imagecopyresampled()
 		OUTPUT:
@@ -230,8 +230,8 @@ class imaging {
 		}
 
 		if (count($err_msg) == 0) {
-			if ($options['adj_brightness']) {
-				imagefilter($img_dst, IMG_FILTER_BRIGHTNESS, $options['adj_brightness']);
+			if ($options['fix_gamma']) {
+				imagegammacorrect($img_dst, 2.2, 1.0);  //see https://web.archive.org/web/20120208120928/http://www.4p8.com/eric.brasseur/gamma.html#PHP
 			}
 		}
 
