@@ -542,11 +542,47 @@ class filesystem {
 		}
 	}
 
+	public static function get_mime_type($filepath) {
+		/*
+		DESCRIPTION:
+		- get the MIME type of a file by analyzing its contents
+		- works only on Linux
+		INPUT:
+		- $filepath : path to file
+		OUTPUT:
+		- associative array with keys 'mimetype' and 'charset' : found the mime type
+		- 'unknown' : don't know the mime type
+		*/
+		if (!file_exists($filepath)) {
+			throw new \Exception('File to get MIME type for does not exist.');
+		}
+
+		$output = []; $exitcode = null;
+		exec('file -ib '. $filepath, $output, $exitcode);
+
+		if ($exitcode > 0) {
+			return 'unknown';
+		} else {
+			list($mimetype, $charset) = explode(';', $output[0]);
+			$mimetype = trim($mimetype);
+			if (!$mimetype) {
+				return 'unknown';
+			} else {
+				return [
+					'mimetype' => trim($mimetype),
+					'charset' => trim(str_replace('charset=', '', $charset)),
+				];
+			}
+		}
+	}
+
 	public static function is_signature_valid($filepath, $extension = false) {
 		/*
 		DESCRIPTION:
 		- check if a file matches its extension by checking its header bytes
-		- https://en.wikipedia.org/wiki/List_of_file_signatures
+		- sources:
+			- https://en.wikipedia.org/wiki/List_of_file_signatures
+			- http://www.garykessler.net/library/file_sigs.html
 		INPUT:
 		- $filepath (string) : path to file
 		- $extension (string) (opt.) : extension of the file. If not provided it is auto-detected.
@@ -589,6 +625,12 @@ class filesystem {
 			break;
 		case 'pdf':
 			$headers = array([37, 80, 68, 70]);  //hex: 25 50 44 46
+			break;
+		case 'otf':
+			$headers = array([79, 84, 84, 79, 0]);  //hex: 4F 54 54 4F 00
+			break;
+		case 'ttf':
+			$headers = array([0, 1, 0, 0]);  //hex: 00 01 00 00 00
 			break;
 		case 'txt':
 		case 'js':
