@@ -556,6 +556,9 @@ class filesystem {
 		if (!file_exists($filepath)) {
 			throw new \Exception('File to get MIME type for does not exist.');
 		}
+		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+			throw new \Exception('The function get_mime_type() is not yet supported on Windows.');
+		}
 
 		$output = []; $exitcode = null;
 		exec('file -ib '. $filepath, $output, $exitcode);
