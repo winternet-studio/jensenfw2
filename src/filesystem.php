@@ -406,69 +406,124 @@ class filesystem {
 		return true;
 	}
 
-	public static function make_valid_filename($input, $skip_space_conversion = false) {
+	public static function make_valid_filename($input, $options = array() ) {
 		/*
 		DESCRIPTION:
 		- use this function to convert any string to a valid file OR directory name, with special characters removed
 		- less restrictive than make_valid_filename_strict()
 		INPUT:
-		- $skip_space_conversion (true|false) : set to true if spaces should NOT be converted to underscores (_)
+		- $options : associative array with any of these keys:
+			- 'skip_space_conversion' (boolean) : set to true if spaces should NOT be converted to underscores (_)
 		*/
 
 		// Replace spaces
-		if (!$skip_space_conversion) {
+		if (!$options['skip_space_conversion']) {
 			$input = str_replace(' ', '_', $input);
 		}
 
 		// Remove invalid and odd characters
 		$invalid_chars = array('\\', '/', ':', '*', '?', '"', '<', '>', '|',
-			'&', '%', '¤', '#', '!', '§', '½', ';', '=', '`', '´', '^', '+'); //first row is directly invalid, the rest I just don't want in a file name
+			'&', '%', '¤', '#', '!', '§', '½', ';', '=', '`', '´', '^', '+');  //first row is truly invalid, the rest just some we don't want
 		$input = str_replace($invalid_chars, '', $input);
 
 		return $input;
 	}
 
-	public static function make_valid_filename_strict($input, $skip_space_conversion = false) {
+	public static function make_valid_filename_strict($input, $options = array() ) {
 		/*
 		DESCRIPTION:
 		- use this function to convert any string to a valid file OR directory name, with special characters removed
 		- very strict regarding which characters are allowed
-		- extension is not touched
 		INPUT:
-		- $skip_space_conversion (true|false) : set to true if spaces should NOT be converted to underscores (_)
+		- $options : associative array with any of these keys:
+			- 'skip_space_conversion' (boolean) : set to true if spaces should NOT be converted to underscores (_)
+			- 'skip_special_char_conversion' (boolean) : set to true if special characters should NOT be converted
+			- 'skip_removing_nonascii' (boolean) : set to true if unknown non-ASCII characters should NOT be removed
+			- 'allow_characters' (string) : string with characters that should be allowed even though they are listed below
+			- 'assume_filename_only' (boolean) : set to true assuming that $input is only a file name and not a full path
 		*/
+		$options['allow_characters'] = (string) $options['allow_characters'];
 
 		// Get basename
 		$fileinfo = pathinfo($input);
-		$extension = $fileinfo['extension'];
-		$basename = str_replace('.'.$extension, '', $fileinfo['basename']);  //my basename is NOT equal to PHP basename - I don't include the extension
+		if (!$options['assume_filename_only']) {
+			$extension = $fileinfo['extension'];
+			$basename = str_replace('.'.$extension, '', $fileinfo['basename']);  //my basename is NOT equal to PHP basename - I don't include the extension
+		} else {
+			$extension = $fileinfo['extension'];
+			$basename = str_replace('.'.$extension, '', $input);
+		}
 
 		// Replace spaces
-		if (!$skip_space_conversion) {
+		if (!$options['skip_space_conversion']) {
 			$basename = str_replace(' ', '_', $basename);
 		}
 
 		// Replace special characters
 		$search  = array('æ' , 'Æ' , 'ø' , 'Ø' , 'å' , 'Å' , 'à', 'á', 'â', 'ã', 'ä', 'è', 'é', 'ê', 'ë', 'ì', 'í', 'î', 'ï', 'ò', 'ó', 'ô', 'õ', 'ö', 'ù', 'ú', 'û', 'ü', 'ý', 'À', 'Á', 'Â', 'Ã', 'Ä', 'È', 'É', 'Ê', 'Ë', 'Ì', 'Í', 'Î', 'Ï', 'Ò', 'Ó', 'Ô', 'Õ', 'Ö', 'Ù', 'Ú', 'Û', 'Ü', 'Ý', 'ß' , '');
 		$replace = array('ae', 'AE', 'oe', 'OE', 'aa', 'AA', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'i', 'i', 'i', 'i', 'o', 'o', 'o', 'o', 'o', 'u', 'u', 'u', 'u', 'y', 'A', 'A', 'A', 'A', 'A', 'E', 'E', 'E', 'E', 'I', 'I', 'I', 'I', 'O', 'O', 'O', 'O', 'O', 'U', 'U', 'U', 'U', 'Y', 'ss', "'");
-		$basename = str_replace($search, $replace, $basename);
-		$extension = str_replace($search, $replace, $extension);
+		if (!$options['skip_special_char_conversion']) {
+			$basename = str_replace($search, $replace, $basename);
+			$extension = str_replace($search, $replace, $extension);
+
+			$excl_regex = '';
+		} else {
+			$excl_regex = implode('', $search);
+		}
 
 		// Remove invalid and odd characters
 		$invalid_chars = array('\\', '/', ':', '*', '?', '"', '<', '>', '|',
-			'.', ',', '&', '%', '¤', '#', '!', '§', '½', ';', '(', ')', '=', '`', '´', '^', '+', '', ''); //de første er direkte ugyldige, resten er bare nogen jeg ikke vil have med
+			'.', ',', '&', '%', '¤', '#', '!', '§', '½', ';', '(', ')', '=', '`', '´', '^', '+');  //first row is truly invalid, the rest just some we don't want
+
+		if ($options['allow_characters']) {
+			for ($i = 0; $i < mb_strlen($options['allow_characters']); $i++) {
+				$key = array_search(mb_substr($options['allow_characters'], $i, 1), $invalid_chars);
+				if ($key !== false) {
+					unset($invalid_chars[$key]);
+				}
+			}
+		}
+
 		$basename = str_replace($invalid_chars, '', $basename);
 		$extension = str_replace($invalid_chars, '', $extension);
 
-		// Remove any other non-ASCII characters
-		$basename = preg_replace('/[^\x20-\x7E]/'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''),'', $basename);
-		$extension = preg_replace('/[^\x20-\x7E]/'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''),'', $extension);
+		// Remove any other unknown non-ASCII characters
+		if (!$options['skip_removing_nonascii']) {
+			$basename = preg_replace('/[^\x20-\x7E'. str_replace('/', "\\/", preg_quote($excl_regex . $options['allow_characters'])) .']/'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''),'', $basename);
+			$extension = preg_replace('/[^\x20-\x7E'. str_replace('/', "\\/", preg_quote($excl_regex . $options['allow_characters'])) .']/'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''),'', $extension);
+		}
 
 		if ($extension) {
 			return $basename .'.'. $extension;
 		} else {
 			return $basename;
 		}
+	}
+
+	public static function is_valid_filepath($filepath, $options = array() ) {
+		/*
+		DESCRIPTION:
+		- check if a full path to a file is valid
+		- eg.: /var/www/myfile.php  or c:\www-root\document.pdf
+		INPUT:
+		- $options : associative array with any of these keys:
+			- 'valid_folder_separators' (string) : list of valid folder separator characters. Default is slash and backslash (\ and /)
+			- 'allow_characters' (string) : other allowed characters in the folder and file names that would normally be disallowed
+			- 'skip_special_char_conversion' (boolean) : set to true to allow special characters according to make_valid_filename_strict() in the path
+		OUTPUT:
+		- boolean
+		*/
+		$defaults = [
+			'valid_folder_separators' => "\\/",
+			'allow_characters' => '',
+			'skip_special_char_conversion' => false,
+		];
+		$options = array_merge($defaults, $options);
+
+		$filepath = preg_replace("/^([a-z]):([\\/])/i", '$1$2', $filepath);  //convert c:/folder/... to c/folder/...
+
+		$clean = self::make_valid_filename_strict($filepath, ['skip_space_conversion' => true, 'skip_special_char_conversion' => $options['skip_special_char_conversion'], 'allow_characters' => $options['allow_characters'] . $options['valid_folder_separators'], 'assume_filename_only' => true]);
+		return ($clean === $filepath ? true : false);
 	}
 
 	public static function make_unique_filename($filename, $basefolder, $is_dir = false, $forcedigits = false, $digits = 2) {
@@ -553,15 +608,18 @@ class filesystem {
 		- associative array with keys 'mimetype' and 'charset' : found the mime type
 		- 'unknown' : don't know the mime type
 		*/
-		if (!file_exists($filepath)) {
-			throw new \Exception('File to get MIME type for does not exist.');
-		}
 		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 			throw new \Exception('The function get_mime_type() is not yet supported on Windows.');
 		}
+		if (!file_exists($filepath)) {  //crucial for security!
+			throw new \Exception('File to get MIME type for does not exist.');
+		}
+		if (!self::is_valid_filepath($filepath)) {  //crucial for security!
+			throw new \Exception('File path contains invalid characters.');
+		}
 
 		$output = []; $exitcode = null;
-		exec('file -ib '. $filepath, $output, $exitcode);
+		exec('file -ib '. str_replace(' ', "\\ ", $filepath), $output, $exitcode);
 
 		if ($exitcode > 0) {
 			return 'unknown';
