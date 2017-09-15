@@ -413,12 +413,17 @@ class filesystem {
 		- less restrictive than make_valid_filename_strict()
 		INPUT:
 		- $options : associative array with any of these keys:
-			- 'skip_space_conversion' (boolean) : set to true if spaces should NOT be converted to underscores (_)
+			- 'replace_space_with' (string) : set character to replace spaces with instead of underscores (_)
+			- 'skip_space_conversion' (boolean) : set to true if spaces should NOT be converted
 		*/
 
 		// Replace spaces
 		if (!$options['skip_space_conversion']) {
-			$input = str_replace(' ', '_', $input);
+			if ($options['replace_space_with']) {
+				$input = str_replace(' ', $options['replace_space_with'], $input);
+			} else {
+				$input = str_replace(' ', '_', $input);
+			}
 		}
 
 		// Remove invalid and odd characters
@@ -436,7 +441,8 @@ class filesystem {
 		- very strict regarding which characters are allowed
 		INPUT:
 		- $options : associative array with any of these keys:
-			- 'skip_space_conversion' (boolean) : set to true if spaces should NOT be converted to underscores (_)
+			- 'replace_space_with' (string) : set character to replace spaces with instead of underscores (_)
+			- 'skip_space_conversion' (boolean) : set to true if spaces should NOT be converted
 			- 'skip_special_char_conversion' (boolean) : set to true if special characters should NOT be converted
 			- 'skip_removing_nonascii' (boolean) : set to true if unknown non-ASCII characters should NOT be removed
 			- 'allow_characters' (string) : string with characters that should be allowed even though they are listed below
@@ -456,7 +462,11 @@ class filesystem {
 
 		// Replace spaces
 		if (!$options['skip_space_conversion']) {
-			$basename = str_replace(' ', '_', $basename);
+			if ($options['replace_space_with']) {
+				$basename = str_replace(' ', $options['replace_space_with'], $basename);
+			} else {
+				$basename = str_replace(' ', '_', $basename);
+			}
 		}
 
 		// Replace special characters
