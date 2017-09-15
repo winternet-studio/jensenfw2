@@ -528,7 +528,7 @@ class filesystem {
 			'allow_characters' => '',
 			'skip_special_char_conversion' => false,
 		];
-		$options = array_merge($defaults, $options);
+		$options = array_merge($defaults, (array) $options);
 
 		$filepath = preg_replace("/^([a-z]):([\\/])/i", '$1$2', $filepath);  //convert c:/folder/... to c/folder/...
 
@@ -632,7 +632,7 @@ class filesystem {
 		exec('file -ib '. str_replace(' ', "\\ ", $filepath), $output, $exitcode);
 
 		if ($exitcode > 0) {
-			return 'unknown';
+			throw new \Exception('Failed to check MIME type of file.', ['File' => $filepath, 'Exit code' => $exitcode, 'Output' => $output]);
 		} else {
 			list($mimetype, $charset) = explode(';', $output[0]);
 			$mimetype = trim($mimetype);
@@ -647,26 +647,34 @@ class filesystem {
 		}
 	}
 
-	public static function is_signature_valid($filepath, $extension = false) {
+	public static function is_signature_valid($filepath, $ext_or_mime = false, $options = []) {
 		/*
 		DESCRIPTION:
-		- check if a file matches its extension by checking its header bytes
+		- check if a file matches its extension or MIME type by checking its header bytes
 		- sources:
 			- https://en.wikipedia.org/wiki/List_of_file_signatures
 			- http://www.garykessler.net/library/file_sigs.html
+			- https://www.sitepoint.com/mime-types-complete-list/
 		INPUT:
 		- $filepath (string) : path to file
-		- $extension (string) (opt.) : extension of the file. If not provided it is auto-detected.
+		- $ext_or_mime (string) (opt.) : extension of the file, or MIME type. If not provided it is auto-detected.
+			- if MIME type was determined by reading the file itself there is no reason to using this method - unless you are cynical ;)
 		OUTPUT:
 		- true : valid
 		- false : not valid
-		- 'unknown' : don't know the file type's signature
+		- 'unknown' : don't know the file type's or MIME type's signature
 		- 'nosig' : has no signature
 		*/
-		if (!$extension) {
-			$extension = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
+		$defaults = [
+			'is_mime' => false,
+		];
+		$options = array_merge($defaults, (array) $options);
+
+		if (!$ext_or_mime) {
+			$ext_or_mime = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
+			$options['is_mime'] = false;
 		} else {
-			$extension = strtolower($extension);
+			$ext_or_mime = strtolower($ext_or_mime);
 		}
 
 		// NOTES:
@@ -675,39 +683,42 @@ class filesystem {
 		// - if a given byte in the sequence is not part of the signature use '*' to indicate that any byte is allowed
 
 		$headers = null;
-		switch ($extension) {
-		case 'jpg':
-		case 'jpeg':
+
+		if ((!$options['is_mime'] && in_array($ext_or_mime, ['jpg', 'jpeg'], true)) || ($options['is_mime'] && in_array($ext_or_mime, ['image/jpeg', 'image/pjpeg'], true))) {
+
 			$headers = array(
 				[255, 216, 255, 219, '*', '*', '*', '*', '*', '*', '*', '*'],  //JPEG raw - hex: FF D8 FF DB
 				[255, 216, 255, 224, '*', '*',  74,  70,  73,  70,   0,   1],  //JFIF - hex: FF D8 FF E0 nn nn 4A 46 49 46 00 01
 				[255, 216, 255, 225, '*', '*',  69, 120, 105, 102,   0,   0],  //Exif - hex: FF D8 FF E1 nn nn 45 78 69 66 00 00
 			);
-			break;
-		case 'png':
+
+		} elseif ((!$options['is_mime'] && $ext_or_mime === 'png') || ($options['is_mime'] && $ext_or_mime === 'image/png')) {
+
 			$headers = array([137, 80, 78, 71, 13, 10, 26, 10]);  //hex: 89 50 4E 47 0D 0A 1A 0A
-			break;
-		case 'tif':
-		case 'tiff':
+
+		} elseif ((!$options['is_mime'] && in_array($ext_or_mime, ['tif', 'tiff'], true)) || ($options['is_mime'] && in_array($ext_or_mime, ['image/tiff', 'image/x-tiff'], true))) {
+
 			$headers = array(
 				[73, 73, 42, 0],  //little endian - hex: 49 49 2A 00
 				[77, 77, 0, 42],  //big endian    - hex: 4D 4D 00 2A
 			);
-			break;
-		case 'pdf':
+
+		} elseif ((!$options['is_mime'] && $ext_or_mime === 'pdf') || ($options['is_mime'] && $ext_or_mime === 'application/pdf')) {
+
 			$headers = array([37, 80, 68, 70]);  //hex: 25 50 44 46
-			break;
-		case 'otf':
+
+		} elseif ((!$options['is_mime'] && $ext_or_mime === 'otf') || ($options['is_mime'] && $ext_or_mime === 'application/vnd.ms-opentype')) {
+
 			$headers = array([79, 84, 84, 79, 0]);  //hex: 4F 54 54 4F 00
-			break;
-		case 'ttf':
+
+		} elseif ((!$options['is_mime'] && $ext_or_mime === 'ttf') || ($options['is_mime'] && $ext_or_mime === 'application/vnd.ms-opentype')) {
+
 			$headers = array([0, 1, 0, 0]);  //hex: 00 01 00 00 00
-			break;
-		case 'txt':
-		case 'js':
-		case 'css':
+
+		} elseif ((!$options['is_mime'] && in_array($ext_or_mime, ['txt', 'js', 'css'], true)) || ($options['is_mime'] && $ext_or_mime === 'text/plain')) {
+
 			return 'nosig';
-			break;
+
 		}
 
 
