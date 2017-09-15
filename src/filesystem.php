@@ -510,6 +510,18 @@ class filesystem {
 		}
 	}
 
+	public static function is_valid_filename($filename) {
+		/*
+		DESCRIPTION:
+		- check if a file name is strictly valid
+		INPUT:
+		- $filename
+		OUTPUT:
+		- boolean
+		*/
+		return (preg_match("/[". preg_quote("\\/:*?\"<>|") ."]/", $filename) ? false : true);
+	}
+
 	public static function is_valid_filepath($filepath, $options = array() ) {
 		/*
 		DESCRIPTION:
