@@ -519,7 +519,7 @@ class filesystem {
 		OUTPUT:
 		- boolean
 		*/
-		return (preg_match("/[". preg_quote("\\/:*?\"<>|") ."]/", $filename) ? false : true);
+		return (preg_match("#[". preg_quote("\\/:*?\"<>|") ."]#", $filename) ? false : true);
 	}
 
 	public static function is_valid_filepath($filepath, $options = array() ) {
