@@ -544,7 +544,7 @@ class datetime {
 		- $todate   : date in Unix or MySQL format
 		- $options : associative array with any combination of these keys:
 			- '2digit_year' : set true to only show 2 digits in the year(s)
-			- 'noyear' : set true to don't show year at all
+			- 'no_year' : set true to don't show year at all
 			- 'always_abbrev_months' : set true to don't spell out fully the short months March, April, May, June and July
 			- 'never_abbrev_months' : set true to always spell out fully the month names
 			- 'input_timezone' : timezone of input when it is in MySQL format and it is not UTC
@@ -558,7 +558,7 @@ class datetime {
 		if (is_string($options)) {
 			$newoptions = [];
 			if (strpos($options, '2digit_year') !== false) $newoptions['2digit_year'] = true;
-			if (strpos($options, 'noyear') !== false) $newoptions['noyear'] = true;
+			if (strpos($options, 'noyear') !== false) $newoptions['no_year'] = true;
 			if (strpos($options, 'always_abbrev_months') !== false) $newoptions['always_abbrev_months'] = true;
 			if (strpos($options, 'never_abbrev_months') !== false) $newoptions['never_abbrev_months'] = true;
 			$options = $newoptions;
@@ -594,7 +594,7 @@ class datetime {
 			}
 		}
 
-		$yrmode = ($options['2digit_year'] ? '2dig' : ($options['noyear'] ? 'noyr' : '4dig'));
+		$yrmode = ($options['2digit_year'] ? '2dig' : ($options['no_year'] ? 'noyr' : '4dig'));
 
 		if ($options['never_abbrev_months']) {
 			$frommonth = $fromdate->format('F');
