@@ -535,66 +535,102 @@ class datetime {
 		return implode(', ', $output);
 	}
 
-	public static function format_timeperiod($fromdate, $todate, $flags = false) {
+	public static function format_timeperiod($fromdate, $todate, $options = []) {
 		/*
 		DESCRIPTION:
 		- formats a time period nicely
 		INPUT:
 		- $fromdate : date in Unix or MySQL format
 		- $todate   : date in Unix or MySQL format
-		- $flags : string with any combination of these flags:
-			- '2digit_year' : only show 2 digits in the year(s)
-			- 'noyear' : don't show year at all
-			- 'always_abbrev_months' : don't spell out fully the short months March, April, May, June and July
-			- 'never_abbrev_months' : always spell out fully the month names
+		- $options : associative array with any combination of these keys:
+			- '2digit_year' : set true to only show 2 digits in the year(s)
+			- 'noyear' : set true to don't show year at all
+			- 'always_abbrev_months' : set true to don't spell out fully the short months March, April, May, June and July
+			- 'never_abbrev_months' : set true to always spell out fully the month names
+			- 'input_timezone' : timezone of input when it is in MySQL format and it is not UTC
+			- 'output_timezone' : timezone to use for the output. Defaults to system timezone.
 		OUTPUT:
 		- string
 		- eg. "Dec. 3-5, 2010" or "Nov. 30 - Dec. 4, 2010" or "Dec. 27, 2010 - Jan. 2, 2011"
 		*/
-		if (!is_numeric($fromdate)) {
-			$fromdate = strtotime($fromdate);
-		}
-		if (!is_numeric($todate)) {
-			$todate = strtotime($todate);
-		}
-		$flags = (string) $flags;
-		$yrmode = (strpos($flags, '2digit_year') !== false ? '2dig' : (strpos($flags, 'noyear') !== false ? 'noyr' : '4dig'));
 
-		if (strpos($flags, 'never_abbrev_months') !== false) {
-			$frommonth = date('F', $fromdate);
-			$tomonth = date('F', $todate);
-		} elseif (strpos($flags, 'always_abbrev_months') === false) {
-			$shortmonths = array(3, 4, 5, 6, 7);
-			if (in_array(date('n', $fromdate), $shortmonths)) {
-				$frommonth = date('F', $fromdate);
+		// Backward compatibility to when $options should be a string
+		if (is_string($options)) {
+			$newoptions = [];
+			if (strpos($options, '2digit_year') !== false) $newoptions['2digit_year'] = true;
+			if (strpos($options, 'noyear') !== false) $newoptions['noyear'] = true;
+			if (strpos($options, 'always_abbrev_months') !== false) $newoptions['always_abbrev_months'] = true;
+			if (strpos($options, 'never_abbrev_months') !== false) $newoptions['never_abbrev_months'] = true;
+			$options = $newoptions;
+		}
+
+		if (!is_numeric($fromdate)) {
+			if ($options['input_timezone']) {
+				$fromdate = new \DateTime($fromdate, new \DateTimeZone($options['input_timezone']));
 			} else {
-				$frommonth = date('M.', $fromdate);
-			}
-			if (in_array(date('n', $todate), $shortmonths)) {
-				$tomonth = date('F', $todate);
-			} else {
-				$tomonth = date('M.', $todate);
+				$fromdate = new \DateTime($fromdate, new \DateTimeZone('UTC'));
 			}
 		} else {
-			$frommonth = date('M.', $fromdate);
-			$tomonth = date('M.', $todate);
+			$fromdate = new \DateTime($fromdate);
+		}
+		if (!is_numeric($todate)) {
+			if ($options['input_timezone']) {
+				$todate = new \DateTime($todate, new \DateTimeZone($options['input_timezone']));
+			} else {
+				$todate = new \DateTime($todate, new \DateTimeZone('UTC'));
+			}
+		} else {
+			$todate = new \DateTime($todate);
+		}
+
+		if ($options['output_timezone']) {
+			$fromdate->setTimezone(new \DateTimeZone($options['output_timezone']));
+			$todate->setTimezone(new \DateTimeZone($options['output_timezone']));
+		} else {
+			// in this case only mess with timezone if an *input* timezone was specified, otherwise leave everything in the same timezone to "ignore" timezone handling
+			if ($options['input_timezone']) {
+				$fromdate->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+				$todate->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+			}
+		}
+
+		$yrmode = ($options['2digit_year'] ? '2dig' : ($options['noyear'] ? 'noyr' : '4dig'));
+
+		if ($options['never_abbrev_months']) {
+			$frommonth = $fromdate->format('F');
+			$tomonth = $todate->format('F');
+		} elseif ($options['always_abbrev_months']) {
+			$shortmonths = array(3, 4, 5, 6, 7);
+			if (in_array($fromdate->format('n'), $shortmonths)) {
+				$frommonth = $fromdate->format('F');
+			} else {
+				$frommonth = $fromdate->format('M.');
+			}
+			if (in_array($todate->format('n'), $shortmonths)) {
+				$tomonth = $todate->format('F');
+			} else {
+				$tomonth = $todate->format('M.');
+			}
+		} else {
+			$frommonth = $fromdate->format('M.');
+			$tomonth = $todate->format('M.');
 		}
 
 		if ($yrmode !== 'noyr') {
-			$fromyear = date('Y', $fromdate);
-			$toyear = date('Y', $todate);
+			$fromyear = $fromdate->format('Y');
+			$toyear = $todate->format('Y');
 		} else {
 			$fromyear = $toyear = '';
 		}
-		$output = $frommonth .' '. date('j', $fromdate);
+		$output = $frommonth .' '. $fromdate->format('j');
 		if ($frommonth == $tomonth && $fromyear == $toyear) {
-			$output .= '-'. date('j', $todate);
+			$output .= '-'. $todate->format('j');
 		} elseif ($fromyear == $toyear) {
 			//months are not the same
-			$output .= ' - '. $tomonth .' '. date('j', $todate);
+			$output .= ' - '. $tomonth .' '. $todate->format('j');
 		} else {
 			//years are not the same
-			$output .= ', '. ($yrmode == '2dig' ? "'". substr($fromyear, 2) : $fromyear) .' - '. $tomonth .' '. date('j', $todate);
+			$output .= ', '. ($yrmode == '2dig' ? "'". substr($fromyear, 2) : $fromyear) .' - '. $tomonth .' '. $todate->format('j');
 		}
 		if ($yrmode != 'noyr') {
 			$output .= ', '. ($yrmode == '2dig' ? "'". substr($toyear, 2) : $toyear);
