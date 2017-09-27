@@ -395,7 +395,24 @@ class imaging {
 		}
 
 		if (file_exists($image_path)) {
+
+			/*
+			On Allan's developer machine (Windows 10) the Imagick module crashes when file name contains special letters like æøå,
+			even when I downloaded the latest php_imagick.dll from https://pecl.php.net/package/imagick/3.4.3/windows (php_imagick-3.4.3-7.0-ts-vc14-x64.zip)
+			So let Imagick do the work on a temporary file instead.
+			*/
+			if (PHP_OS == 'WINNT') {
+				$temp_file = rand(10000000, 99999999) . microtime(true);
+				copy($image_path, $temp_file);
+				$image_path = $temp_file;
+			}
+
 			$img = new Imagick($image_path);
+
+			if (PHP_OS == 'WINNT') {
+				unlink($temp_file);
+			}
+
 		} else {
 			core::system_error('File to get colorspace for does not exist.', ['Image path' => $image_path]);
 		}
