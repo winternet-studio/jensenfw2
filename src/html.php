@@ -152,6 +152,7 @@ class html {
 			}
 		};
 
+		$html = preg_replace("/&(?![a-z#]+;)/", '&amp;', $html);  //otherwise failure on at least Windows, not sure about Linux
 		$dom = $html_to_obj('<div class="jfw_autoadded">'. $html .'</div>');  //class only added so that we have a reference to where it was set just in case it shows up anywhere! Normally it will just be removed by the DOM parsing function.
 
 		$process_array($dom, $the_output, $the_optlist);
