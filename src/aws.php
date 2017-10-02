@@ -2,19 +2,16 @@
 namespace winternet\jensenfw2;
 
 class aws {
+	/**
+	 * Calculate Amazon AWS ETag used on the S3 service
+	 *
+	 * @param string $filename : Path to file to check
+	 * @param integer $chunksize : Chunk size in Megabytes
+	 * @param string $expected : Verify calculated etag against this specified etag and return true or false instead
+	 *	- if you make chunksize negative (eg. -8 instead of 8) the function will guess the chunksize by checking all possible sizes given the number of parts mentioned in $expected
+	 * @return string|boolean : ETag, or boolean if $expected is set
+	 */
 	public static function calculate_etag($filename, $chunksize, $expected = false) {
-		/*
-		DESCRIPTION:
-		- calculate Amazon AWS ETag used on the S3 service
-		INPUT:
-		- $filename : path to file to check
-		- $chunksize : chunk size in Megabytes
-		- $expected : verify calculated etag against this specified etag and return true or false instead
-			- if you make chunksize negative (eg. -8 instead of 8) the function will guess the chunksize by checking all possible sizes given the number of parts mentioned in $expected
-		OUTPUT:
-		- ETag (string)
-		- or boolean true|false if $expected is set
-		*/
 		if ($chunksize < 0) {
 			$do_guess = true;
 			$chunksize = 0 - $chunksize;

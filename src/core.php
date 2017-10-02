@@ -66,15 +66,13 @@ class core {
 		return $cfg;
 	}
 
+	/**
+	 * Get the defaults for a given class, possibly modified by user configuration
+	 *
+	 * @param string $class_name : Name of class. It will be automatically prefixed with `\winternet\jensenfw2\` if is it not a fully qualified class name.
+	 * @return array : Associative array with the defaults
+	 */
 	public static function get_class_defaults($class_name, $get_var = null) {
-		/*
-		DESCRIPTION:
-		- get the defaults for a given class, possibly modified by user configuration
-		INPUT:
-		- $class_name : name of class. It will be automatically prefixed with '\winternet\jensenfw2\' if is it not a fully qualified class name.
-		OUTPUT:
-		- associative array with the defaults
-		*/
 		if (strpos($class_name, 'jensenfw2') === false) {
 			$class_name = "\\winternet\\jensenfw2\\". $class_name;
 		}
@@ -100,10 +98,17 @@ class core {
 
 	// TODO: make option to use Yii's database connection instead
 
+	/**
+	 * Require a database connection
+	 *
+	 * If not connected, try to connect.
+	 *
+	 * @param integer $serverID
+	 */
 	public static function require_database($serverID = 0) {
 		/*
 		DESCRIPTION:
-		- require a database connection. If not connected, try to connect.
+		- 
 		*/
 		$serverID = (int) $serverID;  //convert empty strings to 0
 		$server_id = ($serverID == 0 ? '' : $serverID);
@@ -125,25 +130,22 @@ class core {
 		}
 	}
 
+	/**
+	 * Pass-through function for running queries against the database (to have a single place where all queries go through)
+	 *
+	 * @param string|array $sql : SQL statement to execute
+	 *	- array:
+	 *		- first element is the SQL statement having position holders (?-marks) for each data element that is given in the rest of the array
+	 *			- example with basic use      : INSERT INTO mytable VALUE (?, ?, ?)
+	 *			- example with named positions: INSERT INTO mytable VALUE (?firstname, ?lastname, ?email)
+	 *		- all subsequent elements are each one piece of data that will be inserted into the SQL at the position holders with the first data element being inserted at the first ?-mark found and so on
+	 *			- the data will be escaped and put in quotes automatically
+	 *			- to use named positions the key for each data element must match exactly the name used in the SQL
+	 *	- to run the query on another server use the array method and make the first entry use key 'server_id' and it's value the ID of the server as defined in core config
+	 * @param string $err_msg : Error message to show to user if query fails
+	 * @return \mysqli_result : Output from mysqli_query() by reference. If output is used REMEMBER to assign like this: `$dbresource =& database_query()`
+	 */
 	public static function &database_query($sql, $err_msg = 'Communication with the database failed.', $varinfo = array(), $directives = 'AUTO' ) {
-		/*
-		DESCRIPTION:
-		- pass-through function for running queries against the database (to have a single place where all queries go through)
-		INPUT:
-		- $sql : string or array with SQL statement to execute
-			- array:
-				- first element is the SQL statement having position holders (?-marks) for each data element that is given in the rest of the array
-					- example with basic use      : INSERT INTO mytable VALUE (?, ?, ?)
-					- example with named positions: INSERT INTO mytable VALUE (?firstname, ?lastname, ?email)
-				- all subsequent elements are each one piece of data that will be inserted into the SQL at the position holders with the first data element being inserted at the first ?-mark found and so on
-					- the data will be escaped and put in quotes automatically
-					- to use named positions the key for each data element must match exactly the name used in the SQL
-			- to run the query on another server use the array method and make the first entry use key 'server_id' and it's value the ID of the server as defined in core config
-		- $err_msg : error message to show to user if query fails
-		OUTPUT:
-		- output from mysqli_query() by reference
-		- if output is used REMEMBER to assign like this: $dbresource =& database_query()
-		*/
 		if (!is_array($varinfo)) {
 			self::system_error('Configuration error. Extra information for error debugging is invalid.', array('Varinfo' => $varinfo) );
 		}
@@ -166,32 +168,30 @@ class core {
 		return $db_query;
 	}
 
+	/**
+	 * Execute a database query and return the result recordset in an associative array
+	 *
+	 * @param string|array $sql (req.) : String or array with SQL statement to execute (according to database_query() )
+	 * @param string $format (opt.) : The dataset has a certain format that output should be optimized to:
+	 *		- 'onerow' : result will only have one row and multiple column, and output will therefore only be "one-dimensional" (one array with keys corresponding to field names)
+	 *			- in case SQL statement would return multiple rows only the first row will be returned
+	 *		- 'onecolumn' : result will only have multiple rows but only one column, and output will be an array of those values (one array with no specific keys, only sequentially numeric index values)
+	 *			- in case SQL statement would return multiple columns only the first column will be returned
+	 *		- 'onevalue' : result will only have one row and one column, and output will just that specific value (no array) (empty array returned if SQL returned no data)
+	 *			- in case SQL statement would return multiple rows and/or columns only the value from the first row in the first column will be returned
+	 *			- in case no rows were found in database, an empty array is returned
+	 *		- 'multirow' or false : result has multiple rows and multiple columns
+	 *		- 'keyvalue' : result will be an associative array where first column is the key and the second column the value (additional columns will be ignored)
+	 *		- 'first_as_key' : result will be same as multirow but the key of the first level array will be the value of the first column (which won't be included in the second level array)
+	 *		- 'countonly' : only count how many records would be retrieved and that number would be returned (SELECT clause is replaced with COUNT(*). Function return number of records)
+	 *		- append ':both' to 'onerow' and 'multirow' to return both numeric and associative array (normally only associative is used)
+	 * @param string $err_msg (req.) : User-friendly error message to display if query fails (use only common language everybody understands)
+	 * @return mixed : Associative "two-dimensional" array, unless $format specifies differently:
+	 *	- for INSERT the ID of the new record is returned
+	 *	- for UPDATE, DELETE, DROP, etc. the number of affected rows is returned
+	 *	- for SELECT if no records were found, an empty array is returned
+	 */
 	public static function database_result($sql, $format = false, $err_msg = 'Communication with the database failed.', $varinfo = array(), $directives = 'AUTO' ) {
-		/*
-		DESCRIPTION:
-		- execute a database query and return the result recordset in an associative array
-		INPUT:
-		- $sql (req.) : string or array with SQL statement to execute (according to database_query() )
-		- $format (opt.) : the dataset has a certain format that output should be optimized to:
-			- 'onerow' : result will only have one row and multiple column, and output will therefore only be "one-dimensional" (one array with keys corresponding to field names)
-				- in case SQL statement would return multiple rows only the first row will be returned
-			- 'onecolumn' : result will only have multiple rows but only one column, and output will be an array of those values (one array with no specific keys, only sequentially numeric index values)
-				- in case SQL statement would return multiple columns only the first column will be returned
-			- 'onevalue' : result will only have one row and one column, and output will just that specific value (no array) (empty array returned if SQL returned no data)
-				- in case SQL statement would return multiple rows and/or columns only the value from the first row in the first column will be returned
-				- in case no rows were found in database, an empty array is returned
-			- 'multirow' or false : result has multiple rows and multiple columns
-			- 'keyvalue' : result will be an associative array where first column is the key and the second column the value (additional columns will be ignored)
-			- 'first_as_key' : result will be same as multirow but the key of the first level array will be the value of the first column (which won't be included in the second level array)
-			- 'countonly' : only count how many records would be retrieved and that number would be returned (SELECT clause is replaced with COUNT(*). Function return number of records)
-			- append ':both' to 'onerow' and 'multirow' to return both numeric and associative array (normally only associative is used)
-		- $err_msg (req.) : user-friendly error message to display if query fails (use only common language everybody understands)
-		OUTPUT:
-		- associative "two-dimensional" array, unless $format specifies differently
-		- for INSERT the ID of the new record is returned
-		- for UPDATE, DELETE, DROP, etc. the number of affected rows is returned
-		- for SELECT if no records were found, an empty array is returned
-		*/
 		if (is_array($sql)) {
 			if (array_key_exists('server_id', $sql) && $sql['server_id'] != 0) {
 				$server_id = $sql['server_id'];
@@ -263,24 +263,22 @@ class core {
 		}
 	}
 
+	/**
+	 * Prepare an SQL statement by safely inserting variables into the SQL
+	 *
+	 * @param array $array : Array with SQL statement and variables
+	 *		- first element is the SQL statement having position holders (?-marks) for each data element that is given in the rest of the array
+	 *			- example with basic use      : INSERT INTO mytable VALUE (?, ?, ?)
+	 *			- example with named positions: INSERT INTO mytable VALUE (?firstname, ?lastname, ?email)
+	 *		- all subsequent elements are each one piece of data that will be inserted into the SQL at the position holders with the first data element being inserted at the first ?-mark found and so on
+	 *			- the data will be escaped and put in quotes automatically
+	 *			- to use named positions the key for each data element must match exactly the name used in the SQL
+	 * @param array $parms : Instead of providing everything in $array you can also provide the base SQL in $array as a string and
+	 *	           provide all the data in $parms as an associative array (using numeric keys has not been tested).
+	 *	           This is an alternative format that matches Yii2.
+	 * @return string : The final SQL statement
+	 */
 	public static function prepare_sql($array, $parms = null) {
-		/*
-		DESCRIPTION:
-		- prepare an SQL statement by safely inserting variables into the SQL
-		INPUT:
-		- $array : array with SQL statement and variables
-			- first element is the SQL statement having position holders (?-marks) for each data element that is given in the rest of the array
-				- example with basic use      : INSERT INTO mytable VALUE (?, ?, ?)
-				- example with named positions: INSERT INTO mytable VALUE (?firstname, ?lastname, ?email)
-			- all subsequent elements are each one piece of data that will be inserted into the SQL at the position holders with the first data element being inserted at the first ?-mark found and so on
-				- the data will be escaped and put in quotes automatically
-				- to use named positions the key for each data element must match exactly the name used in the SQL
-		ALTERNATIVE FORMAT (matches Yii2):
-		- $parms : instead of providing everything in $array you can also provide the base SQL in $array as a string and
-		           provide all the data in $parms as an associative array (using numeric keys has not been tested)
-		OUTPUT:
-		- string with generated SQL statement
-		*/
 		if ($parms === null) {
 			$data = array_slice($array, 1);
 			$sql = $array[0];
@@ -320,11 +318,10 @@ class core {
 		return $sql;
 	}
 
+	/**
+	 * Convenience alias for mysqli_real_escape_string()
+	 */
 	public static function sql_esc($str) {
-		/*
-		DESCRIPTION:
-		- convenience alias for mysqli_real_escape_string()
-		*/
 		if ($str && !is_string($str) && !is_numeric($str)) {
 			self::system_error('A non-string was passed to SQL escaping function.', array('Argument' => print_r($str, true)), array('xnotify' => 'developer') );
 		}
@@ -336,20 +333,23 @@ class core {
 
 	//////////////////////////// Hook/plugin system ////////////////////////////
 
+	/**
+	 * Execute hooks
+	 *
+	 * Function that will make the code "pluggable" as it will execute the hooks that have been set up by the customized code in order to run code or modify a value.
+	 *
+	 * Check for more aspects we need to consider: http://www.smashingmagazine.com/2011/10/07/definitive-guide-wordpress-hooks/
+	 *
+	 * Took me 1,5 hour to make this basic/first version of the hook system.
+	 *
+	 * Consider implement an "all" hook like Wordpress does (see _wp_call_all_hook() )
+	 *
+	 * @param string $hook_id : Hook reference
+	 * @param mixed $value : Value to be passed to the callback function
+	 *	- any additional arguments are passed on to the callback function as well
+	 * @return mixed : The new value that might have been changed by the hook
+	 */
 	public static function run_hooks($hook_id, $value = '.NO-VALUE.') {
-		/*
-		DESCRIPTION:
-		- function that will make the code "pluggable" as it will execute the hooks that have been set up by the customized code in order to run code or modify a value
-		- check for more aspects we need to consider: http://www.smashingmagazine.com/2011/10/07/definitive-guide-wordpress-hooks/
-		- took me 1,5 hour to make this basic/first version of the hook system
-		- consider implement an "all" hook like Wordpress does (see _wp_call_all_hook() )
-		INPUT:
-		- $hook_id (string) : hook reference
-		- $value : value to be passed to the callback function
-		- any additional arguments are passed on to the callback function as well
-		OUTPUT:
-		- the new value that might have been changed by the hook
-		*/
 		if (@isset($GLOBALS['sys']['hook_system']['hooks'][$hook_id])) {
 			$args = func_get_args();  //retrieve ALL arguments (not just the first one which is $value)
 
@@ -369,16 +369,16 @@ class core {
 		return $value;
 	}
 
+	/**
+	 * Execute hooks with arguments passed on in an array
+	 *
+	 * Function that will make the code "pluggable" as it will execute the hooks that have been set up by the customized code in order to run code or modify a value.
+	 *
+	 * @param string $hook_id : Hook reference
+	 * @param array $args : Array of arguments to be passed to the callback function
+	 * @return array : The new array that was returned by the hook
+	 */
 	public static function run_hooks_array($hook_id, $args) {
-		/*
-		DESCRIPTION:
-		- function that will make the code "pluggable" as it will execute the hooks that have been set up by the customized code in order to run code or modify a value
-		INPUT:
-		- $hook_id (string) : hook reference
-		- $args : array of arguments to be passed to the callback function
-		OUTPUT:
-		- the new array that was returned by the hook
-		*/
 		if (@isset($GLOBALS['sys']['hook_system']['hooks'][$hook_id])) {
 			foreach ($GLOBALS['sys']['hook_system']['hooks'][$hook_id] as &$hooks_for_curr_priority) {
 				foreach ($hooks_for_curr_priority as &$curr_callback) {
@@ -391,18 +391,18 @@ class core {
 		return $args;
 	}
 
+	/**
+	 * Connect/setup a hook
+	 *
+	 * Function to be called by the customized code that want to connect a callback function into the original code.
+	 *
+	 * @param string $hook_id : Hook reference
+	 * @param \closure|string $callback_function : A closure (anonymous function) or string with function to call
+	 *	- the function will be passed the additional arguments that were passed to run_hooks()
+	 * @param integer $priority : A number indicating the priority of this hook. Default is 10
+	 * @return boolean : Always returns true
+	 */
 	public static function connect_hook($hook_id, $callback_function, $priority = 10) {
-		/*
-		DESCRIPTION:
-		- function to be called by the customized code that want to connect a callback function into the original code
-		INPUT:
-		- $hook_id (string) : hook reference
-		- $callback_function : a closure (anonymous function) or string with function to call
-			- the function will be passed the additional arguments that were passed to run_hooks()
-		- $priority : a number indicating the priority of this hook. Default is 10
-		OUTPUT:
-		- true
-		*/
 		if (!@isset($GLOBALS['sys']['hook_system']['hooks'])) {
 			$GLOBALS['sys']['hook_system']['hooks'] = array();
 		}
@@ -418,18 +418,17 @@ class core {
 		return true;
 	}
 
+	/**
+	 * Disconnect a hook
+	 *
+	 * Function to be called by the customized code that want disconnect a callback it set up earlier.
+	 *
+	 * @param string $hook_id : Hook reference
+	 * @param \closure|string $callback_function : A closure (anonymous function) or string with function to call
+	 * @param integer $priority : A number indicating the priority of this hook. Default is 10
+	 * @return boolean : false if not found or failure, true if disconnected successfully
+	 */
 	public static function disconnect_hook($hook_id, $callback_function, $priority = 10) {
-		/*
-		DESCRIPTION:
-		- function to be called by the customized code that want disconnect a callback it set up earlier
-		INPUT:
-		- $hook_id (string) : hook reference
-		- $callback_function : a closure (anonymous function) or string with function to call
-		- $priority : a number indicating the priority of this hook. Default is 10
-		OUTPUT:
-		- if not found or failure : false
-		- if disconnected successfully : true
-		*/
 		$id = self::_hook_unique_callback_id($callback_function);
 		if (@isset($GLOBALS['sys']['hook_system']['hooks'][$hook_id][$priority][$id])) {
 			unset($GLOBALS['sys']['hook_system']['hooks'][$hook_id][$priority][$id]);
@@ -439,15 +438,19 @@ class core {
 		}
 	}
 
+	/**
+	 * Disconnect all hooks
+	 *
+	 * Function to be called by the customized code that want disconnect ALL callback it set up earlier for a given hook, optionally only those of a certain priority.
+	 * @param string $hook_id : Hook reference
+	 * @param integer $priority : A number indicating the priority of this hook. Default is 10
+	 * @return void
+	 */
 	public static function disconnect_all_hooks($hook_id, $priority = false) {
 		/*
 		DESCRIPTION:
-		- function to be called by the customized code that want disconnect ALL callback it set up earlier for a given hook, optionally only those of a certain priority
+		- 
 		INPUT:
-		- $hook_id (string) : hook reference
-		- $priority : a number indicating the priority of this hook. Default is 10
-		OUTPUT:
-		- nothing
 		*/
 		if (@isset($GLOBALS['sys']['hook_system']['hooks'][$hook_id])) {
 			if (false === $priority) {
@@ -858,27 +861,24 @@ class core {
 		}
 	}
 
+	/**
+	 * Send an email to the developer
+	 *
+	 * @param string $who (`developer`|`admin`) : Notify developer or webmaster/system administrator?
+	 * @param string $subj : Subject of the message
+	 * @param string|array $message : Body of the message. An array will be converted to list key/value pairs.
+	 * @param string|array $reference (opt.) : A unique reference to the message. Used to send this notification only once when this function is called multiple times with the same reference.
+	 *		- alternatively use an array instead with these keys:
+	 *			- `ref` (req.) : the unique reference
+	 *			- `persist` (opt.) : set to true to use set_buffer_value() to globally remember this reference (instead of within current session only)
+	 *			- `expire` (opt.) : make it expire after a certain time, by specifying one of the following formats according to set_buffer_value(): (only effective together with `persist`)
+	 *				- `2017-11-05:` : make it expire on this date (yyyy-mm-dd)
+	 *				- `6h:` : make it expire in 6 hours
+	 *				- `2d:` : make it expire in 2 days
+	 *			- note that the system_buffer must have been created beforehand
+	 * @return boolean : True if email sent, false if email not sent (due to being a "duplicate")
+	 */
 	public static function notify_webmaster($who, $subj, $message, $reference = false) {
-		/*
-		DESCRIPTION:
-		- send an email to the developer
-		INPUT:
-		- $who ('developer'|'admin') : notify developer or webmaster/system administrator?
-		- $subj : subject of the message
-		- $message (string or array) : body of the message. An array will be converted to list key/value pairs.
-		- $reference (opt.) : a unique reference to the message. Used to send this notification only once when this function is called multiple times with the same reference.
-			- alternatively use an array instead with these keys:
-				- 'ref' (req.) : the unique reference
-				- 'persist' (opt.) : set to true to use set_buffer_value() to globally remember this reference (instead of within current session only)
-				- 'expire' (opt.) : make it expire after a certain time, by specifying one of the following formats according to set_buffer_value(): (only effective together with 'persist')
-					- '2017-11-05:' : make it expire on this date (yyyy-mm-dd)
-					- '6h:' : make it expire in 6 hours
-					- '2d:' : make it expire in 2 days
-				- note that the system_buffer must have been created beforehand
-		OUTPUT:
-		- email sent : true
-		- email not sent : false (due to being a "duplicate")
-		*/
 		if (is_array($reference)) {
 			$use_systembuffer = ($reference['persist'] ? true : false);
 
@@ -953,11 +953,11 @@ class core {
 
 
 	//////////////////////////// Extra utility functions ////////////////////////////
+
+	/**
+	 * Searches for a given string (full or part) in an array, case-insensitive
+	 */
 	public static function arristr($haystack = '', $needle = array() ) {
-		/*
-		DESCRIPTION:
-		- searches for a given string (full or part) in an array, case-insensitive
-		*/
 		foreach($needle as $n) {
 			if (stristr($haystack, $n) !== false) {
 				return true;
@@ -966,17 +966,16 @@ class core {
 		return false;
 	}
 
+	/**
+	 * Check if one or more values from one array exists in another
+	 *
+	 * If needle is a string it will be auto-converted to an array so that it can also be used instead of in_array().
+	 *
+	 * @param array $arr_needle : Array of values to look for
+	 * @param array $array : Array to search
+	 * @return boolean
+	 */
 	public static function any_in_array($arr_needle, $array) {
-		/*
-		DESCRIPTION:
-		- check if one or more values from one array exists in another
-		- if needle is a string it will be auto-converted to an array so that it can also be used instead of in_array()
-		INPUT:
-		- $arr_needle : array of values to look for
-		- $array : array to search
-		OUTPUT:
-		- true or false
-		*/
 		if (is_string($arr_needle)) $arr_needle = array($arr_needle);
 		if (!is_array($arr_needle)) self::system_error('Invalid needle for searching array.');
 		if (!is_array($array)) self::system_error('Invalid array to search.');
@@ -984,19 +983,17 @@ class core {
 		return !empty($a);
 	}
 
+	/**
+	 * Search a two-dimensional array for a certain key/value pair (= 'column'), case-insensitive
+	 *
+	 * This differs from array_keys(array, search_arg) and in_array() in that this searches on the SECOND level.
+	 *
+	 * @param array $array : Array to search
+	 * @param string $key : Key which need to contain the value that we search for
+	 * @param mixed $value : The value we want to find
+	 * @return mixed : If found: the key that contained the key/value pair (= 1st level key). If not found: false
+	 */
 	public static function array_search_column(&$array, $key, $value) {
-		/*
-		DESCRIPTION:
-		- search a two-dimensional array for a certain key/value pair (= 'column'), case-insensitive
-		- this differs from array_keys(array, search_arg) and in_array() in that this searches on the SECOND level
-		INPUT:
-		- $array : array to search
-		- $key : key which need to contain the value that we search for
-		- $value : the value we want to find
-		OUTPUT:
-		- if found: the key that contained the key/value pair (= 1st level key)
-		- if not found: false
-		*/
 		if (!is_array($array)) {
 			self::system_error('Parameter for column search is not an array.', array('Array' => $array));
 		} else {
@@ -1020,21 +1017,18 @@ class core {
 		}
 	}
 
+	/**
+	 * Parses a string with multiple translations of a piece of text
+	 *
+	 * Uses the session language but can be overridden by $GLOBALS['_override_current_language']
+	 *
+	 * @param string $str : string in the format: `EN=Text in English ,,, ES=Text in Spanish`
+	 *	- unlimited number of translations
+	 *	- upper case of language identifier is optional
+	 *	- spaces are allowed around both identifiers and texts (will be trimmed)
+	 * @return string : If no matches found, the raw string is returned. If language is not found, the first language is returned.
+	 */
 	public static function txtdb($str) {
-		/*
-		DESCRIPTION:
-		- parses a string with multiple translations of a piece of text
-		- uses the session language but can be overridden by $GLOBALS['_override_current_language']
-		INPUT:
-		- $str : string in the format: EN=Text in English ,,, ES=Text in Spanish
-			- unlimited number of translations
-			- upper case of language identifier is optional
-			- spaces are allowed around both identifiers and texts (will be trimmed)
-		OUTPUT:
-		- string
-		- if no matches found, the raw string is returned
-		- if language is not found, the first language is returned
-		*/
 		$str = (string) $str;
 		if (!$str) {
 			return $str;
@@ -1057,32 +1051,34 @@ class core {
 		}
 	}
 
+	/**
+	 * Insert a multipart translation into it's template
+	 *
+	 * @param string $template : The final template where fields of the format `#FIELDNAME#` are to be replaced with the translation
+	 *	- example:
+	 * ```
+	 *	<h1>#TITLE#</h1>
+	 *	<p>#PARAGRAPH1#</p>
+	 *	<p style="margin: 2em 0 2em 0;padding: 0;color: #606060;font-family: monospace, Courier New, Courier;font-size: 20px;line-height: 150%;text-align: center;">
+	 *		<span style="border: 1px solid #E4E4E4; border-radius: 3px; font-weight: bold; padding: 5px 30px"><a href="%%resetpwURL%%">#RESET-BUTTON#</a></span>
+	 *	</p>
+	 * ```
+	 * @param string $translation : String with the fields in the format `#FIELDNAME:` followed by the translation of the text for that field (whitespace around the fields and values is automatically trimmed)
+	 *	- example:
+	 * ```
+	 *	#TITLE:
+	 *	Reset Password
+	 *	#PARAGRAPH1:
+	 *	Someone requested a password reset for this email address (%%email%%%%userID_text%%) at the website. Hopefully it was you.
+	 *	If not, please make sure no one else has access to your email address - then you can safely ignore this email.
+	 *	#PARAGRAPH2:
+	 *	To set the new password please click below.
+	 *	#RESET-BUTTON:
+	 *	Reset Password
+	 * ```
+	 * @return string
+	 */
 	public static function parse_multipart_translation($template, $translation) {
-		/*
-		DESCRIPTION:
-		- insert a multipart translation into it's template
-		INPUT:
-		- $template : string with the final template where fields of the format #FIELDNAME# are to be replaced with the translation
-			- example:
-				<h1>#TITLE#</h1>
-				<p>#PARAGRAPH1#</p>
-				<p style="margin: 2em 0 2em 0;padding: 0;color: #606060;font-family: monospace, Courier New, Courier;font-size: 20px;line-height: 150%;text-align: center;">
-					<span style="border: 1px solid #E4E4E4; border-radius: 3px; font-weight: bold; padding: 5px 30px"><a href="%%resetpwURL%%">#RESET-BUTTON#</a></span>
-				</p>
-		- $translation : string with the fields in the format #FIELDNAME: followed by the translation of the text for that field (whitespace around the fields and values is automatically trimmed)
-			- example:
-				#TITLE:
-				Reset Password
-				#PARAGRAPH1:
-				Someone requested a password reset for this email address (%%email%%%%userID_text%%) at the website. Hopefully it was you.
-				If not, please make sure no one else has access to your email address - then you can safely ignore this email.
-				#PARAGRAPH2:
-				To set the new password please click below.
-				#RESET-BUTTON:
-				Reset Password
-		OUTPUT:
-		- string
-		*/
 		if (preg_match_all("/#[A-Z0-9\\-]+:/", $translation, $matches, PREG_OFFSET_CAPTURE) > 0) {
 			foreach ($matches[0] as $key => $match) {
 				$fieldname = trim($match[0], '#:');
@@ -1101,18 +1097,15 @@ class core {
 		return $template;
 	}
 
-	public static function get_system_setting($name, $flags = '') {
-		/*
-		DESCRIPTION:
-		- get a system setting from database
-		INPUT:
-		- $name : name of system setting to get
-		- $flags : string with any combination of these flags:
-			- 'no_error' : don't raise error if setting is not found, but return false
-		OUTPUT:
-		- the database field value
-		- returns false if setting was not found
-		*/
+	/**
+	 * Get a system setting from database
+	 *
+	 * @param string $name : Name of system setting to get
+	 * @param array $options : Options available:
+	 *	- `no_error` : don't raise error if setting is not found, but return false
+	 * @return string|boolean : The database field value, or false if setting was not found
+	 */
+	public static function get_system_setting($name, $options = []) {
 		if (!isset($GLOBALS['cache']['system_settings'])) {
 			$GLOBALS['cache']['system_settings'] = array();
 			self::require_database();
@@ -1127,7 +1120,7 @@ class core {
 			}
 		}
 		if (!array_key_exists($name, $GLOBALS['cache']['system_settings'])) {
-			if (strpos( (string) $flags, 'no_error') === false) {
+			if (!$options['no_error']) {
 				self::system_error('Configuration error. A system setting could not be found.', array('Name' => $name) );
 			} else {
 				return false;
@@ -1136,14 +1129,12 @@ class core {
 		return $GLOBALS['cache']['system_settings'][$name];
 	}
 
+	/**
+	 * Get the name of the function calling the current function/scope
+	 *
+	 * @return string|boolean : Name of function, or false if it was not called from a function
+	 */
 	public static function get_parent_function($f = 1) {
-		/*
-		DESCRIPTION:
-		- get the name of the function calling the current function/scope
-		OUTPUT:
-		- name of function
-		- false if it was not called from a function
-		*/
 		$parent_info = debug_backtrace();
 		$parent_function = $parent_info[1 + $f]['function'];  //the parent function of the function that called this function, has the index no. 2 in the debug array. Higher levels has higher numbers.
 		if ($parent_function) {
@@ -1153,31 +1144,27 @@ class core {
 		}
 	}
 
-	public static function pageurl($array = array(), $flags = '') {
-		/*
-		DESCRIPTION:
-		- generate URL for this same page but with modified query string parameters according to the specified array
-		INPUT:
-		- $array : associative array with keys being query string variable name and value of course being the corresponding value
-			- leave empty to generate the same URL as current one (but without the one-time variables)
-			- to delete an existing parameter set the value to null
-			- to make the variable a one-time variable only, set the value to an array where first item is the actual value and the second item is 'once' (string). Then that variable will not be kept on next page when calling jfw_pageurl()
-			- a dot (.) is not allowed in the variable name of one-time variables because it is used as a separator (you could use dash (-) instead)
-		- $options : string with any of these options, separated by a space:
-			'querystring_only' : only generate the query string (exlude path and '?')
-			'varname:[name of variable]' : use this name for the query string variable containing one-time values (instead of the default '1')
-		OUTPUT:
-		- string with URL
-		*/
+	/**
+	 * Generate URL for this same page but with modified query string parameters according to the specified array
+	 *
+	 * @param array $array : Associative array with keys being query string variable name and value of course being the corresponding value
+	 *	- leave empty to generate the same URL as current one (but without the one-time variables)
+	 *	- to delete an existing parameter set the value to null
+	 *	- to make the variable a one-time variable only, set the value to an array where first item is the actual value and the second item is `once` (string). Then that variable will not be kept on next page when calling jfw_pageurl()
+	 *	- a dot (.) is not allowed in the variable name of one-time variables because it is used as a separator (you could use dash (-) instead)
+	 * @param array $options : Options available:
+	 *	- `querystring_only` : only generate the query string (excluding path and `?`)
+	 *	- `varname` : use this name for the query string variable containing one-time values (instead of the default `1`)
+	 * @return string : URL
+	 */
+	public static function pageurl($array = array(), $options = []) {
 		if (!is_array($array)) {
 			self::system_error('Invalid array for generating query string.');
 		}
 
-		$flags = (string) $flags;
-
 		$onetime_varname = '1';
-		if (preg_match("/varname:([^ ]+)/", $flags, $onematch)) {
-			$onetime_varname = $onematch[1];
+		if ($options['varname']) {
+			$onetime_varname = $options['varname'];
 		} elseif ($GLOBALS['_jfw_onetime_varname']) {
 			$onetime_varname = $GLOBALS['_jfw_onetime_varname'];
 		}
@@ -1194,10 +1181,10 @@ class core {
 		$onetime_vars = array();
 		foreach ($array as $name => $value) {
 			if (is_array($value)) {
-				$flags = $value[1];
+				$opt = $value[1];
 				$value = $value[0];
 
-				if (strpos($flags, 'once') !== false) {
+				if (strpos($opt, 'once') !== false) {
 					$onetime_vars[] = $name;
 				}
 			}
@@ -1212,7 +1199,7 @@ class core {
 			$qs[$onetime_varname] = implode('.', $onetime_vars);
 		}
 
-		if (strpos($flags, 'querystring_only') !== false) {
+		if ($options['querystring_only']) {
 			return http_build_query($qs);
 		} else {
 			$uri = $_SERVER['REQUEST_URI'];
