@@ -402,7 +402,9 @@ class imaging {
 			So let Imagick do the work on a temporary file instead.
 			*/
 			if (PHP_OS == 'WINNT') {
-				$temp_file = rand(10000000, 99999999) . microtime(true);
+				$path = pathinfo($image_path, PATHINFO_DIRNAME);
+				$ext = pathinfo($image_path, PATHINFO_EXTENSION);
+				$temp_file = $path .'/'. rand(10000000, 99999999) . microtime(true) .'.'. $ext;  //Imagick crashes if full path is not given
 				copy($image_path, $temp_file);
 				$image_path = $temp_file;
 			}
