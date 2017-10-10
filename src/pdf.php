@@ -21,6 +21,7 @@ class pdf {
 			'jpg_quality' => 90,
 			'suffix_pattern' => '-%d',  //suffix added to file name for each page of the converted PDF (%d indicates page number)
 			'ghostscript_path' => 'gs',
+			'use_box' => null,  //crop image to a specific box ('ArtBox', 'TrimBox', 'CropBox')
 			'TextAlphaBits' => 4,  //set these two to 1 to disable anti-aliasing
 			'GraphicsAlphaBits' => 4,
 		);
@@ -38,7 +39,12 @@ class pdf {
 			core::system_error('Invalid output format for converting PDF to image.', ['Format' => $options['output_format']]);
 		}
 
-		$cmd = $options['ghostscript_path'] .' -q -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 -sDEVICE='. $sdevice .' -dTextAlphaBits='. $options['TextAlphaBits'] .' -dGraphicsAlphaBits='. $options['GraphicsAlphaBits'] .' -r'. $options['resolution'] . ($options['output_format'] == 'jpg' ? ' -dJPEGQ='. $options['jpg_quality'] : '') .' -sOutputFile='. $image_path .' '. $pdf_path .' 2>&1';
+		$additional_options = '';
+		if ($options['use_box'] && in_array($options['use_box'], ['ArtBox', 'TrimBox', 'CropBox'])) {
+			$additional_options .= '-dUse'. $options['use_box'] .' ';  //=> -dUseArtbox, -dUseTrimBox, -dUseCropBox
+		}
+
+		$cmd = $options['ghostscript_path'] .' -q -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT '. $additional_options .' -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 -sDEVICE='. $sdevice .' -dTextAlphaBits='. $options['TextAlphaBits'] .' -dGraphicsAlphaBits='. $options['GraphicsAlphaBits'] .' -r'. $options['resolution'] . ($options['output_format'] == 'jpg' ? ' -dJPEGQ='. $options['jpg_quality'] : '') .' -sOutputFile='. $image_path .' '. $pdf_path .' 2>&1';
 		exec($cmd, $coutput, $returncode);
 
 		if (!empty($coutput)) {
