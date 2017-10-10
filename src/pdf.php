@@ -48,9 +48,9 @@ class pdf {
 		exec($cmd, $coutput, $returncode);
 
 		if (!empty($coutput)) {
-			throw new \Exception("Error in ". __FILE__ .":". __LINE__ ." -- GhostScript command for converting PDF to image outputted unexpected data ((INTERNAL:". json_encode($coutput) ."))");
+			throw new \Exception("GhostScript command for converting PDF to image outputted unexpected data ((INTERNAL:". json_encode($coutput) ."))");
 		} elseif ($returncode != 0) {
-			throw new \Exception("Error in ". __FILE__ .":". __LINE__ ." -- GhostScript command for converting PDF to image returned ". $returncode);
+			throw new \Exception("GhostScript command for converting PDF to image returned ". $returncode);
 		}
 
 		// WORKS BUT NOT ANTI-ALISED! AND FAIRLY SMALL SIZE IMAGE
