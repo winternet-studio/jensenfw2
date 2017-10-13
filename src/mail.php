@@ -994,6 +994,7 @@ class mail {
 		- $options (opt.) : associative array with any of the following keys:
 			- 'mode' : specify scrampling mode. Available options are:
 				- 'plaintext' : will scrample it to eg.: johndoe at yahoo dot com
+				- 'nolink' : only show email address as text, don't make active link
 			- 'text' : text to show as the link, instead of the email address itself
 		OUTPUT:
 		- a Javascript block to put in HTML code, OR according to scrample mode
@@ -1007,17 +1008,23 @@ class mail {
 			$randomno1 = 'n'. rand(10,999999);
 			$randomno2 = 'a'. rand(10,999999);
 			$html  = '<script type="text/javascript">'."\r\n";
-			$html .= '/* <![CDATA[ */'."\r\n";
-			$html .= $randomno1 .'="'. $part1 .'";';
-			$html .= $randomno2 .'="'. $part2 .'";';
-			$html .= "document.write('<a hr'+'ef=\"mai'+'lto:'+". $randomno1 ."+eval('unes'+'cape(\'%40\')')+". $randomno2 ."+'\">');";
+			$html .= '/'.'* <![CDATA[ */'."\r\n";  //break because of Sublime Text syntax highlighter
+			$html .= 'var '. $randomno1 .'="'. $part1 .'";';
+			$html .= 'var '. $randomno2 .'="'. $part2 .'";';
+			if ($options['mode'] != 'nolink') {
+				$html .= "document.write('<a hr'+'ef=\"mai'+'lto:'+". $randomno1 ."+eval('unes'+'cape(\'%40\')')+". $randomno2 ."+'\">');";
+			}
 			$html .= "document.write(";
 			if ($options['text']) {
-				$html .= "'". js::esc($options['text']) ."'";
+				require_function('js_esc');
+				$html .= "'". js_esc($options['text']) ."'";
 			} else {
 				$html .= $randomno1 ."+eval('unes'+'cape(\'%40\')')+". $randomno2;
 			}
-			$html .= "+'</a>');"."\r\n";
+			if ($options['mode'] != 'nolink') {
+				$html .= "+'</a>'";
+			}
+			$html .= ");"."\r\n";
 			$html .= '/* ]]> */'."\r\n";
 			$html .= '</script>';
 			return $html;
