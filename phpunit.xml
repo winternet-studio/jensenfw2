@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+This was an attribute in <phpunit> tag but since I don't have the file phpunit complained: bootstrap="vendor/autoload.php".
+I see no other project having a vendor folder, usually an autoload.php neither - so how is this suppose to work?
+-->
 <phpunit backupGlobals="false"
          backupStaticAttributes="false"
-         bootstrap="vendor/autoload.php"
          colors="true"
          convertErrorsToExceptions="true"
          convertNoticesToExceptions="true"
