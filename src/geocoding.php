@@ -195,7 +195,7 @@ class geocoding {
 				}
 				return $return;
 			} else {
-				return 'ERROR:'. $json['status'];
+				return 'ERROR:'. $json['status'] .' - '. $json['error_message'];
 			}
 		}
 	}
