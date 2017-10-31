@@ -1086,7 +1086,7 @@ class core {
 				if ($matches[0][$key+1]) {
 					$length = $matches[0][$key+1][1] - $start_pos;
 				} else {
-					$length = null;
+					$length = strlen($translation);   //may NOT be NULL! (see docs) So just set a high number.
 				}
 				$text = trim(substr($translation, $start_pos, $length));  //cannot use mb_substr() because works in bytes, not characters
 
