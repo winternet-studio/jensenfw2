@@ -996,6 +996,9 @@ class mail {
 				- 'plaintext' : will scrample it to eg.: johndoe at yahoo dot com
 				- 'nolink' : only show email address as text, don't make active link
 			- 'text' : text to show as the link, instead of the email address itself
+			- 'params' : associative array with any of the following keys:
+				- 'subject' : encode a predefined subject line into the link
+				- 'body' : encode a predefined body text into the link
 		OUTPUT:
 		- a Javascript block to put in HTML code, OR according to scrample mode
 		*/
@@ -1012,7 +1015,7 @@ class mail {
 			$html .= 'var '. $randomno1 .'="'. $part1 .'";';
 			$html .= 'var '. $randomno2 .'="'. $part2 .'";';
 			if ($options['mode'] != 'nolink') {
-				$html .= "document.write('<a hr'+'ef=\"mai'+'lto:'+". $randomno1 ."+eval('unes'+'cape(\'%40\')')+". $randomno2 ."+'\">');";
+				$html .= "document.write('<a hr'+'ef=\"mai'+'lto:'+". $randomno1 ."+eval('unes'+'cape(\'%40\')')+". $randomno2 ."+'". (array_key_exists('params', $options) ? '?'. http_build_query($options['params'], '', '&amp;', PHP_QUERY_RFC3986) : '') ."\">');";
 			}
 			$html .= "document.write(";
 			if ($options['text']) {
