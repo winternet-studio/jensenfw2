@@ -21,15 +21,21 @@ class salesforce {
 	var $curl = null;
 	var $exec_curl_log_callback = null;
 
+	/**
+	 * Constructor
+	 *
+	 * @param string $client_id
+	 * @param string $client_secret
+	 * @param string $username
+	 * @param string $password
+	 * @param string $security_token
+	 * @param string $login_uri
+	 * @param string $api_version
+	 * @param string $token_storage_instance : Class with these methods:
+	 *  - `saveToken($access_token, $instance_url)` which returns nothing
+	 *  - `getToken()` which returns eg. `array('access_token' => 'rELHinuBmp9i98HBV4h7mMWVh', 'instance_url' => 'https://na30.salesforce.com')`
+	 */
 	public function __construct($client_id, $client_secret, $username, $password, $security_token, $login_uri, $api_version, $token_storage_instance = null) {
-		/*
-		DESCRIPTION:
-		- constructor
-		INPUT:
-		- $token_storage_instance : class with these methods:
-			- saveToken($access_token, $instance_url) which returns nothing
-			- getToken() which returns eg. array('access_token' => 'rELHinuBmp9i98HBV4h7mMWVh', 'instance_url' => 'https://na30.salesforce.com')
-		*/
 		$this->client_id = $client_id;
 		$this->client_secret = $client_secret;
 		$this->username = $username;
@@ -87,15 +93,13 @@ class salesforce {
 		}
 	}
 
+	/**
+	 * Run an SOQL query
+	 *
+	 * @param string $SOQL : Query in the format of Salesforce Object Query Language
+	 * @return array
+	 */
 	public function execute_soql($SOQL) {
-		/*
-		DESCRIPTION:
-		- run an SOQL query
-		INPUT:
-		- $SOQL : string with a query in the format of Salesforce Object Query Language
-		OUTPUT:
-		- array
-		*/
 		$this->authenticate();
 
 		$url = $this->auth_response['instance_url'] .'/services/data/'. $this->api_version .'/query?q=' . urlencode($SOQL);
@@ -114,16 +118,14 @@ class salesforce {
 		return json_decode($json_response, true);
 	}
 
+	/**
+	 * Create a single record
+	 *
+	 * @param string $object_name : String with name of object to create, eg. "Account", "Contact", etc.
+	 * @param array $fields : Associative array with fieldname/value pairs
+	 * @return array
+	 */
 	public function create($object_name, $fields = array() ) {
-		/*
-		DESCRIPTION:
-		- create a single record
-		INPUT:
-		- $object_name : string with name of object to create, eg. "Account", "Contact", etc.
-		- $fields : associative array with fieldname/value pairs
-		OUTPUT:
-		- array
-		*/
 		$this->authenticate();
 
 		$url = $this->auth_response['instance_url'] .'/services/data/'. $this->api_version .'/sobjects/'. $object_name .'/';
@@ -143,16 +145,14 @@ class salesforce {
 		return json_decode($json_response, true);
 	}
 
+	/**
+	 * Create multiple records
+	 *
+	 * @param string $object_name : String with name of object to create, eg. "Account", "Contact", etc.
+	 * @param array $array_of_fields : Array with associative subarrays with fieldname/value pairs
+	 * @return array : Array from batch() method
+	 */
 	public function create_multiple($object_name, $array_of_fields = array() ) {
-		/*
-		DESCRIPTION:
-		- create multiple records
-		INPUT:
-		- $object_name : string with name of object to create, eg. "Account", "Contact", etc.
-		- $array_of_fields : array with associative subarrays with fieldname/value pairs
-		OUTPUT:
-		- array from batch() method
-		*/
 		$parms = array(
 			'haltOnError' => true,
 			'batchRequests' => array(),
@@ -169,17 +169,15 @@ class salesforce {
 		return $this->batch($parms);
 	}
 
+	/**
+	 * Update a single record
+	 *
+	 * @param string $object_name : String with name of object to update, eg. "Account", "Contact", etc.
+	 * @param string $id : ID of record to update
+	 * @param array $fields : Associative array with fieldname/value pairs
+	 * @return void : (Salesforce gives no response data on success)
+	 */
 	public function update($object_name, $id, $fields = array() ) {
-		/*
-		DESCRIPTION:
-		- update a single record
-		INPUT:
-		- $object_name : string with name of object to update, eg. "Account", "Contact", etc.
-		- $id : ID of record to update
-		- $fields : associative array with fieldname/value pairs
-		OUTPUT:
-		- nothing (Salesforce gives no response data on success)
-		*/
 		$this->authenticate();
 
 		$url = $this->auth_response['instance_url'] .'/services/data/'. $this->api_version .'/sobjects/'. $object_name .'/'. $id;
@@ -197,18 +195,16 @@ class salesforce {
 		}
 	}
 
+	/**
+	 * Update multiple records
+	 *
+	 * @param string $object_name : String with name of object to create, eg. "Account", "Contact", etc.
+	 * @param array $array_of_records : Array with associative subarrays with these keys:
+	 *  - `id` : ID of record to update
+	 *  - `fields` : associative array with fieldname/value pairs
+	 * @return array : Array from batch() method
+	 */
 	public function update_multiple($object_name, $array_of_records = array() ) {
-		/*
-		DESCRIPTION:
-		- update multiple records
-		INPUT:
-		- $object_name : string with name of object to create, eg. "Account", "Contact", etc.
-		- $array_of_records : array with associative subarrays with these keys:
-			- 'id' : ID of record to update
-			- 'fields' : associative array with fieldname/value pairs
-		OUTPUT:
-		- array from batch() method
-		*/
 		$parms = array(
 			'haltOnError' => true,
 			'batchRequests' => array(),
@@ -225,19 +221,29 @@ class salesforce {
 		return $this->batch($parms);
 	}
 
+	/**
+	 * Delete a single record
+	 *
+	 * Supports cascading deletions to ensure referential integrity - at least stated in SOAP doc, assume it's the same for REST:
+	 * https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_calls_delete.htm
+	 * Except for Accounts that have Opportunities that are Closed Won. Those we manually delete before deleting the Account this function.
+	 *
+	 * @param string $object_name : String with name of object to delete, eg. "Account", "Contact", etc.
+	 * @param string $id : ID of record to delete
+	 * @return boolean : True if success, false if already previously deleted
+	 **/
 	public function delete($object_name, $id) {
-		/*
-		DESCRIPTION:
-		- delete a single record
-		- supports cascading deletions to ensure referential integrity - at least stated in SOAP doc, assume it's the same for REST: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_calls_delete.htm
-		INPUT:
-		- $object_name : string with name of object to delete, eg. "Account", "Contact", etc.
-		- $id : ID of record to delete
-		OUTPUT:
-		- success : true
-		- already previously deleted : false
-		*/
 		$this->authenticate();
+
+		// For Accounts manually delete Opportunities since cascade deletions doesn't work for those that are Closed Won
+		if ($object_name == 'Account') {
+			$opportunities = $this->execute_soql("SELECT Id FROM Opportunity WHERE AccountId = '". str_replace("'", '', $id) ."'");
+			if ($opportunities['totalSize'] > 0) {
+				foreach ($opportunities['records'] as $opportunity) {
+					$this->delete('Opportunity', $opportunity['Id']);
+				}
+			}
+		}
 
 		$url = $this->auth_response['instance_url'] .'/services/data/'. $this->api_version .'/sobjects/'. $object_name .'/'. $id;
 		curl_setopt($this->curl, CURLOPT_URL, $url);
@@ -266,16 +272,14 @@ class salesforce {
 		}
 	}
 
+	/**
+	 * Delete multiple records
+	 *
+	 * @param string $object_name : String with name of object to create, eg. "Account", "Contact", etc.
+	 * @param array $IDs : Array of record IDs to be deleted
+	 * @return array : Array from batch() method
+	 */
 	public function delete_multiple($object_name, $IDs = array() ) {
-		/*
-		DESCRIPTION:
-		- delete multiple records
-		INPUT:
-		- $object_name : string with name of object to create, eg. "Account", "Contact", etc.
-		- $IDs : array of record IDs to be deleted
-		OUTPUT:
-		- array from batch() method
-		*/
 		$parms = array(
 			'haltOnError' => true,
 			'batchRequests' => array(),
@@ -291,55 +295,57 @@ class salesforce {
 		return $this->batch($parms);
 	}
 
+	/**
+	 * Do batches of requests, eg. multiple insert/update/delete
+	 *
+	 * @param array $batch_requests : Array according to https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/requests_composite_batch.htm
+	 *  - see also: https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_composite_batch.htm#topic-title
+	 *  - example (in JSON notation):
+	 * ```
+	 * 		{
+	 * 			"haltOnError": true,
+	 * 			"batchRequests": [
+	 * 				{
+	 * 					"method": "PATCH",
+	 * 					"url": "v34.0/sobjects/Account/001D000000K0fXOIAZ",
+	 * 					"richInput": {
+	 * 						"Name": "NewName"
+	 * 					}
+	 * 				},
+	 * 				{
+	 * 					"method": "GET",
+	 * 					"url": "v34.0/sobjects/Account/001D000000K0fXOIAZ?fields=Name,BillingPostalCode"
+	 * 				}
+	 * 			]
+	 * 		}
+	 * ```
+	 *
+	 * @return array : Sxample (in JSON notation):
+	 * ```
+	 * 		{
+	 * 			"hasErrors": false,
+	 * 			"results": [
+	 * 				{
+	 * 					"statusCode": 204,   //eg. in case of updating a record or successfully deleting a record
+	 * 					"result": null
+	 * 				},
+	 * 				{
+	 * 					"statusCode": 200,
+	 * 					"result": {
+	 * 						"attributes": {
+	 * 							"type": "Account",
+	 * 							"url": "/services/data/v34.0/sobjects/Account/001D000000K0fXOIAZ"
+	 * 						},
+	 * 						"Name": "NewName",
+	 * 						"BillingPostalCode": "94105",
+	 * 						"Id": "001D000000K0fXOIAZ"
+	 * 					}
+	 * 				}
+	 * 			]
+	 * 		}
+	 * ```
+	 */
 	public function batch($batch_requests) {
-		/*
-		DESCRIPTION:
-		- do batches of requests, eg. multiple insert/update/delete
-		INPUT:
-		- $batch_requests : array according to https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/requests_composite_batch.htm
-			- see also: https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_composite_batch.htm#topic-title
-			- example (in JSON notation):
-				{
-					"haltOnError": true,
-					"batchRequests": [
-						{
-							"method": "PATCH",
-							"url": "v34.0/sobjects/Account/001D000000K0fXOIAZ",
-							"richInput": {
-								"Name": "NewName"
-							}
-						},
-						{
-							"method": "GET",
-							"url": "v34.0/sobjects/Account/001D000000K0fXOIAZ?fields=Name,BillingPostalCode"
-						}
-					]
-				}
-		OUTPUT:
-		- array
-		- example (in JSON notation):
-				{
-					"hasErrors": false,
-					"results": [
-						{
-							"statusCode": 204,   //eg. in case of updating a record or successfully deleting a record
-							"result": null
-						},
-						{
-							"statusCode": 200,
-							"result": {
-								"attributes": {
-									"type": "Account",
-									"url": "/services/data/v34.0/sobjects/Account/001D000000K0fXOIAZ"
-								},
-								"Name": "NewName",
-								"BillingPostalCode": "94105",
-								"Id": "001D000000K0fXOIAZ"
-							}
-						}
-					]
-				}
-		*/
 		$this->authenticate();
 
 		$url = $this->auth_response['instance_url'] .'/services/data/'. $this->api_version .'/composite/batch';
@@ -356,15 +362,13 @@ class salesforce {
 		return $result;
 	}
 
+	/**
+	 * Describe a Salesforce object (= get schema)
+	 *
+	 * @param string $object_name : String with name of object to update, eg. "Account", "Contact", etc.
+	 * @return array
+	 */
 	public function describe_object($object_name) {
-		/*
-		DESCRIPTION:
-		- describe a Salesforce object (= get schema)
-		INPUT:
-		- $object_name : string with name of object to update, eg. "Account", "Contact", etc.
-		OUTPUT:
-		- associative array
-		*/
 		$this->authenticate();
 
 		$url = $this->auth_response['instance_url'] .'/services/data/'. $this->api_version .'/sobjects/'. $object_name .'/describe';
