@@ -247,7 +247,7 @@ class mail {
 				require_once($cfg['swiftmailer_path']);
 
 				// Create message
-				$message = Swift_Message::newInstance();
+				$message = \Swift_Message::newInstance();
 				$message->setSubject($fsubj);
 				$message->setFrom(array($fromemail => $fromname));
 				$message->setTo($arr_recipients);
@@ -310,12 +310,12 @@ class mail {
 							if (!$attmfile['filename']) {
 								core::system_error('Missing file name for inline attached file.', array('File' => print_r($attmfile, true) ) );
 							}
-							$message->attach(Swift_Attachment::newInstance($attmfile['content'], $attmfile['filename']));
+							$message->attach(\Swift_Attachment::newInstance($attmfile['content'], $attmfile['filename']));
 							$eff_attached_files[] = $attmfile['filename'];
 						} else {
 							$filename = basename($attmfile);
 							if (is_file($attmfile)) {
-								$message->attach(Swift_Attachment::fromPath($attmfile));
+								$message->attach(\Swift_Attachment::fromPath($attmfile));
 								$eff_attached_files[] = $filename;
 							} else {
 								// Write in message that we could not find the file
@@ -379,7 +379,7 @@ class mail {
 				}
 
 				// Create a transport
-				$transport = Swift_SmtpTransport::newInstance($cfg['swift_host'], $cfg['swift_port'], $cfg['swift_encryption']);
+				$transport = \Swift_SmtpTransport::newInstance($cfg['swift_host'], $cfg['swift_port'], $cfg['swift_encryption']);
 				if ($cfg['swift_user']) {
 					$transport->setUsername($cfg['swift_user']);
 				}
@@ -388,12 +388,12 @@ class mail {
 				}
 
 				// Send the message
-				$mailer = Swift_Mailer::newInstance($transport);
+				$mailer = \Swift_Mailer::newInstance($transport);
 
 				if ($options['enable_debugging']) {
 					// Debugging: output the SMTP communication
-					$logger = new Swift_Plugins_Loggers_EchoLogger();
-					$mailer->registerPlugin(new Swift_Plugins_LoggerPlugin($logger));
+					$logger = new \Swift_Plugins_Loggers_EchoLogger();
+					$mailer->registerPlugin(new \Swift_Plugins_LoggerPlugin($logger));
 
 					// Debugging: output the raw mail
 					echo '<pre>';
