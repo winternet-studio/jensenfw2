@@ -667,6 +667,9 @@ class filesystem {
 			- https://en.wikipedia.org/wiki/List_of_file_signatures
 			- http://www.garykessler.net/library/file_sigs.html
 			- https://www.sitepoint.com/mime-types-complete-list/
+			- http://filesignatures.net/index.php?page=all&order=SIGNATURE&sort=DESC&alpha=All
+		- software developer Allan Jensen (www.winternet.no) has started building a collection of sample files with the different signatures
+		- hex to decimal converter: https://duckduckgo.com/?q=hex+to+decimal&atb=v26_k&ia=textconverter
 		INPUT:
 		- $filepath (string) : path to file
 		- $ext_or_mime (string) (opt.) : extension of the file, or MIME type. If not provided it is auto-detected.
@@ -702,6 +705,7 @@ class filesystem {
 				[255, 216, 255, 219, '*', '*', '*', '*', '*', '*', '*', '*'],  //JPEG raw - hex: FF D8 FF DB
 				[255, 216, 255, 224, '*', '*',  74,  70,  73,  70,   0,   1],  //JFIF - hex: FF D8 FF E0 nn nn 4A 46 49 46 00 01
 				[255, 216, 255, 225, '*', '*',  69, 120, 105, 102,   0,   0],  //Exif - hex: FF D8 FF E1 nn nn 45 78 69 66 00 00
+				[255, 216, 255, 226, '*', '*', '*', '*', '*', '*', '*', '*'],  //Canon EOS JPEG - hex: FF D8 FF E2
 			);
 
 		} elseif ((!$options['is_mime'] && $ext_or_mime === 'png') || ($options['is_mime'] && $ext_or_mime === 'image/png')) {
