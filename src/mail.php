@@ -209,8 +209,6 @@ class mail {
 			$bounce_email_addr = $fromemail;
 		} elseif ($cfg['bounce_addr']) {
 			$bounce_email_addr = $cfg['bounce_addr'];
-		} elseif (function_exists('get_system_setting') && get_system_setting('bounce_email', 'no_error')) {
-			$bounce_email_addr = get_system_setting('bounce_email');
 		} elseif (ini_get('sendmail_from')) {
 			$bounce_email_addr = ini_get('sendmail_from');
 		} else {
