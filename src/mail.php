@@ -1060,6 +1060,7 @@ class mail {
 		- $data (req.) : array with associative subarrays having the following keys:
 			- 'from'
 			- 'to'
+			- 'replyto'
 			- 'subject'
 			- 'body'
 			- 'send_status' (opt.)
@@ -1073,7 +1074,15 @@ class mail {
 		$data['body'] = 'File/function: '. basename($_SERVER['SCRIPT_NAME']) . ($parentfunc ? ', '. $parentfunc .'()' : '') . "\r\n". $data['body'];
 
 		if (!is_string($data['from'])) {
-			$data['from'] = json_encode($data['from']);
+			if (!empty($data['replyto'])) {
+				$data['from'] = json_encode(['ReplyTo' => $data['replyto'], 'From' => $data['from']]);
+			} else {
+				$data['from'] = json_encode($data['from']);
+			}
+		} else {
+			if (!empty($data['replyto'])) {
+				$data['from'] = (is_string($data['replyto']) ? $data['replyto'] .' / '. $data['from'] : array_merge($data['replyto'], ['From' => $data['from']]));
+			}
 		}
 		if (!is_string($data['to'])) {
 			$data['to'] = json_encode($data['to']);
