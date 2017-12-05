@@ -44,7 +44,10 @@ class pdf {
 			$additional_options .= '-dUse'. $options['use_box'] .' ';  //=> -dUseArtbox, -dUseTrimBox, -dUseCropBox
 		}
 
-		$cmd = $options['ghostscript_path'] .' -q -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT '. $additional_options .' -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 -sDEVICE='. $sdevice .' -dTextAlphaBits='. $options['TextAlphaBits'] .' -dGraphicsAlphaBits='. $options['GraphicsAlphaBits'] .' -r'. $options['resolution'] . ($options['output_format'] == 'jpg' ? ' -dJPEGQ='. $options['jpg_quality'] : '') .' -sOutputFile='. escapeshellarg($image_path) .' '. escapeshellarg($pdf_path) .' 2>&1';
+		$image_path_safe = str_replace('%d', '-PERCENTAGE-d', $image_path);  //on Windows escapeshellarg() replaces percent sign with space, so temporarily remove it
+		$image_path_safe = escapeshellarg($image_path_safe);
+		$image_path_safe = str_replace('-PERCENTAGE-d', '%d', $image_path_safe);
+		$cmd = $options['ghostscript_path'] .' -q -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT '. $additional_options .' -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 -sDEVICE='. $sdevice .' -dTextAlphaBits='. $options['TextAlphaBits'] .' -dGraphicsAlphaBits='. $options['GraphicsAlphaBits'] .' -r'. $options['resolution'] . ($options['output_format'] == 'jpg' ? ' -dJPEGQ='. $options['jpg_quality'] : '') .' -sOutputFile='. $image_path_safe .' '. escapeshellarg($pdf_path) .' 2>&1';
 		exec($cmd, $coutput, $returncode);
 
 		if (!empty($coutput)) {
