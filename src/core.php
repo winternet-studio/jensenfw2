@@ -514,7 +514,7 @@ class core {
 		if (is_array($directives)) {
 			//note: doing it this way we secure that nothing bad can happen to any of these variables
 			if (array_key_exists('xsevere', $directives)) $directives['xsevere'] = strtoupper($directives['xsevere']);
-			if ($directives['xnotify'] == true) $directives['xnotify'] = 'developer';  //this ONLY happens if one mistakenly set notify to true instead of one of the values! This is a safety against that.
+			if ($directives['xnotify'] === true) $directives['xnotify'] = 'developer';  //this ONLY happens if one mistakenly set notify to true instead of one of the values! This is a safety against that.
 			//
 			if (array_key_exists('xsilent', $directives)) $silent = $directives['xsilent'];
 			if (array_key_exists('xregister', $directives)) $register = $directives['xregister'];
