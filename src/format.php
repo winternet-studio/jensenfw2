@@ -228,6 +228,25 @@ class format {
 		}
 	}
 
+	/**
+	 * Make a string with possible spaces, dots and hyphens copy without those spacing characters
+	 * while retaining the visual separation of between digit groups
+	 *
+	 * Eg. "1020.31.02846" will be pasted as "10203102846" (and shown as "1020 31 02846"), and "NO02 1020 3102 846" will be pasted as "NO0210203102846"
+	 *
+	 * @param string $number_string : String with number or alphanumeric characters. May not contain HTML (or at least not with spaces, dots, and hyphens).
+	 * @return string : HTML
+	 */
+	public static function enable_copy_without_spaces($number_string) {
+		if (preg_match("/[\\s\\.\\-]/", $number_string)) {
+			$number_string = preg_replace("/[\\s\\.\\-]/", ' ', $number_string);
+		}
+
+		$number_string = str_replace(' ', '<span style="display:inline-block;width:6px"></span>', $number_string);
+
+		return $number_string;
+	}
+
 	public static function convert_distance($dist, $from, $to) {
 		/*
 		DESCRIPTION:
