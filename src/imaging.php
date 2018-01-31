@@ -461,7 +461,7 @@ class imaging {
 		}
 	}
 
-	function compress_png($input_file_png, $options = []) {
+	static public function compress_png($input_file_png, $options = []) {
 		/*
 		DESCRIPTION:
 		- Optimizes PNG file with pngquant 1.8 or later (reduces file size of 24-bit/32-bit PNG images)
