@@ -116,6 +116,7 @@ class html {
 
 					$the_optlist[$id]['_level'] = $level;
 					$the_optlist[$id]['tag'] = $a;
+					$the_optlist[$id]['just_started'] = true;
 					if (in_array($a, array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'pre', 'blockquote', 'li', 'ol', 'ul', 'p', 'nav', 'section'))) {
 						$is_new_block_element = true;
 					}
@@ -132,13 +133,20 @@ class html {
 					$process_array($a, $the_output, $the_optlist, ++$level);
 				} elseif (is_numeric($key) && is_string($a)) {
 					$output_index++;
-					$the_output[$output_index] = array('text' => $a, 'optlist' => array_values($the_optlist));  //use array_values to get rid of the keys consisting of the ID, which we don't need for anything (I think!)
 
 					// If the optlist indicates that this text is a new block element (= that text starts in a new paragraph) then trim the last trailing line-break (if any) from the previous text so that they are not converted to blank lines and thereby making extra space between the paragraphs (only trim one space since multiple line-breaks do need to make extra space between the paragraphs)
 					if ($is_new_block_element && $output_index >= 1) {
 						$prev_output_index = $output_index - 1;
 						$the_output[$prev_output_index]['text'] = preg_replace("/\\n$/", '', $the_output[$prev_output_index]['text'], 1);
 					}
+
+					$the_output[$output_index] = array('text' => $a, 'optlist' => array_values($the_optlist));  //use array_values to get rid of the keys consisting of the ID, which we don't need for anything (I think!)
+
+					// Reset just_started for the next use of $the_oplist
+					$the_optlist = array_map(function($item) {
+						$item['just_started'] = false;
+						return $item;
+					}, $the_optlist);
 
 					$is_new_block_element = false;
 				}
