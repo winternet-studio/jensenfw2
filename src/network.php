@@ -31,15 +31,13 @@ class network {
 	 * @param array $post_data : Associative array with keys as field names, and values as values or associative array
 	 *	- or just a string if the option `raw_post` is set
 	 * @param array $options (opt.) : Associative array with any of these options:
-	 *	- `raw_post` (boolean) : do a raw POST, meaning sending the string $post_data as is and do not assume it to be key/value pairs
+	 *	- `raw_post` (boolean) : set true to do a raw POST, meaning sending the string $post_data as is and do not assume it to be key/value pairs
 	 *	- `set_curl_opt` (array) : set a cURL option according to the PHP manual, eg. `[CURLOPT_CONNECTTIMEOUT => 5]`
 	 * @return string : Output/response from the requested URL
 	 */
-	public static function get_url_post($url, $post_data, $options = false) {
-		$options = (string) $options;
-
+	public static function get_url_post($url, $post_data, $options = []) {
 		// Make POST string
-		if (strpos($options, 'raw_post') !== false) {
+		if ($options['raw_post']) {
 			$post_string = (string) $post_data;
 		} else {
 			$post_string = '';
@@ -54,15 +52,15 @@ class network {
 		curl_setopt($ch, CURLOPT_POST, 1);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $post_string);  //NOTE from PHP manual: Passing an array to CURLOPT_POSTFIELDS will encode the data as multipart/form-data, while passing a URL-encoded string will encode the data as application/x-www-form-urlencoded.
 			//Further notes: on the other end use file_get_contents('php://input') to retrieve the POSTed data ($HTTP_RAW_POST_DATA many times does not work due to some php.ini settings) (php://input does not work with enctype="multipart/form-data"! Source: http://www.codediesel.com/php/reading-raw-post-data-in-php/)
-		if (strpos($options, 'raw_post') !== false) {
+		if ($options['raw_post']) {
 			curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: text/plain'));
 		}
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 
 		// Set extra cURL options
-		if (preg_match_all("|set_curl_opt:([A-Z0-9_]+):(.+)::|iU", $options, $matches, PREG_SET_ORDER)) {
-			foreach ($matches as $match) {
-				curl_setopt($ch, constant($match[1]), $match[2]);
+		if (is_array($options['set_curl_opt'])) {
+			foreach ($options['set_curl_opt'] as $curl_opt => $curl_value) {
+				curl_setopt($ch, $curl_opt, $curl_value);
 			}
 		}
 
