@@ -622,7 +622,7 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 				// 'type' => null,
 				'duration' => round(microtime(true) - $starttime, 3),
 				// 'http_code' => null,
-				// 'request_size' => strlen($this->soap_connection->soapClient->__getLastRequest()),
+				// 'request_size' => strlen($this->soap_connection->soapClient->__getLastRequest()),  //NOTE: \Phpforce\SoapClient\Client->soapClient must first be modified to make it public instead of protected
 				// 'response_size' => strlen($this->soap_connection->soapClient->__getLastResponse()),
 				'source' => 'SOAP',
 			];
@@ -631,6 +631,9 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 
 		$existing = array();
 		foreach ($results as $record) {  //the iterator automatically do additional calls to fetch all records when the total is more than 2000
+			if (!property_exists($record, $sf_primkey)) {
+				core::system_error('Property holding value of our primary key does not exist '. $sf_object .' in Salesforce.', ['PrimKey' => $sf_primkey, 'More' => 'Maybe we forgot to generate new WSDL?']);
+			}
 			if (is_numeric($record->{$sf_primkey})) {  //don't touch records that don't have a ShareHim personID
 				if ($record->$sf_lastmodified) {
 					$existing[$record->{$sf_primkey}] = array(
