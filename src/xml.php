@@ -1,20 +1,19 @@
 <?php
-/*
-This file contains functions related to XML
-*/
+/**
+ * Functions related to XML
+ */
+
 namespace winternet\jensenfw2;
 
 class xml {
+	/**
+	 * Generate an XML element, eg.: <firstName>Regina</firstName>
+	 *
+	 * @param string $tag : Name of the XML tag/element
+	 * @param string $content : Value for the given tag
+	 * @return string
+	 */
 	public static function xml_tag($tag, $content, $flags = '') {
-		/*
-		DESCRIPTION:
-		- generate an XML element, eg.: <firstName>Regina</firstName>
-		INPUT:
-		- $tag : name of the XML tag/element
-		- $content : value for the given tag
-		OUTPUT:
-		- string
-		*/
 		if (is_array($tag)) {
 			$attribs = $tag[1];
 			$tag = $tag[0];
