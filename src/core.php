@@ -106,10 +106,6 @@ class core {
 	 * @param integer $serverID
 	 */
 	public static function require_database($serverID = 0) {
-		/*
-		DESCRIPTION:
-		- 
-		*/
 		$serverID = (int) $serverID;  //convert empty strings to 0
 		$server_id = ($serverID == 0 ? '' : $serverID);
 		if (!$GLOBALS['_jfw_db_connection'.$server_id]) {  //don't open the database if it is already open
@@ -447,11 +443,6 @@ class core {
 	 * @return void
 	 */
 	public static function disconnect_all_hooks($hook_id, $priority = false) {
-		/*
-		DESCRIPTION:
-		- 
-		INPUT:
-		*/
 		if (@isset($GLOBALS['sys']['hook_system']['hooks'][$hook_id])) {
 			if (false === $priority) {
 				$GLOBALS['sys']['hook_system']['hooks'][$hook_id] = array();
@@ -958,7 +949,7 @@ class core {
 	 * Searches for a given string (full or part) in an array, case-insensitive
 	 */
 	public static function arristr($haystack = '', $needle = array() ) {
-		foreach($needle as $n) {
+		foreach ($needle as $n) {
 			if (stristr($haystack, $n) !== false) {
 				return true;
 			}
@@ -1157,7 +1148,7 @@ class core {
 	 *	- `varname` : use this name for the query string variable containing one-time values (instead of the default `1`)
 	 * @return string : URL
 	 */
-	public static function pageurl($array = array(), $options = []) {
+	public static function page_url($array = array(), $options = []) {
 		if (!is_array($array)) {
 			self::system_error('Invalid array for generating query string.');
 		}
