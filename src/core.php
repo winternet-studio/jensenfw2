@@ -574,6 +574,12 @@ class core {
 			$userinfo = null;
 		}
 
+		// Use different mechanism in a Yii application that uses the winternet\yii2\SystemError module
+		if (@constant('YII_BEGIN_TIME') && \Yii::$app->system && get_class(\Yii::$app->system) == 'winternet\yii2\SystemError') {
+ 			\Yii::$app->system->error($msg, $varinfo, ['silent' => $silent, 'register' => $register, 'notify' => $notify, 'terminate' => $terminate, 'severe' => $severe, 'expire' => $expire]);
+			return;
+		}
+
 		$err_timestamp = date('M j Y, H:i:s');
 
 		$errordata = 'Message: '. $msg . "\r\n";
