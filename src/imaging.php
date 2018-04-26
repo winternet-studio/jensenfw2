@@ -461,6 +461,69 @@ class imaging {
 		}
 	}
 
+	/**
+	 * Convert RGB color values to CMYK and vice versa
+	 *
+	 * Requires LittleCMS (http://www.littlecms.com/)
+	 *
+	 * Install LittleCMS on Debian:
+	 * ```
+	 * apt install gcc build-essential
+	 * apt install liblcms2-2
+	 * git clone https://github.com/mm2/Little-CMS.git
+	 * cd Little-CMS
+	 * ./configure
+	 * make
+	 * make check
+	 * make install
+	 * ```
+	 *
+	 * @param string $from_colorspace : `rgb` or `cmyk`
+	 * @param string $to_colorspace : `rgb` or `cmyk`
+	 * @param array $color_value : array with "from" colorspace values. RGB sample: `['r' => 10, 'g' => 248, 'b' => 0]`. CMYK sample: `['c' => 100, 'm' => 50, 'y' => 0, 'k' => 0]`
+	 * @param string $from_icc : full path to ICC profile of "from" colorspace
+	 * @param string $to_icc : full path to ICC profile of "to" colorspace
+	 * @return array : Formatted as $color_value
+	 */
+	static public function convert_colorspace($from_colorspace, $to_colorspace, $color_value, $from_icc, $to_icc) {
+		// Sample command lines:
+		// echo -e "100\n0\n0\n0\n" | transicc -i ./icc_profiles/ISOcoated_v2_300_eci.icc -o ./icc_profiles/AdobeRGB1998.icc -n
+		// echo -e "73\n34\n0\n0\n" | transicc -i ./icc_profiles/ISOcoated_v2_300_eci.icc -o ./icc_profiles/AdobeRGB1998.icc -n
+		// echo -e "208\n68\n117\n" | transicc -i ./icc_profiles/AdobeRGB1998.icc -o ./icc_profiles/ISOcoated_v2_300_eci.icc -n
+
+		if ($from_colorspace == 'rgb') {
+			if (!is_numeric($color_value['r']) || !is_numeric($color_value['g']) || !is_numeric($color_value['g'])) {
+				core::system_error('At least one RGB input value is not numeric when converting colorspace.', ['Values' => $color_value]);
+			}
+			$color_string = (int) $color_value['r'] .'\n'. (int) $color_value['g'] .'\n'. (int) $color_value['b'] .'\n';
+		} else {
+			if (!is_numeric($color_value['c']) || !is_numeric($color_value['m']) || !is_numeric($color_value['y']) || !is_numeric($color_value['k'])) {
+				core::system_error('At least one CMYK input value is not numeric when converting colorspace.', ['Values' => $color_value]);
+			}
+			$color_string = (int) $color_value['c'] .'\n'. (int) $color_value['m'] .'\n'. (int) $color_value['y'] .'\n'. (int) $color_value['k'] .'\n';
+		}
+
+		$output = [];
+		exec('echo -e "'. $color_string .'" | transicc -i '. escapeshellarg($from_icc) .' -o '. escapeshellarg($to_icc) .' -n 2>/dev/null', $output);
+		if ($output) {
+			$output = explode(' ', $output[0]);
+		} else {
+			core::system_error('File to check transparency for does not exist. Maybe LittleCMS is not installed.');
+		}
+
+		if ($to_colorspace == 'rgb') {
+			if (!is_numeric($output[0]) || !is_numeric($output[1]) || !is_numeric($output[2])) {
+				core::system_error('At least one RGB output value is not numeric when converting colorspace. Maybe LittleCMS is not installed.', ['Values' => $output]);
+			}
+			return ['r' => $output[0], 'g' => $output[1], 'b' => $output[2]];
+		} else {
+			if (!is_numeric($output[0]) || !is_numeric($output[1]) || !is_numeric($output[2]) || !is_numeric($output[3])) {
+				core::system_error('At least one CMYK output value is not numeric when converting colorspace. Maybe LittleCMS is not installed.', ['Values' => $output]);
+			}
+			return ['c' => $output[0], 'm' => $output[1], 'y' => $output[2], 'k' => $output[3]];
+		}
+	}
+
 	static public function compress_png($input_file_png, $options = []) {
 		/*
 		DESCRIPTION:
