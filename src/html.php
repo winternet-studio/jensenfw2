@@ -105,19 +105,42 @@ class html {
 			foreach ($array as $key => $a) {
 				if ($key === 'tag') {
 					$id = '{'. $a .'}';
-					//look for attributes of this tag
+
+					// Look for attributes of this tag
 					$attributes = array();
 					foreach ($array as $otherkey => $b) {
 						if (is_string($otherkey) && $otherkey !== 'tag') {
-							$id .= '('. $otherkey .'='. $b .')';
 							$attributes[$otherkey] =  $b;
 						}
 					}
 
+					// Ensure unique ID
+					$occur_counter = 1;
+					while ($the_optlist[$id . $occur_counter]) {
+						$occur_counter++;
+					}
+					$id = $id . $occur_counter;  //the counter actually becomes an indicator of how many nested occurences we haveof this given tag (always starts at 1. The first nested tag will have number 2)
+
 					$the_optlist[$id]['_level'] = $level;
 					$the_optlist[$id]['tag'] = $a;
 					$the_optlist[$id]['just_started'] = true;
-					$the_optlist[$id]['tagtype'] = (in_array($a, array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'pre', 'blockquote', 'li', 'ol', 'ul', 'p', 'nav', 'section')) ? 'block' : 'inline');
+					$the_optlist[$id]['is_ending'] = false;
+
+					/*
+					Misc sources:
+					http://www.htmlhelp.com/reference/html40/block.html
+					http://itman.in/en/html5-block-level-elements/
+					http://www.htmlhelp.com/reference/html40/block.html
+					https://stackoverflow.com/questions/21840505/td-element-is-a-inline-element-or-block-level-element#21840575
+					*/
+					if (in_array($a, array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'pre', 'blockquote', 'li', 'ol', 'ul', 'p', 'nav', 'section', 'table'))) {
+						$the_optlist[$id]['tagtype'] = 'block';
+					} elseif (in_array($a, array('td', 'th', 'thead', 'tbody', 'tfoot'))) {  // I'm not quite sure how to classify these so set them to something unspecific until we one day figure out they need a classification
+						$the_optlist[$id]['tagtype'] = '_unknown_';
+					} else {
+						$the_optlist[$id]['tagtype'] = 'inline';
+					}
+
 					if (!empty($attributes)) {  //no reason to add it if it is empty
 						$the_optlist[$id]['attribs'] = $attributes;
 						if ($the_optlist[$id]['attribs']['style']) {
@@ -131,9 +154,9 @@ class html {
 				} elseif (is_numeric($key) && is_string($a)) {
 					$output_index++;
 
-					$the_output[$output_index] = array('text' => $a, 'optlist' => array_values($the_optlist), 'block_started' => false /*default*/);  //use array_values to get rid of the keys consisting of the ID, which we don't need for anything (I think!)
+					$the_output[$output_index] = array('text' => $a, 'optlist' => $the_optlist, 'block_started' => false /*default*/);
 
-					// Reset just_started for the next use of the contents in $the_oplist
+					// Reset just_started for the next use of the contents in $the_optlist (since $the_optlist is reused for next fragment)
 					$the_optlist = array_map(function($item) use (&$the_output, &$output_index) {
 						// ...and at the same time regsiter if any of the options indicate that this text is a block element that was just started
 						if ($item['tagtype'] == 'block' && $item['just_started']) {
@@ -155,6 +178,9 @@ class html {
 			//remove options as we move higher up in the tree than at the level where they were set
 			foreach ($the_optlist as $tag => $tagdata) {
 				if ($level <= $tagdata['_level']) {
+					//record tags that are closing after this fragment
+					$the_output[$output_index]['optlist'][$tag]['is_ending'] = true;
+
 					unset($the_optlist[$tag]);
 				}
 			}
