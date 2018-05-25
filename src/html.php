@@ -2,16 +2,15 @@
 namespace winternet\jensenfw2;
 
 class html {
+	/**
+	 * Convert HTML string to a PHP array
+	 *
+	 * @link http://stackoverflow.com/questions/23062537/how-to-convert-html-to-json-using-php
+	 *
+	 * @param string $html : HTML code
+	 * @return array
+	 */
 	public static function parse_to_array($html) {
-		/*
-		DESCRIPTION:
-		- convert HTML string to a PHP array
-		- source: http://stackoverflow.com/questions/23062537/how-to-convert-html-to-json-using-php
-		INPUT:
-		- $html : string with HTML code
-		OUTPUT:
-		- array
-		*/
 		$dom = new \DOMDocument();
 		$dom->loadHTML($html);
 
@@ -33,29 +32,28 @@ class html {
 		return $element_to_obj($dom->documentElement);
 	}
 
+	/**
+	 * Convert HTML string to a "flat" PHP array (flat meaning the hierarchy of the HTML structure has been removed)
+	 *
+	 * @param string $html : HTML code
+	 * @param array $options : Associative array with any of these options:
+	 *   - `error_callback` : pass a function that is called in case there are errors or warnings, eg. about invalid HTML (instead of outputting them to screen)
+	 *       - it is passed an array with 'load_result' and 'errors' (array of LibXMLError objects)
+	 *       - sample error:
+	 *           LibXMLError Object (
+	 *               [level] => 2
+	 *               [code] => 68
+	 *               [column] => 6893
+	 *               [message] => htmlParseEntityRef: no name
+	 *               [file] => 
+	 *               [line] => 1
+	 *           )
+	 *       - see also http://php.net/libxml_get_errors
+	 *       - the function will have to raise an exception if script should be terminated
+	 *
+	 * @return array
+	 */
 	public static function parse_to_flat_array($html, $options = []) {
-		/*
-		DESCRIPTION:
-		- convert HTML string to a "flat" PHP array (flat meaning the hierarchy of the HTML structure has been removed)
-		INPUT:
-		- $html : string with HTML code
-		- $options : associative array with any of these options:
-			- 'error_callback' : pass a function that is called in case there are errors or warnings, eg. about invalid HTML (instead of outputting them to screen)
-				- it is passed an array with 'load_result' and 'errors' (array of LibXMLError objects)
-				- sample error:
-					LibXMLError Object (
-					    [level] => 2
-					    [code] => 68
-					    [column] => 6893
-					    [message] => htmlParseEntityRef: no name
-					    [file] => 
-					    [line] => 1
-					)
-				- see also http://php.net/libxml_get_errors
-				- the function will have to raise an exception if script should be terminated
-		OUTPUT:
-		- array
-		*/
 		$options = (array) $options;
 
 		$element_to_obj = function($element) use (&$element_to_obj) {
@@ -193,8 +191,12 @@ class html {
 		return $the_output;
 	}
 
+	/**
+	 * Parse the CSS in a style attribute
+	 *
+	 * @link http://stackoverflow.com/questions/4432334/parse-inline-css-values-with-regex
+	 */
 	public static function parse_style_css($css) {
-		// Source: http://stackoverflow.com/questions/4432334/parse-inline-css-values-with-regex
 		$output = array();
 		preg_match_all("/([\w-]+)\s*:\s*([^;]+)\s*;?/", $css, $matches, PREG_SET_ORDER);
 		foreach ($matches as $match) {
@@ -203,17 +205,15 @@ class html {
 		return $output;
 	}
 
+	/**
+	 * Format the standard result/output from a function with 'status', 'result_msg', and 'err_msg' keys in an array
+	 *
+	 * @param array $arr_result : The array that was returned by the function
+	 * @param string $ok_messageHTML : Message to write to the user when the operation succeeds (normally one sentence, eg. 'The event has been deleted.')
+	 * @param string $error_messageHTML : Message to write to the user when the operation fails (eg. 'Sorry, the event could not be deleted because:')
+	 * @return string : HTML code
+	 */
 	public static function format_standard_function_result($arr_result, $ok_messageHTML, $error_messageHTML) {
-		/*
-		DESCRIPTION:
-		- format the standard result/output from a function with 'status', 'result_msg', and 'err_msg' keys in an array
-		INPUT:
-		- $arr_result : the array that was returned by the function
-		- $ok_messageHTML : message to write to the user when the operation succeeds (normally one sentence, eg. 'The event has been deleted.')
-		- $error_messageHTML : message to write to the user when the operation fails (eg. 'Sorry, the event could not be deleted because:')
-		OUTPUT:
-		- HTML code
-		*/
 		$html = '';
 		if ($arr_result['status'] == 'ok') {
 			$html = '<div class="std-func-result ok">'. $ok_messageHTML;
