@@ -37,6 +37,7 @@ class html {
 	 *
 	 * @param string $html : HTML code
 	 * @param array $options : Associative array with any of these options:
+	 *   - `optlist_unique_tag_keys` : set to true to make the tag IDs unique only within the optlist in its context
 	 *   - `error_callback` : pass a function that is called in case there are errors or warnings, eg. about invalid HTML (instead of outputting them to screen)
 	 *       - it is passed an array with 'load_result' and 'errors' (array of LibXMLError objects)
 	 *       - sample error:
@@ -97,11 +98,13 @@ class html {
 
 		$the_output = array();
 		$the_optlist = array();
+		$tag_counter = array();
 		$output_index = -1;
 
-		$process_array = function($array, &$the_output, &$the_optlist, $level = 0) use (&$process_array, &$output_index) {
+		$process_array = function($array, &$the_output, &$the_optlist, $level = 0) use (&$process_array, &$output_index, &$options, &$tag_counter) {
 			foreach ($array as $key => $a) {
 				if ($key === 'tag') {
+					// Starting a new tag
 					$id = '{'. $a .'}';
 
 					// Look for attributes of this tag
@@ -112,12 +115,18 @@ class html {
 						}
 					}
 
-					// Ensure unique ID
-					$occur_counter = 1;
-					while ($the_optlist[$id . $occur_counter]) {
-						$occur_counter++;
+					if (!$options['optlist_unique_tag_keys']) {
+						// Ensure globally unique ID
+						$tag_counter[$a]++;
+						$id = $id . $tag_counter[$a];
+					} else {
+						// Ensure unique ID with in the current optlist
+						$occur_counter = 1;
+						while ($the_optlist[$id . $occur_counter]) {
+							$occur_counter++;
+						}
+						$id = $id . $occur_counter;  //the counter actually becomes an indicator of how many nested occurences we haveof this given tag (always starts at 1. The first nested tag will have number 2)
 					}
-					$id = $id . $occur_counter;  //the counter actually becomes an indicator of how many nested occurences we haveof this given tag (always starts at 1. The first nested tag will have number 2)
 
 					$the_optlist[$id]['_level'] = $level;
 					$the_optlist[$id]['tag'] = $a;
