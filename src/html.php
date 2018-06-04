@@ -140,9 +140,11 @@ class html {
 					http://www.htmlhelp.com/reference/html40/block.html
 					https://stackoverflow.com/questions/21840505/td-element-is-a-inline-element-or-block-level-element#21840575
 					*/
-					if (in_array($a, array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'pre', 'blockquote', 'li', 'ol', 'ul', 'p', 'nav', 'section', 'table'))) {
+					if (in_array($a, array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'pre', 'blockquote', 'li', 'p', 'nav', 'section', 'table'))) {
 						$the_optlist[$id]['tagtype'] = 'block';
-					} elseif (in_array($a, array('td', 'th', 'thead', 'tbody', 'tfoot'))) {  // I'm not quite sure how to classify these so set them to something unspecific until we one day figure out they need a classification
+					} elseif (in_array($a, array('ol', 'ul'))) {  //these do cause a new block though but so does <li> - but they don't cause two blocks in their own right, they together cause a block. They are rather "block-with-block-children". Maybe we need a separate array entry for marking that?
+						$the_optlist[$id]['tagtype'] = 'block';
+					} elseif (in_array($a, array('td', 'th', 'thead', 'tbody', 'tfoot'))) {  // I'm not quite sure how to classify these (maybe block-children-of-block?!) so set them to something unspecific until we one day figure out they need a classification
 						$the_optlist[$id]['tagtype'] = '_unknown_';
 					} else {
 						$the_optlist[$id]['tagtype'] = 'inline';
