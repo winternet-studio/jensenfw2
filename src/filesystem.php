@@ -631,7 +631,7 @@ class filesystem {
 		- 'unknown' : don't know the mime type
 		*/
 		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-			throw new \Exception('The function get_mime_type() is not yet supported on Windows.');
+			throw new \Exception('The method get_mime_type() is not yet supported on Windows.');
 		}
 		if (!file_exists($filepath)) {  //crucial for security!
 			throw new \Exception('File to get MIME type for does not exist.');
@@ -657,6 +657,57 @@ class filesystem {
 				];
 			}
 		}
+	}
+
+	/**
+	 * Check if a file has the correct extension relative to it's MIME type/file signature
+	 *
+	 * Works only on Linux.
+	 *
+	 * Usually used after is_signature_valid() has returned false.
+	 *
+	 * @return boolean|array : Returns `true` if correct or assumed correct. If we know wrong extension is being used return array with keys `actual` and `correct`.
+	 */
+	public static function check_correct_extension($filepath, $actual_extension = null) {
+		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+			throw new \Exception('The method check_wrong_extension() is not yet supported on Windows.');
+		}
+
+		$fileinfo = self::get_mime_type($filepath);
+
+		if ($fileinfo === 'unknown') {
+			// unknown file, assume it's correct
+			return true;
+		}
+
+		if (!$actual_extension) {
+			$actual_extension = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
+		}
+		$actual_extension = strtolower($actual_extension);
+		$correct_extension = self::map_mime_type_to_extension()[$fileinfo['mimetype']];
+
+		if (!$correct_extension) {
+			// don't know what extension it should be according to its signature, so just assume it's correct
+			return true;
+		}
+		if (!in_array($actual_extension, $correct_extension)) {
+			return ['actual' => $actual_extension, 'correct' => $correct_extension[0]];
+		}
+	}
+
+	public static function map_mime_type_to_extension() {
+		return [
+			'image/jpeg'  => ['jpg'],
+			'image/pjpeg' => ['jpg'],
+			'image/png' => ['png'],
+			'image/tiff' => ['tif', 'tiff'],
+			'image/x-tiff' => ['tif', 'tiff'],
+			'application/pdf' => ['pdf'],
+			'application/vnd.ms-opentype' => ['otf'],
+			'application/x-font-opentype' => ['otf'],
+			'application/x-font-ttf' => ['ttf'],
+			'application/x-font-truetype' => ['ttf'],
+		];
 	}
 
 	public static function is_signature_valid($filepath, $ext_or_mime = false, $options = []) {
@@ -723,11 +774,11 @@ class filesystem {
 
 			$headers = array([37, 80, 68, 70]);  //hex: 25 50 44 46
 
-		} elseif ((!$options['is_mime'] && $ext_or_mime === 'otf') || ($options['is_mime'] && $ext_or_mime === 'application/vnd.ms-opentype')) {
+		} elseif ((!$options['is_mime'] && $ext_or_mime === 'otf') || ($options['is_mime'] && in_array($ext_or_mime, ['application/x-font-opentype', 'application/vnd.ms-opentype'], true))) {
 
 			$headers = array([79, 84, 84, 79, 0]);  //hex: 4F 54 54 4F 00
 
-		} elseif ((!$options['is_mime'] && $ext_or_mime === 'ttf') || ($options['is_mime'] && $ext_or_mime === 'application/vnd.ms-opentype')) {
+		} elseif ((!$options['is_mime'] && $ext_or_mime === 'ttf') || ($options['is_mime'] && in_array($ext_or_mime, ['application/x-font-ttf', 'application/x-font-truetype'], true))) {
 
 			$headers = array([0, 1, 0, 0]);  //hex: 00 01 00 00 00
 
