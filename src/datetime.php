@@ -622,15 +622,21 @@ class datetime {
 		} else {
 			$fromyear = $toyear = '';
 		}
+
 		$output = $frommonth .' '. $fromdate->format('j');
-		if ($frommonth == $tomonth && $fromyear == $toyear) {
-			$output .= '-'. $todate->format('j');
-		} elseif ($fromyear == $toyear) {
-			//months are not the same
-			$output .= ' - '. $tomonth .' '. $todate->format('j');
+
+		if ($fromdate->format('Y-m-d') == $todate->format('Y-m-d')) {
+			// only one day, don't write ending date
 		} else {
-			//years are not the same
-			$output .= ', '. ($yrmode == '2dig' ? "'". substr($fromyear, 2) : $fromyear) .' - '. $tomonth .' '. $todate->format('j');
+			if ($frommonth == $tomonth && $fromyear == $toyear) {
+				$output .= '-'. $todate->format('j');
+			} elseif ($fromyear == $toyear) {
+				//months are not the same
+				$output .= ' - '. $tomonth .' '. $todate->format('j');
+			} else {
+				//years are not the same
+				$output .= ', '. ($yrmode == '2dig' ? "'". substr($fromyear, 2) : $fromyear) .' - '. $tomonth .' '. $todate->format('j');
+			}
 		}
 		if ($yrmode != 'noyr') {
 			$output .= ', '. ($yrmode == '2dig' ? "'". substr($toyear, 2) : $toyear);
