@@ -766,8 +766,10 @@ class filesystem {
 		} elseif ((!$options['is_mime'] && in_array($ext_or_mime, ['tif', 'tiff'], true)) || ($options['is_mime'] && in_array($ext_or_mime, ['image/tiff', 'image/x-tiff'], true))) {
 
 			$headers = array(
-				[73, 73, 42, 0],  //little endian - hex: 49 49 2A 00
-				[77, 77, 0, 42],  //big endian    - hex: 4D 4D 00 2A
+				[73, 73, 42, 0],  //little endian       - hex: 49 49 2A 00
+				[77, 77, 0, 42],  //big endian          - hex: 4D 4D 00 2A
+				[77, 77, 0, 43],  //BigTIFF files >4 GB - hex: 4D 4D 00 2B
+				[73, 32, 73, '*'], //                   - hex: 49 20 49
 			);
 
 		} elseif ((!$options['is_mime'] && $ext_or_mime === 'pdf') || ($options['is_mime'] && $ext_or_mime === 'application/pdf')) {
