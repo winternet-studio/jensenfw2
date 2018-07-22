@@ -173,8 +173,17 @@ class imaging {
 
 		$src_ext = strtolower(pathinfo($inputfilepath, PATHINFO_EXTENSION));
 		if ($src_ext == 'jpeg') $src_ext = 'jpg';
-		if ($src_ext != 'jpg' && $src_ext != 'png') {
+		if ($src_ext == 'tiff') $src_ext = 'tif';
+		if (!in_array($src_ext, array('jpg', 'png', 'tif'))) {
 			$err_msg[] = 'Input file extension '. $src_ext .' is not supported.';
+		}
+		if ($src_ext == 'tif') {
+			if (!extension_loaded('imagick')) {
+				core::system_error('The extension Imagick is not installed. Required for using resize_save() with TIFF files.');
+			}
+			if ($options['src_x'] || $options['src_y']) {
+				core::system_error('Options src_x and src_y for TIFF images is not yet supported by resize_save().');
+			}
 		}
 
 		if (!is_numeric($options['src_x'])) {
@@ -189,7 +198,9 @@ class imaging {
 		}
 
 		if (count($err_msg) == 0) {
-			if ($src_ext == 'jpg') {
+			if ($src_ext == 'tif') {
+				$img_src = new \Imagick($inputfilepath);
+			} elseif ($src_ext == 'jpg') {
 				$img_src = imagecreatefromjpeg($inputfilepath);
 				if (!is_numeric($options['quality'])) {
 					$options['quality'] = 90;
@@ -218,18 +229,22 @@ class imaging {
 		}
 
 		if (count($err_msg) == 0) {
-			$img_dst = imagecreatetruecolor($new_width, $new_height);
-			if ($has_transparency) {
-				imagealphablending($img_dst, false);
-				imagesavealpha($img_dst, true);
+			if ($src_ext == 'tif') {
+				$result = $img_src->resizeImage($new_width, $new_height, \Imagick::FILTER_GAUSSIAN, 1);
+			} else {
+				$img_dst = imagecreatetruecolor($new_width, $new_height);
+				if ($has_transparency) {
+					imagealphablending($img_dst, false);
+					imagesavealpha($img_dst, true);
+				}
+				$result = imagecopyresampled($img_dst, $img_src, 0, 0, $options['src_x'], $options['src_y'], $new_width, $new_height, $curr_width, $curr_height);
 			}
-			$result = imagecopyresampled($img_dst, $img_src, 0, 0, $options['src_x'], $options['src_y'], $new_width, $new_height, $curr_width, $curr_height);
 			if ($result == false) {
 				$err_msg[] = 'Failed to create destination image.';
 			}
 		}
 
-		if (count($err_msg) == 0) {
+		if (count($err_msg) == 0 && $src_ext != 'tif') {
 			if ($options['fix_gamma']) {
 				imagegammacorrect($img_dst, 2.2, 1.0);  //see https://web.archive.org/web/20120208120928/http://www.4p8.com/eric.brasseur/gamma.html#PHP
 			}
@@ -238,16 +253,20 @@ class imaging {
 		if (count($err_msg) == 0) {
 			// Write text on image
 			if (is_string($options['add_elements']) && $options['add_elements']) {
-				$options['add_elements'] = array(
-					array(
-						'type' => 'text',
-						'add_transp_bg' => true,
-						'position' => 'bottom_left',
-						'writetext' => $options['add_elements'],
-						'fontsize' => 10,
-						'angle' => 0,
-					)
-				);
+				if ($src_ext == 'tif') {
+					core::system_error('Writing text on the TIFF images is not yet supported by resize_save().');
+				} else {
+					$options['add_elements'] = array(
+						array(
+							'type' => 'text',
+							'add_transp_bg' => true,
+							'position' => 'bottom_left',
+							'writetext' => $options['add_elements'],
+							'fontsize' => 10,
+							'angle' => 0,
+						)
+					);
+				}
 			}
 			if (!is_array($options['add_elements'])) {
 				$options['add_elements'] = array();
@@ -277,30 +296,36 @@ class imaging {
 		if (count($err_msg) == 0) {
 			$dest_ext = strtolower(pathinfo($outputfilepath, PATHINFO_EXTENSION));
 
-			if (in_array($dest_ext, array('jpg', 'jpeg'))) {
-				if (!imagejpeg($img_dst, $outputfilepath, $options['quality'])) {
-					$err_msg[] = 'Failed to write JPG file.';
-				}
-			} elseif ($dest_ext == 'png') {
-				if (!imagepng($img_dst, $outputfilepath, $options['quality'])) {
-					$err_msg[] = 'Failed to write PNG file.';
-				} else {
-					if ($options['compress_png']) {
-						if ($options['calc_png_compression_savings']) {
-							$size_before = filesize($outputfilepath);
-						}
-						self::compress_png($outputfilepath, ['save_to_file' => $outputfilepath, 'allow_overwrite' => true, 'ignore_exitcodes' => [99 /*ignore if compression fails due to minimum quality not being met*/]]);
-						if ($options['calc_png_compression_savings']) {
-							clearstatcache();
-							$size_after = filesize($outputfilepath);
+			if ($src_ext == 'tif') {
+				$img_src->writeImage($outputfilepath);
+				$img_src->clear();
+				$img_src->destroy();
+			} else {
+				if (in_array($dest_ext, array('jpg', 'jpeg'))) {
+					if (!imagejpeg($img_dst, $outputfilepath, $options['quality'])) {
+						$err_msg[] = 'Failed to write JPG file.';
+					}
+				} elseif ($dest_ext == 'png') {
+					if (!imagepng($img_dst, $outputfilepath, $options['quality'])) {
+						$err_msg[] = 'Failed to write PNG file.';
+					} else {
+						if ($options['compress_png']) {
+							if ($options['calc_png_compression_savings']) {
+								$size_before = filesize($outputfilepath);
+							}
+							self::compress_png($outputfilepath, ['save_to_file' => $outputfilepath, 'allow_overwrite' => true, 'ignore_exitcodes' => [99 /*ignore if compression fails due to minimum quality not being met*/]]);
+							if ($options['calc_png_compression_savings']) {
+								clearstatcache();
+								$size_after = filesize($outputfilepath);
+							}
 						}
 					}
+				} else {
+					$err_msg[] = 'Output file extension '. $dest_ext .' is not supported.';
 				}
-			} else {
-				$err_msg[] = 'Output file extension '. $dest_ext .' is not supported.';
+				imagedestroy($img_src);
+				imagedestroy($img_dst);
 			}
-			imagedestroy($img_src);
-			imagedestroy($img_dst);
 		}
 
 		if (count($err_msg) > 0) {
@@ -316,7 +341,7 @@ class imaging {
 				'result_msg' => $result_msg,
 			);
 		}
-		if ($options['calc_png_compression_savings'] && $size_before) {
+		if ($dest_ext == 'png' && $options['calc_png_compression_savings'] && $size_before) {
 			$result['png_compression_savings'] = $size_before - $size_after;
 			$result['png_compression_savings_perc'] = $result['png_compression_savings'] / $size_before * 100;
 		}
