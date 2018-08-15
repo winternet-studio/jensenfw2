@@ -707,6 +707,7 @@ class filesystem {
 			'application/x-font-opentype' => ['otf'],
 			'application/x-font-ttf' => ['ttf'],
 			'application/x-font-truetype' => ['ttf'],
+			'application/x-indesign' => ['indd'],
 		];
 	}
 
@@ -772,7 +773,7 @@ class filesystem {
 				[73, 32, 73, '*'], //                   - hex: 49 20 49
 			);
 
-		} elseif ((!$options['is_mime'] && $ext_or_mime === 'pdf') || ($options['is_mime'] && $ext_or_mime === 'application/pdf')) {
+		} elseif ((!$options['is_mime'] && $ext_or_mime === 'pdf') || ($options['is_mime'] && in_array($ext_or_mime, ['application/pdf'], true))) {
 
 			$headers = array([37, 80, 68, 70]);  //hex: 25 50 44 46
 
@@ -783,6 +784,10 @@ class filesystem {
 		} elseif ((!$options['is_mime'] && $ext_or_mime === 'ttf') || ($options['is_mime'] && in_array($ext_or_mime, ['application/x-font-ttf', 'application/x-font-truetype'], true))) {
 
 			$headers = array([0, 1, 0, 0]);  //hex: 00 01 00 00 00
+
+		} elseif ((!$options['is_mime'] && $ext_or_mime === 'indd') || ($options['is_mime'] && in_array($ext_or_mime, ['application/x-indesign', 'application/octet-stream' /*on Swiftlayout server it gave this type for .indd files*/], true))) {
+
+			$headers = array([6, 6, 237, 245, 216, 29, 70, 229, 189, 49, 239, 231, 254, 116, 183, 29]);  //hex: 06 06 ED F5 D8 1D 46 e5 BD 31 EF E7 FE 74 B7 1D - followed by an 8-byte file type specifier: "DOCUMENT" (even when saved as template), "BOOKBOOK", or "LIBRARY4", which need the proper extensions .indd, .indb, .indl. (source: https://forums.adobe.com/thread/705908)
 
 		} elseif ((!$options['is_mime'] && in_array($ext_or_mime, ['txt', 'js', 'css'], true)) || ($options['is_mime'] && $ext_or_mime === 'text/plain')) {
 
