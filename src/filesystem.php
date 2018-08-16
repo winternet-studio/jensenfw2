@@ -5,17 +5,14 @@ This file contains functions related to file system handling and manipulation
 namespace winternet\jensenfw2;
 
 class filesystem {
+	/**
+	 * Get a list of all folders in a given folder
+	 *
+	 * @param string $folder : Relative or absolute reference to folder
+	 * @param integer $sorting_order : See PHP documentation for scandir()
+	 * @return array|false : Array with file names, or false if folder does not exist
+	 */
 	public static function get_folders($folder, $sorting_order = 0) {
-		/*
-		DESCRIPTION:
-		- get a list of all folders in a given folder
-		INPUT:
-		- $folder : relative or absolute reference to folder
-		- $sorting_order : see PHP documentation for scandir()
-		OUTPUT:
-		- array with file names
-		- or false if folder does not exist
-		*/
 		if (file_exists($folder)) {
 			$folders = scandir($folder, $sorting_order); 
 			foreach ($folders as $key => $file) {
@@ -31,17 +28,14 @@ class filesystem {
 		}
 	}
 
+	/**
+	 * Get all files in a folder
+	 *
+	 * @param string $folder : Relative or absolute reference to folder
+	 * @param integer $sorting_order : See PHP documentation for scandir()
+	 * @return array|false : Array with file names, or false if folder does not exist
+	 */
 	public static function get_files($folder, $sorting_order = 0) {
-		/*
-		DESCRIPTION:
-		- get all files in a folder
-		INPUT:
-		- $folder : relative or absolute reference to folder
-		- $sorting_order : see PHP documentation for scandir()
-		OUTPUT:
-		- array with file names
-		- or false if folder does not exist
-		*/
 		if (file_exists($folder)) {
 			$files = scandir($folder, $sorting_order);
 			foreach ($files as $key => $file) {
@@ -57,17 +51,15 @@ class filesystem {
 		}
 	}
 
+	/**
+	 * Add contents to file, but prepending instead of appending it
+	 * 
+	 * @param string $file
+	 * @param string $contents : New content to add to the file
+	 * @param integer $trim_length (opt.) : After prepending contents truncate the file to this amount of bytes
+	 * @return void : Only modifies the file
+	 */
 	public static function file_put_contents_prepend($file, $contents, $trim_length = false) {
-		/*
-		DESCRIPTION:
-		- add contents to file, but prepending instead of appending it
-		INPUT:
-		- $file
-		- $contents : new content to add to the file
-		- $trim_length (opt.) : after prepending contents truncate the file to this amount of bytes
-		OUTPUT:
-		- nothing, only modifies the file
-		*/
 		$contents = (string) $contents;
 		$len = strlen($contents);
 		if ($len == 0) {
@@ -94,15 +86,13 @@ class filesystem {
 		}
 	}
 
+	/**
+	 * Get all kinds of information about a file
+	 * 
+	 * @param string $file : Can be just a file name, but if you want path data output too you must of course include that
+	 * @return array
+	 */
 	public static function file_info($file) {
-		/*
-		DESCRIPTION:
-		- get all kinds of information about a file
-		INPUT:
-		- $file : can be just a file name, but if you want path data output too you must of course include that
-		OUTPUT:
-		- associative array
-		*/
 		$pathinfo = pathinfo($file);
 		$nameonly = substr($pathinfo['basename'], 0, strlen($pathinfo['basename']) - strlen($pathinfo['extension']) - 1);  //remove extension and dot
 		$file = str_replace("\\", "/", $file);  //unify input data
@@ -124,19 +114,17 @@ class filesystem {
 		return $fileinfo;
 	}
 
+	/**
+	 * Renames a file and/or move a file
+	 *
+	 * @param string $old_filepath : Current file name including path to file
+	 * @param string $new_file : New file name
+	 *   - if only rename : you can leave out the path
+	 *   - if rename and move : path must of course be included
+	 * @param string  $err_msg_var : If present any error message (associative array with `code` and `desc`) will be written to this variable
+	 * @return boolean : True on success, false on failed
+	 */
 	public static function rename_move_file($old_filepath, $new_file, &$err_msg_var = null, $allow_overwrite = false) {
-		/*
-		DESCRIPTION:
-		- renames a file and/or move a file
-		INPUT:
-		- $old_filepath : current file name including path to file
-		- $new_file : new file name
-			- if only rename : you can leave out the path
-			- if rename and move : path must of course be included
-		- $err_msg_var : if present any error message (associative array with 'code' and 'desc') will be written to this variable
-		OUTPUT:
-		- true on success, false on failed
-		*/
 		// Unify input data
 		$old_filepath = str_replace('\\', '/', $old_filepath);
 		$new_file     = str_replace('\\', '/', $new_file);
@@ -192,15 +180,15 @@ class filesystem {
 		}
 	}
 
+	/**
+	 * Delete a file, with optional trashcan feature
+	 * 
+	 * @param string $location : Path and file name
+	 * @param string $trashcan_folder : If a folder is specified the file will be moved to this folder instead of just being deleted (with or without trailing slash/backslash)
+	 * @param string $err_msg_var : If present any error message (associative array with `code` and `desc`) will be written to this variable
+	 * @return boolean
+	 */
 	public static function delete_file($location, $trashcan_folder = false, &$err_msg_var = null) {
-		/*
-		DESCRIPTION:
-		- delete a file, with optional trashcan feature
-		INPUT:
-		- $location : path and file name
-		- $trashcan_folder : if a folder is specified the file will be moved to this folder instead of just being deleted (with or without trailing slash/backslash)
-		- $err_msg_var : if present any error message (associative array with 'code' and 'desc') will be written to this variable
-		*/
 		if (file_exists($location)) {
 			if ($trashcan_folder) {
 				// Using trashcan feature
@@ -235,22 +223,23 @@ class filesystem {
 		}
 	}
 
+	/**
+	 * Look through all files in a folder tree (recursively) and apply a callback function to each file
+	 *
+	 * Example:
+	 * ```
+	 * iterate_folder_tree($path, 'remove_old_file');
+	 * public static function remove_old_file($fullpath, $filename) {
+	 *   unlink($fullpath);
+	 * }
+	 * ```
+	 * 
+	 * @param string $path : The path to the folder to start in
+	 * @param callable $callback_function : Function to call for each file
+	 *   - is passed two arguments: 1) full path to the file incl. its name, 2) file name only
+	 * @return void : But `$GLOBALS['jfw_iterated_paths']` will be an array of paths we have gone through
+	 */
 	public static function iterate_folder_tree($path, $callback_function, $_internal = false) {
-		/*
-		DESCRIPTION:
-		- look through all files in a folder tree (recursively) and apply a callback function to each file
-		- example:
-			iterate_folder_tree($path, 'remove_old_file');
-			public static function remove_old_file($fullpath, $filename) {
-				unlink($fullpath);
-			}
-		INPUT:
-		- $path : the path to the folder to start in
-		- $callback_function : function to call for each file
-			- is passed two arguments: 1) full path to the file incl. its name, 2) file name only
-		OUTPUT:
-		- nothing, but $GLOBALS['jfw_iterated_paths'] will be an array of paths we have gone through
-		*/
 		if (!$_internal) $GLOBALS['jfw_iterated_paths'] = array();
 		foreach (scandir($path) as $file) {
 			$pathfile = rtrim($path, '/') .'/'. $file;
@@ -268,18 +257,15 @@ class filesystem {
 		}
 	}
 
+	/**
+	 * Copy all files and folders to another folder
+	 * 
+	 * @param string $src : Source folder
+	 * @param string $dest : Destination folder
+	 * @param array $arr_skip_matches : Array of regular expressions which when matching a given full path should exclude that path
+	 * @return boolean : True if success, false if failure
+	 */
 	public static function copy_folder_tree($src, $dest, $arr_skip_matches = array() ) {
-		/*
-		DESCRIPTION:
-		- copy all files and folders to another folder
-		INPUT:
-		- $src : source folder
-		- $dest : destination folder
-		- $arr_skip_matches : array of regular expressions which when matching a given full path should exclude that path
-		OUTPUT:
-		- if success : true
-		- if failure : false
-		*/
 		if (!is_dir($src)) {
 			return false;
 		}
@@ -317,19 +303,17 @@ class filesystem {
 		return true;
 	}
 
+	/**
+	 * Delete all files and folders within a given folder recursively
+	 *
+	 * Use delete_folder_tree() instead to also delete the folder itself.
+	 *
+	 * @param string $emptypath : Complete absolute path to folder that should be emptied
+	 * @param array $arr_skip_matches : Array of regular expressions within the given folder which when matched should NOT be deleted
+	 * @param string $err_msg_var : If present any error message (associative array with `code` and `desc`) will be written to this variable
+	 * @return boolean : True if success, false if failure
+	 */
 	public static function empty_folder($emptypath, $arr_skip_matches = array(), &$err_msg_var = null) {
-		/*
-		DESCRIPTION:
-		- delete all files and folders within a given folder recursively
-		- use delete_folder_tree() instead to also delete the folder itself
-		INPUT:
-		- $emptypath : complete absolute path to folder that should be emptied
-		- $arr_skip_matches : array of regular expressions within the given folder which when matched should NOT be deleted
-		- $err_msg_var : if present any error message (associative array with 'code' and 'desc') will be written to this variable
-		OUTPUT:
-		- if success : true
-		- if failure : false
-		*/
 		if (mb_strlen($emptypath) < 7 || substr($emptypath, -1) != '/') {
 			die('Error in argument for emptying folder: '. $emptypath);
 		}
@@ -364,18 +348,16 @@ class filesystem {
 		return true;
 	}
 
+	/**
+	 * Delete an entire folder structure with all its files and folders recursively
+	 *
+	 * Use empty_folder() instead to only delete its contents.
+	 *
+	 * @param string $folder : Folder to delete
+	 * @param string $err_msg_var : If present any error message (associative array with `code` and `desc`) will be written to this variable
+	 * @return boolean : True if success, false if failure
+	 */
 	public static function delete_folder_tree($dir, &$err_msg_var = null) {
-		/*
-		DESCRIPTION:
-		- delete an entire folder structure with all its files and folders recursively
-		- use empty_folder() instead to only delete its contents
-		INPUT:
-		- $folder : folder to delete
-		- $err_msg_var : if present any error message (associative array with 'code' and 'desc') will be written to this variable
-		OUTPUT:
-		- if success : true
-		- if failure : false
-		*/
 		if (!is_dir($folder)) {
 			$err_msg_var = array('code' => 'folder_nonexist', 'desc' => 'Folder to delete does not exist.', 'path' => $folder);
 			return false;
@@ -406,17 +388,17 @@ class filesystem {
 		return true;
 	}
 
+	/**
+	 * Convert any string to a valid file OR directory name, with special characters removed
+	 *
+	 * Less restrictive than make_valid_filename_strict().
+	 *
+	 * @param array $options : Associative array with any of these keys:
+	 *   - `replace_space_with` (string) : set character to replace spaces with instead of underscores (_)
+	 *   - `skip_space_conversion` (boolean) : set to true if spaces should NOT be converted
+	 * @return string
+	 */
 	public static function make_valid_filename($input, $options = array() ) {
-		/*
-		DESCRIPTION:
-		- use this function to convert any string to a valid file OR directory name, with special characters removed
-		- less restrictive than make_valid_filename_strict()
-		INPUT:
-		- $options : associative array with any of these keys:
-			- 'replace_space_with' (string) : set character to replace spaces with instead of underscores (_)
-			- 'skip_space_conversion' (boolean) : set to true if spaces should NOT be converted
-		*/
-
 		// Replace spaces
 		if (!$options['skip_space_conversion']) {
 			if ($options['replace_space_with']) {
@@ -434,20 +416,22 @@ class filesystem {
 		return $input;
 	}
 
+	/**
+	 * Convert any string to a valid file OR directory name, with special characters removed
+	 *
+	 * Very strict regarding which characters are allowed.
+	 *
+	 * @param string $input : File name
+	 * @param array $options : Associative array with any of these keys:
+	 *   - `replace_space_with` (string) : set character to replace spaces with instead of underscores (_)
+	 *   - `skip_space_conversion` (boolean) : set to true if spaces should NOT be converted
+	 *   - `skip_special_char_conversion` (boolean) : set to true if special characters should NOT be converted
+	 *   - `skip_removing_nonascii` (boolean) : set to true if unknown non-ASCII characters should NOT be removed
+	 *   - `allow_characters` (string) : string with characters that should be allowed even though they are listed below
+	 *   - `assume_filename_only` (boolean) : set to true assuming that $input is only a file name and not a full path
+	 * @return string
+	 */
 	public static function make_valid_filename_strict($input, $options = array() ) {
-		/*
-		DESCRIPTION:
-		- use this function to convert any string to a valid file OR directory name, with special characters removed
-		- very strict regarding which characters are allowed
-		INPUT:
-		- $options : associative array with any of these keys:
-			- 'replace_space_with' (string) : set character to replace spaces with instead of underscores (_)
-			- 'skip_space_conversion' (boolean) : set to true if spaces should NOT be converted
-			- 'skip_special_char_conversion' (boolean) : set to true if special characters should NOT be converted
-			- 'skip_removing_nonascii' (boolean) : set to true if unknown non-ASCII characters should NOT be removed
-			- 'allow_characters' (string) : string with characters that should be allowed even though they are listed below
-			- 'assume_filename_only' (boolean) : set to true assuming that $input is only a file name and not a full path
-		*/
 		$options['allow_characters'] = (string) $options['allow_characters'];
 
 		// Get basename
@@ -510,31 +494,28 @@ class filesystem {
 		}
 	}
 
+	/**
+	 * Check if a file name is strictly valid
+	 *
+	 * @param string $filename
+	 * @return boolean
+	 */
 	public static function is_valid_filename($filename) {
-		/*
-		DESCRIPTION:
-		- check if a file name is strictly valid
-		INPUT:
-		- $filename
-		OUTPUT:
-		- boolean
-		*/
 		return (preg_match("#[". preg_quote("\\/:*?\"<>|") ."]#", $filename) ? false : true);
 	}
 
+	/**
+	 * Check if a full path to a file is valid
+	 *
+	 * Eg.: `/var/www/myfile.php` or `c:\www-root\document.pdf`
+	 *
+	 * @param aray $options : Associative array with any of these keys:
+	 * 	- `valid_folder_separators` (string) : list of valid folder separator characters. Default is slash and backslash (\ and /)
+	 * 	- `allow_characters` (string) : other allowed characters in the folder and file names that would normally be disallowed
+	 * 	- `skip_special_char_conversion` (boolean) : set to true to allow special characters according to make_valid_filename_strict() in the path
+	 * @return boolean
+	 */
 	public static function is_valid_filepath($filepath, $options = array() ) {
-		/*
-		DESCRIPTION:
-		- check if a full path to a file is valid
-		- eg.: /var/www/myfile.php  or c:\www-root\document.pdf
-		INPUT:
-		- $options : associative array with any of these keys:
-			- 'valid_folder_separators' (string) : list of valid folder separator characters. Default is slash and backslash (\ and /)
-			- 'allow_characters' (string) : other allowed characters in the folder and file names that would normally be disallowed
-			- 'skip_special_char_conversion' (boolean) : set to true to allow special characters according to make_valid_filename_strict() in the path
-		OUTPUT:
-		- boolean
-		*/
 		$defaults = [
 			'valid_folder_separators' => "\\/",
 			'allow_characters' => '',
@@ -548,19 +529,17 @@ class filesystem {
 		return ($clean === $filepath ? true : false);
 	}
 
+	/**
+	 * Ensure that a file OR directory will be unique in a certain folder by adding a number after the name
+	 *
+	 * @param string $filename : File name to check uniqueness of
+	 * @param string $basefolder : In which folder to check (with or without trailing slash/backslash)
+	 * @param boolean $is_dir : If $filename is a file or a directory
+	 * @param boolean $forcedigits : Whether or not to add a number even though the file would be unique without adding a number (good for making a series of files)
+	 * @param integer $digits : Number of digits in the number that will be added
+	 * @return string
+	 */
 	public static function make_unique_filename($filename, $basefolder, $is_dir = false, $forcedigits = false, $digits = 2) {
-		/*
-		DESCRIPTION:
-		- use this function to ensure that a file OR directory will be unique in a certain folder by adding a number after the name
-		INPUT:
-		- $filename : file name to check uniqueness of
-		- $basefolder : in which folder to check (with or without trailing slash/backslash)
-		- $is_dir: if $filename is a file or a directory
-		- $forcedigits: whether or not to add a number even though the file would be unique without adding a number (good for making a series of files)
-		- $digits: number of digits in the number that will be added
-		TODO:
-		- first put files into an array and then check against the array instead of going to the filesystem all the time
-		*/
 		$basefolder = self::cleanup_path($basefolder);
 		if ($basefolder[strlen($basefolder)-1] != '/') {  //add trailing slash if not present
 			$basefolder .= '/';
@@ -591,19 +570,19 @@ class filesystem {
 		}
 	}
 
-	public static function require_folder_exist($folder, $mode = false) {
-		/*
-		DESCRIPTION:
-		- check existence of a folder and automatically tries to create it if not present
-		- works recursively (=> ensures that parent folders also exist)
-		- source: PHP documentation notes: acroyear@io.com (22-Jun-2003 05:38)
-		- original function name: mkdirs()
-		INPUT:
-		- $folder : path to require existence of
-		- $mode (opt.) : option to set specific permissions (ignored on Windows platforms)
-		OUTPUT:
-		- true or false
-		*/
+	/**
+	 * Check existence of a folder and automatically try to create it if not present
+	 *
+	 * Works recursively (=> ensures that parent folders also exist)
+	 *
+	 * Source: PHP documentation notes: acroyear@io.com (22-Jun-2003 05:38)
+	 * Original function name: mkdirs()
+	 *
+	 * @param string $folder : Path to require existence of
+	 * @param integer $mode : (opt.) Option to set specific permissions (ignored on Windows platforms)
+	 * @return boolean
+	 */
+	public static function require_folder_exist($folder, $mode = null) {
 		if (is_dir($folder)) {
 			return true;
 		}
@@ -611,7 +590,11 @@ class filesystem {
 		if (!self::require_folder_exist($parent_folder, $mode)) {
 			return false;
 		}
+		if ($mode) {
+			$mkdir_result = mkdir($folder, $mode);
+		} else {
 		$mkdir_result = mkdir($folder);
+		}
 		if (!$mkdir_result) {
 			core::system_error('Folder did not exists and automatic creation failed.', ['Folder' => $folder]);
 		} else {
@@ -619,17 +602,15 @@ class filesystem {
 		}
 	}
 
+	/**
+	 * Get the MIME type of a file by analyzing its contents
+	 *
+	 * Works only on Linux
+	 *
+	 * @param string $filepath : Path to file
+	 * @return array|string : If found an associative array with keys `mimetype` and `charset`, if not found string `unknown`
+	 */
 	public static function get_mime_type($filepath) {
-		/*
-		DESCRIPTION:
-		- get the MIME type of a file by analyzing its contents
-		- works only on Linux
-		INPUT:
-		- $filepath : path to file
-		OUTPUT:
-		- associative array with keys 'mimetype' and 'charset' : found the mime type
-		- 'unknown' : don't know the mime type
-		*/
 		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 			throw new \Exception('The method get_mime_type() is not yet supported on Windows.');
 		}
@@ -711,27 +692,29 @@ class filesystem {
 		];
 	}
 
+	/**
+	 * Check if a file matches its extension or MIME type by checking its header bytes
+	 *
+	 * Sources:
+	 * - https://en.wikipedia.org/wiki/List_of_file_signatures
+	 * - http://www.garykessler.net/library/file_sigs.html
+	 * - https://www.sitepoint.com/mime-types-complete-list/
+	 * - http://filesignatures.net/index.php?page=all&order=SIGNATURE&sort=DESC&alpha=All
+	 *
+	 * Software developer Allan Jensen (www.winternet.no) has started building a collection of sample files with the different signatures
+	 *
+	 * Hex to decimal converter: https://duckduckgo.com/?q=hex+to+decimal&atb=v26_k&ia=textconverter
+	 *
+	 * @param string $filepath : Path to file
+	 * @param string $ext_or_mime : (opt.) Extension of the file, or MIME type. If not provided it is auto-detected.
+	 *   - if MIME type was determined by reading the file itself there is no reason to using this method - unless you are cynical ;)
+	 * @return boolean|string : Possible return values:
+	 *   - true : valid
+	 *   - false : not valid
+	 *   - `unknown` : don't know the file type's or MIME type's signature
+	 *   - `nosig` : has no signature
+	 */
 	public static function is_signature_valid($filepath, $ext_or_mime = false, $options = []) {
-		/*
-		DESCRIPTION:
-		- check if a file matches its extension or MIME type by checking its header bytes
-		- sources:
-			- https://en.wikipedia.org/wiki/List_of_file_signatures
-			- http://www.garykessler.net/library/file_sigs.html
-			- https://www.sitepoint.com/mime-types-complete-list/
-			- http://filesignatures.net/index.php?page=all&order=SIGNATURE&sort=DESC&alpha=All
-		- software developer Allan Jensen (www.winternet.no) has started building a collection of sample files with the different signatures
-		- hex to decimal converter: https://duckduckgo.com/?q=hex+to+decimal&atb=v26_k&ia=textconverter
-		INPUT:
-		- $filepath (string) : path to file
-		- $ext_or_mime (string) (opt.) : extension of the file, or MIME type. If not provided it is auto-detected.
-			- if MIME type was determined by reading the file itself there is no reason to using this method - unless you are cynical ;)
-		OUTPUT:
-		- true : valid
-		- false : not valid
-		- 'unknown' : don't know the file type's or MIME type's signature
-		- 'nosig' : has no signature
-		*/
 		$defaults = [
 			'is_mime' => false,
 		];
@@ -841,15 +824,13 @@ class filesystem {
 		return 'unknown';
 	}
 
+	/**
+	 * Determine if a file is binary
+	 * 
+	 * @param string $file : File name including path
+	 * @return boolean
+	 */
 	public static function is_binary_file($file) {
-		/*
-		DESCRIPTION:
-		- determine if a file is binary
-		INPUT:
-		- $file : file name including path
-		OUTPUT:
-		- true or false
-		*/
 		$fp = fopen($file, 'r');
 		$d = fread($fp, 1000);
 		if (preg_match("|\\x00|", $d) || !preg_match('/\\.(php|phtml|js|txt|css|htm|html|xhtml|xml|xsl|xsd|txt|ini|sql|json|htaccess|htpasswd|asp|cgi|bat|log|vbs|csv|m3u)$/i', $file)) {  //NOTE: the first condition was not enough in case of a given PDF file I tried to upload
@@ -897,11 +878,10 @@ class filesystem {
 		}
 	}
 
+	/**
+	 * Cleanup a path (with or without filename) by using only forward slashes
+	 */
 	public static function cleanup_path($path) {
-		/*
-		DESCRIPTION:
-		- cleanup a path (with or without filename) by using only forward slashes
-		*/
 		return str_replace('\\', '/', $path);
 	}
 }
