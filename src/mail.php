@@ -1013,7 +1013,7 @@ class mail {
 			$html .= 'var '. $randomno1 .'="'. $part1 .'";';
 			$html .= 'var '. $randomno2 .'="'. $part2 .'";';
 			if ($options['mode'] != 'nolink') {
-				$html .= "document.write('<a hr'+'ef=\"mai'+'lto:'+". $randomno1 ."+eval('unes'+'cape(\'%40\')')+". $randomno2 ."+'". (array_key_exists('params', $options) ? '?'. http_build_query($options['params'], '', '&amp;', PHP_QUERY_RFC3986) : '') ."\">');";
+				$html .= "document.write('<a hr'+'ef=\"mai'+'lto:'+". $randomno1 ."+eval('unes'+'cape(\'%40\')')+". $randomno2 ."+'". self::build_mailto_parameters($options['params']) ."\">');";
 			}
 			$html .= "document.write(";
 			if ($options['text']) {
@@ -1029,6 +1029,25 @@ class mail {
 			$html .= '/* ]]> */'."\r\n";
 			$html .= '</script>';
 			return $html;
+		}
+	}
+
+	/**
+	 * Build parameters (subject, body etc) for a mailto: link
+	 *
+	 * More information: https://blog.escapecreative.com/customizing-mailto-links/
+	 *
+	 * @param array $params : Associative array with any of the following keys:
+	 *   - `subject` : subject line
+	 *   - `body` : body text
+	 *   - `cc` : CC email addresses (comma-sep.)
+	 *   - `bcc` : BCC email addresses (comma-sep.)
+	 */
+	public static function mailto_params($params) {
+		if (!empty($params)) {
+			return '?'. http_build_query($params, '', '&amp;', PHP_QUERY_RFC3986);
+		} else {
+			return '';
 		}
 	}
 
@@ -1134,7 +1153,7 @@ class mail {
 	public static function resend_email_from_raw_log($emaillog_rawID, $add_note = '') {
 		/*
 		DESCRIPTION:
-		- 
+		-
 		INPUT:
 		- $emaillog_rawID : IF the email record from temp_emaillog_raw
 		- $add_note : note to add in the top of the email (plain text)
