@@ -14,7 +14,7 @@ class filesystem {
 	 */
 	public static function get_folders($folder, $sorting_order = 0) {
 		if (file_exists($folder)) {
-			$folders = scandir($folder, $sorting_order); 
+			$folders = scandir($folder, $sorting_order);
 			foreach ($folders as $key => $file) {
 			    if (!is_dir($folder.'/'.$file) || $file == '.' || $file == '..') {
 					unset($folders[$key]);
@@ -53,7 +53,7 @@ class filesystem {
 
 	/**
 	 * Add contents to file, but prepending instead of appending it
-	 * 
+	 *
 	 * @param string $file
 	 * @param string $contents : New content to add to the file
 	 * @param integer $trim_length (opt.) : After prepending contents truncate the file to this amount of bytes
@@ -88,7 +88,7 @@ class filesystem {
 
 	/**
 	 * Get all kinds of information about a file
-	 * 
+	 *
 	 * @param string $file : Can be just a file name, but if you want path data output too you must of course include that
 	 * @return array
 	 */
@@ -182,7 +182,7 @@ class filesystem {
 
 	/**
 	 * Delete a file, with optional trashcan feature
-	 * 
+	 *
 	 * @param string $location : Path and file name
 	 * @param string $trashcan_folder : If a folder is specified the file will be moved to this folder instead of just being deleted (with or without trailing slash/backslash)
 	 * @param string $err_msg_var : If present any error message (associative array with `code` and `desc`) will be written to this variable
@@ -233,7 +233,7 @@ class filesystem {
 	 *   unlink($fullpath);
 	 * }
 	 * ```
-	 * 
+	 *
 	 * @param string $path : The path to the folder to start in
 	 * @param callable $callback_function : Function to call for each file
 	 *   - is passed two arguments: 1) full path to the file incl. its name, 2) file name only
@@ -259,7 +259,7 @@ class filesystem {
 
 	/**
 	 * Copy all files and folders to another folder
-	 * 
+	 *
 	 * @param string $src : Source folder
 	 * @param string $dest : Destination folder
 	 * @param array $arr_skip_matches : Array of regular expressions which when matching a given full path should exclude that path
@@ -367,7 +367,7 @@ class filesystem {
 			$folderobject = rtrim($folder, '/') .'/'. $object;
 			if ($object != '.' && $object != '..') {
 				if (filetype($folderobject) == 'dir') {
-					$r = self::delete_folder_tree($folderobject, $del_errmsg); 
+					$r = self::delete_folder_tree($folderobject, $del_errmsg);
 					if (!$r) {
 						$err_msg_var = array('code' => 'folder_nonexist', 'desc' => 'Could not delete child folder tree.', 'parent_error' => $del_errmsg, 'path' => $folderobject);
 						return false;
@@ -826,7 +826,7 @@ class filesystem {
 
 	/**
 	 * Determine if a file is binary
-	 * 
+	 *
 	 * @param string $file : File name including path
 	 * @return boolean
 	 */
@@ -849,11 +849,11 @@ class filesystem {
 	  if (is_dir($dir)) {
 	    $dh = opendir($dir);
 	    while (($file = readdir($dh)) !== false)
-	      if ($file != "." and $file != "..") 
-	        $space += folder_size($dir."/".$file); 
+	      if ($file != "." and $file != "..")
+	        $space += folder_size($dir."/".$file);
 	    closedir($dh);
-	  } 
-	  return $space; 
+	  }
+	  return $space;
 	}
 	*/
 
