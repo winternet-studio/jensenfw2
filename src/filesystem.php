@@ -181,6 +181,31 @@ class filesystem {
 	}
 
 	/**
+	 * Copy a file
+	 *
+	 * @param string $source : Source file according to copy()
+	 * @param string $destination : Destination file according to copy()
+	 * @param array $options : Any of these options:
+	 *   - `keep_modification_time` : Retain modification time of the source file in the destination file
+	 */
+	public static function copy_file($source, $destination, $options = []) {
+		$result = copy($source, $destination);
+		if ($result) {
+			if ($options['keep_modification_time']) {  //source: https://stackoverflow.com/questions/4898534/php-copy-file-without-changing-the-last-modified-date#17893031
+				$dt = filemtime($source);
+				if ($dt === false)  {
+					core::system_error('Failed to get source timestamp when copying file.', ['Source' => $source, 'Destination' => $destination]);
+				} else {
+					if (!touch($destination, $dt)) {
+						core::system_error('Failed to set destination timestamp when copying file.', ['Source' => $source, 'Destination' => $destination]);
+					}
+				}
+			}
+		}
+		return $result;
+	}
+
+	/**
 	 * Delete a file, with optional trashcan feature
 	 *
 	 * @param string $location : Path and file name
