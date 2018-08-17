@@ -1013,7 +1013,7 @@ class mail {
 			$html .= 'var '. $randomno1 .'="'. $part1 .'";';
 			$html .= 'var '. $randomno2 .'="'. $part2 .'";';
 			if ($options['mode'] != 'nolink') {
-				$html .= "document.write('<a hr'+'ef=\"mai'+'lto:'+". $randomno1 ."+eval('unes'+'cape(\'%40\')')+". $randomno2 ."+'". self::build_mailto_parameters($options['params']) ."\">');";
+				$html .= "document.write('<a hr'+'ef=\"mai'+'lto:'+". $randomno1 ."+eval('unes'+'cape(\'%40\')')+". $randomno2 ."+'". self::mailto_params($options['params']) ."\">');";
 			}
 			$html .= "document.write(";
 			if ($options['text']) {
