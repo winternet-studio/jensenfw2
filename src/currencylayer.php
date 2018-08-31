@@ -1,21 +1,19 @@
 <?php
-/*
-This file contains functions related to geocoding
-*/
+/**
+ * This file contains functions related to apilayer.com
+ */
 namespace winternet\jensenfw2;
 
 class currencylayer {
+	/**
+	 * Get most currenct exchange rates from currencylayer.com
+	 *
+	 * @param string $api_access_key : (req.)
+	 * @param string $base_currency : (opt.) Set base currency other than USD. REQUIRES a paid subscription!
+	 * @param array $limit_to_currencies : (opt.) Get only currencies listed in the given array
+	 * @return array
+	 */
 	public static function get_live_exchange_rates($api_access_key, $base_currency = false, $limit_to_currencies = []) {
-		/*
-		DESCRIPTION:
-		- get most currenct exchange rates from currencylayer.com
-		INPUT:
-		- $api_access_key (req.)
-		- $base_currency (opt.) : set base currency other than USD. REQUIRES a paid subscription!
-		- $limit_to_currencies (opt.) : get only currencies listed in the given array
-		OUTPUT:
-		- 
-		*/
 		$url = 'http://apilayer.net/api/live?access_key='. $api_access_key;
 
 		if ($base_currency) {
