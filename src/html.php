@@ -217,6 +217,47 @@ class html {
 	}
 
 	/**
+	 * Parse the CSS shorthand syntax for providing one to four values
+	 *
+	 * @param string $css_value : CSS property value, eg. `4px`, `2px 5px`, `2px 7px 5px`, or `2px 7px 3px 7px`
+	 * @return array : Associative array with keys `top`, `left`, `bottom`, and `right`
+	 */
+	public static function parse_css_shorthand($css_value) {
+		$css_value = trim($css_value);
+		if (strpos($css_value, ' ') !== false) {
+			$parts = preg_split("/[\\s]+/", $css_value);
+			$partscount = count($parts);
+			if ($partscount == 2) {
+				$output['top'] = $parts[0];
+				$output['bottom'] = $parts[0];
+				$output['left'] = $parts[1];
+				$output['right'] = $parts[1];
+			} elseif ($partscount == 3) {
+				$output['top'] = $parts[0];
+				$output['left'] = $parts[1];
+				$output['right'] = $parts[1];
+				$output['bottom'] = $parts[2];
+			} elseif ($partscount == 4) {
+				$output['top'] = $parts[0];
+				$output['right'] = $parts[1];
+				$output['bottom'] = $parts[2];
+				$output['left'] = $parts[3];
+			} else {
+				core::system_error('Invalid CSS property shorthand to parse.', ['Value' => $css_value]);
+			}
+		} else {
+			// single value
+			$output = array(
+				'top' => $css_value,
+				'left' => $css_value,
+				'bottom' => $css_value,
+				'right' => $css_value,
+			);
+		}
+		return $output;
+	}
+
+	/**
 	 * Format the standard result/output from a function with 'status', 'result_msg', and 'err_msg' keys in an array
 	 *
 	 * @param array $arr_result : The array that was returned by the function
