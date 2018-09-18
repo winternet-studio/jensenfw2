@@ -193,38 +193,37 @@ class geography {
 		return $new_latlng;
 	}
 
+	/**
+	 * Convert a latitude or longitude from Degrees Minutes Seconds to Decimal Degrees
+	 *
+	 * Eg. N 55° 40' 49.872", E 12° 33' 44.028"  ===>  55.68052, 12.56223
+	 *
+	 * Source: https://www.dougv.com/2012/03/07/converting-latitude-and-longitude-coordinates-between-decimal-and-degrees-minutes-seconds/
+	 *
+	 * @param float $degrees
+	 * @param float $minutes
+	 * @param float $seconds
+	 * @param string $direction : Possible values: `N`, `S`, `E`, `W` (is case-insensitive)
+	 * @return float : The decimal degrees
+	 */
 	public static function convert_coordinate_dms_to_decimal($degrees, $minutes, $seconds, $direction) {
-		/*
-		DESCRIPTION:
-		- convert a latitude or longitude from Degrees Minutes Seconds to Decimal Degrees
-		- source: https://www.dougv.com/2012/03/07/converting-latitude-and-longitude-coordinates-between-decimal-and-degrees-minutes-seconds/
-		INPUT:
-		- $degrees : number
-		- $minutes : number
-		- $seconds : number
-		- $direction ('N', 'S', 'E', 'W') : (is case-insensitive)
-		OUTPUT:
-		- success: decimal
-		- failure: false
-		*/
-		$d = strtolower($direction);
-		$ok = array('n', 's', 'e', 'w');
+		$d = strtoupper($direction);
+		$ok = array('N', 'S', 'E', 'W');
 
 		//degrees must be integer between 0 and 180
 		if (!is_numeric($degrees) || $degrees < 0 || $degrees > 180) {
-			$decimal = false;
+			core::system_error('Invalid degress for converting to decimal.');
 		} elseif(!is_numeric($minutes) || $minutes < 0 || $minutes > 59) {  //minutes must be integer or float between 0 and 59
-			$decimal = false;
+			core::system_error('Invalid minutes for converting to decimal.');
 		} elseif (!is_numeric($seconds) || $seconds < 0 || $seconds > 59) {  //seconds must be integer or float between 0 and 59
-			$decimal = false;
+			core::system_error('Invalid seconds for converting to decimal.');
 		} elseif (!in_array($d, $ok)) {
-			$decimal = false;
+			core::system_error('Invalid direction for converting to decimal.');
 		} else {
-			//inputs clean, calculate
 			$decimal = $degrees + ($minutes / 60) + ($seconds / 3600);
 
 			//reverse for south or west coordinates; north is assumed
-			if ($d == 's' || $d == 'w') {
+			if ($d == 'S' || $d == 'W') {
 				$decimal *= -1;
 			}
 		}
@@ -232,39 +231,27 @@ class geography {
 		return $decimal;
 	}
 
+	/**
+	 * Convert a latitude or longitude from Decimal Degrees to Degrees Minutes Seconds
+	 *
+	 * Eg. 55.68052, 12.56223  ===>  N 55° 40' 49.872", E 12° 33' 44.028"
+	 *
+	 * Source: https://www.dougv.com/2012/03/07/converting-latitude-and-longitude-coordinates-between-decimal-and-degrees-minutes-seconds/
+	 *
+	 * @param float $decimal : The decimal degrees, eg. `59.7682642` or `-122.4726193`
+	 * @param string $type : Whether the decimal degrees is for a latitude or longitude: `lat` or `lng`
+	 * @return array : Array with keys `degrees`, `minutes`, `seconds`, `direction`
+	 */
 	public static function convert_coordinate_decimal_to_dms($decimal, $type) {
-		/*
-		DESCRIPTION:
-		- convert a latitude or longitude from Decimal Degrees to Degrees Minutes Seconds
-		- source: https://www.dougv.com/2012/03/07/converting-latitude-and-longitude-coordinates-between-decimal-and-degrees-minutes-seconds/
-		INPUT:
-		- $decimal : the decimal degrees
-		- $type ('lat|lng') : whether the decimal degrees is for a latitude or longitude
-		OUTPUT:
-		- associative array with keys 'degrees', 'minutes', 'seconds', 'direction'
-		*/
-
-		//set default values for variables passed by reference
-		$degrees = 0;
-		$minutes = 0;
-		$seconds = 0;
-		$direction = 'X';
-
-		//decimal must be integer or float no larger than 180;
-		//type must be Boolean
-		if (!is_numeric($decimal) || abs($decimal) > 180 || !in_array($type, array('lat', 'lng', 'lon', 'long'))) {
-			return false;
+		if (!is_numeric($decimal) || abs($decimal) > 180 || !in_array($type, array('lat', 'lng'))) {
+			core::system_error('Invalid parameters for converting decimal degrees.', ['Decimal' => $decimal, 'Type' => $type]);
 		}
 
-		//inputs OK, proceed
-		//type is latitude when true, longitude when false
-
-		//set direction; north assumed
-		if ($type && $decimal < 0) {
+		if ($type == 'lat' && $decimal < 0) {
 			$direction = 'S';
-		} elseif (!$type && $decimal < 0) {
+		} elseif ($type == 'lng' && $decimal < 0) {
 			$direction = 'W';
-		} elseif (!$type) {
+		} elseif ($type == 'lng') {
 			$direction = 'E';
 		} else {
 			$direction = 'N';
@@ -283,7 +270,7 @@ class geography {
 		$minutes = floor($seconds / 60);
 
 		//reset seconds
-		$seconds = floor($seconds - ($minutes * 60));
+		$seconds = round($seconds - ($minutes * 60), 5);
 
 		return array(
 			'degrees' => $degrees,
@@ -291,6 +278,24 @@ class geography {
 			'seconds' => $seconds,
 			'direction' => $direction,
 		);
+	}
+
+	/**
+	 * Convert a latitude or longitude from Decimal Degrees to Degrees Decimal Minutes
+	 *
+	 * Eg. 55.68052, 12.56223  ===>  N 55° 40.8312', E 12° 33.7338'
+	 *
+	 * @param float $decimal : The decimal degrees, eg. `59.7682642` or `-122.4726193`
+	 * @param string $type : Whether the decimal degrees is for a latitude or longitude: `lat` or `lng`
+	 * @return array : Array with keys `degrees`, `minutes`, `direction`
+	 */
+	public static function convert_coordinate_decimal_to_ddm($decimal, $type) {
+		$output = self::convert_coordinate_decimal_to_dms($decimal, $type);
+
+		$output['minutes'] = $output['minutes'] + ($output['seconds'] / 60);
+		unset($output['seconds']);
+
+		return $output;
 	}
 
 	public static function is_in_polygon($polygon, $longitude_x, $latitude_y) {
