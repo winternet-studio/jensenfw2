@@ -1,43 +1,45 @@
 <?php
-/*
-This file contains functions related to geography
-*/
 namespace winternet\jensenfw2;
 
-/*
-TESTS:
-$longitude_x = 37.6;  // x-coordinate of the point to test
-$latitude_y = -77.446;    // y-coordinate of the point to test
-
-$polygon = array(array(37.628134,-77.458334), array(37.629867,-77.449021), array(37.62324,-77.445416), array(37.622424,-77.457819));
-
-if (is_in_polygon($polygon, $longitude_x, $latitude_y)) {
-	echo "Is in polygon!";
-} else {
-	echo "Is not in polygon";
-}
-*/
+/**
+ * Methods related to geography
+ *
+ * TESTS:
+ * ```
+ * $longitude_x = 37.6;  // x-coordinate of the point to test
+ * $latitude_y = -77.446;    // y-coordinate of the point to test
+ * 
+ * $polygon = array(array(37.628134,-77.458334), array(37.629867,-77.449021), array(37.62324,-77.445416), array(37.622424,-77.457819));
+ * 
+ * if (is_in_polygon($polygon, $longitude_x, $latitude_y)) {
+ * 	echo 'Is inside polygon';
+ * } else {
+ * 	echo 'Is outside polygon';
+ * }
+ * ```
+ */
 
 class geography {
+	/**
+	 * Calculate the distance between two latitude/longitude coordinates
+	 *
+	 * Example: distance(32.9697, -96.80322, 29.46786, -98.53506, 'km')
+	 *
+	 * Source: http://www.zipcodeworld.com/samples/distance.php.html (did minor adjustments)
+	 *
+	 * @param float $lat1 : Latitude  of 1st coordinate
+	 * @param float $lng1 : Longitude of 1st coordinate
+	 * @param float $lat2 : Latitude  of 2nd coordinate
+	 * @param float $lng2 : Longitude of 2nd coordinate
+	 * @param string $unit : Unit to return the results in. Options are:
+	 * 	- `km`  : kilometers
+	 * 	- `m`   : meters
+	 * 	- `mi`  : statute miles (most common in US) (default)
+	 * 	- `nmi` : nautical miles
+	 *
+	 * @return float : Distance in the given unit
+	 */
 	public static function distance($lat1, $lng1, $lat2, $lng2, $unit) {
-		/*
-		DESCRIPTION:
-		- calculate the distance between two latitude/longitude coordinates
-		- example: distance(32.9697, -96.80322, 29.46786, -98.53506, 'km')
-		- source: http://www.zipcodeworld.com/samples/distance.php.html (did minor adjustments)
-		INPUT:
-		- $lat1 : latitude  of 1st coordinate
-		- $lng1 : longitude of 1st coordinate
-		- $lat2 : latitude  of 2nd coordinate
-		- $lng2 : longitude of 2nd coordinate
-		- $unit : the unit to return the results in. Options are:
-			- 'km'  : kilometers
-			- 'm'   : meters
-			- 'mi'  : statute miles (most common in US) (default)
-			- 'nmi' : nautical miles
-		OUTPUT:
-		- number
-		*/
 		//:: ORIGINAL COMMENTS:
 		//::  this routine calculates the distance between two points (given the
 		//::  latitude/longitude of those points). it is being used to calculate
@@ -77,38 +79,39 @@ class geography {
 		}
 	}
 
+	/**
+	 * Calculate the great-circle bearing (follow earth's curvature), in degrees, from starting Point A to remote Point B
+	 *
+	 * The bearing varies as you move towards Point B, so for navigation you would have to recalcuate this from time to time
+	 *
+	 * Source: http://webcache.googleusercontent.com/search?q=cache:o-7HcMkYfh0J:https://www.dougv.com/2009/07/13/calculating-the-bearing-and-compass-rose-direction-between-two-latitude-longitude-coordinates-in-php/+&cd=2&hl=no&ct=clnk
+	 *
+	 * @param float $lat1 : Latitude of Point A
+	 * @param float $lng1 : Longitude of Point A
+	 * @param float $lat2 : Latitude of Point B
+	 * @param float $lng2 : Longitude of Point B
+	 *
+	 * @return float : Bearing
+	 */
 	public static function bearing_greatcircle($lat1, $lng1, $lat2, $lng2) {
-		/*
-		DESCRIPTION:
-		- calculate the great-circle bearing (follow earth's curvature), in degrees, from starting Point A to remote Point B
-		- the bearing varies as you move towards Point B, so for navigation you would have to recalcuate this from time to time
-		- source: http://webcache.googleusercontent.com/search?q=cache:o-7HcMkYfh0J:https://www.dougv.com/2009/07/13/calculating-the-bearing-and-compass-rose-direction-between-two-latitude-longitude-coordinates-in-php/+&cd=2&hl=no&ct=clnk
-		INPUT:
-		- $lat1 : latitude of Point A
-		- $lng1 : longitude of Point A
-		- $lat2 : latitude of Point B
-		- $lng2 : longitude of Point B
-		OUTPUT:
-		- bearing (number)
-		*/
 		return (rad2deg(atan2(sin(deg2rad($lng2) - deg2rad($lng1)) * cos(deg2rad($lat2)), cos(deg2rad($lat1)) * sin(deg2rad($lat2)) - sin(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($lng2) - deg2rad($lng1)))) + 360) % 360;
 	}
 
+	/**
+	 * Calculate the bearing of a rhumb-line (straight line on map), in degrees, from starting Point A to remote Point B
+	 *
+	 * The bearing for a rhumb-line is constant all the way
+	 *
+	 * Source: http://webcache.googleusercontent.com/search?q=cache:o-7HcMkYfh0J:https://www.dougv.com/2009/07/13/calculating-the-bearing-and-compass-rose-direction-between-two-latitude-longitude-coordinates-in-php/+&cd=2&hl=no&ct=clnk
+	 *
+	 * @param float $lat1 : Latitude of Point A
+	 * @param float $lng1 : Longitude of Point A
+	 * @param float $lat2 : Latitude of Point B
+	 * @param float $lng2 : Longitude of Point B
+	 *
+	 * @return float : Bearing
+	 */
 	public static function bearing_rhumbline($lat1, $lng1, $lat2, $lng2) {
-		/*
-		DESCRIPTION:
-		- calculate the bearing of a rhumb-line (straight line on map), in degrees, from starting Point A to remote Point B
-		- the bearing for a rhumb-line is constant all the way
-		- source: http://webcache.googleusercontent.com/search?q=cache:o-7HcMkYfh0J:https://www.dougv.com/2009/07/13/calculating-the-bearing-and-compass-rose-direction-between-two-latitude-longitude-coordinates-in-php/+&cd=2&hl=no&ct=clnk
-		INPUT:
-		- $lat1 : latitude of Point A
-		- $lng1 : longitude of Point A
-		- $lat2 : latitude of Point B
-		- $lng2 : longitude of Point B
-		OUTPUT:
-		- bearing (number)
-		*/
-
 		//difference in longitudinal coordinates
 		$dLon = deg2rad($lng2) - deg2rad($lng1);
 
@@ -128,15 +131,13 @@ class geography {
 		return (rad2deg(atan2($dLon, $dPhi)) + 360) % 360;
 	}
 
+	/**
+	 * Get the cardinal direction of a bearing divided into 8 different directions
+	 *
+	 * @param float $bearing : Number between 0 and 359
+	 * @return array : Associative array with keys `short` and `long`
+	 */
 	public static function get_compass_rose_direction_8($bearing) {
-		/*
-		DESCRIPTION:
-		- get the cardinal direction of a bearing divided into 8 different directions
-		INPUT:
-		- $bearing : number between 0 and 359
-		OUTPUT:
-		- associative array with keys 'short' and 'long'
-		*/
 		if ($bearing <= 22.5 || $bearing > 337.5) {
 			return array('short' => 'N', 'long' => 'North');
 		} elseif ($bearing <= 67.5) {
@@ -156,20 +157,19 @@ class geography {
 		}
 	}
 
+	/**
+	 * Calculate the point (latitude/longitude) given a point of origin, a bearing, and a distance
+	 *
+	 * Source: http://www.etechpulse.com/2014/02/calculate-latitude-and-longitude-based.html
+	 *
+	 * @param float $lat
+	 * @param float $lng
+	 * @param float $angle : Bearing in degrees (0-360)
+	 * @param float $distance : Distance from the point in kilometers
+	 *
+	 * @return array : First entry is the new latitude, second entry the new longitude, eg.: array(60.6793281, 8.6953779)
+	 */
 	public static function point_from_bearing_distance($lat, $lng, $angle, $distance) {
-		/*
-		DESCRIPTION:
-		- calculate the point (latitude/longitude) given a point of origin, a bearing, and a distance
-		- source: http://www.etechpulse.com/2014/02/calculate-latitude-and-longitude-based.html
-		INPUT:
-		- $lat
-		- $lng
-		- $angle : bearing in degrees (0-360)
-		- $distance : distance from the point in kilometers
-		OUTPUT:
-		- array where first entry is the new latitude, second entry the new longitude
-		- example: array(60.6793281, 8.6953779)
-		*/
 		$new_latlng = [];
 		$distance = $distance / 6371;
 		$angle = deg2rad($angle);
@@ -204,6 +204,7 @@ class geography {
 	 * @param float $minutes
 	 * @param float $seconds
 	 * @param string $direction : Possible values: `N`, `S`, `E`, `W` (is case-insensitive)
+	 *
 	 * @return float : The decimal degrees
 	 */
 	public static function convert_coordinate_dms_to_decimal($degrees, $minutes, $seconds, $direction) {
@@ -298,18 +299,18 @@ class geography {
 		return $output;
 	}
 
+	/**
+	 * Determine if a given latitude/longitude point is within a given polygon
+	 *
+	 * Source: http://stackoverflow.com/questions/5065039/find-point-in-polygon-php
+	 *
+	 * @param array $polygon : Array with subarray of points in the polygon, where first value is the longitude (decimal), second value is the latitude (decimal)
+	 * @param float $longitude_x : Longitude of point
+	 * @param float $latitude_y : Latitude of point
+	 *
+	 * @return mixed : True or false (or 1 and 0)
+	 */
 	public static function is_in_polygon($polygon, $longitude_x, $latitude_y) {
-		/*
-		DESCRIPTION:
-		- determine if a given latitude/longitude point is within a given polygon
-		- source: http://stackoverflow.com/questions/5065039/find-point-in-polygon-php
-		INPUT:
-		- $polygon : array with subarray of points in the polygon, where first value is the longitude (decimal), second value is the latitude (decimal)
-		- $longitude_x : longitude of point (decimal)
-		- $latitude_y : latitude of point (decimal)
-		OUTPUT:
-		- true or false (or 1 and 0)
-		*/
 		$vertices_x = array();
 		$vertices_y = array();
 		foreach ($polygon as $p) {
