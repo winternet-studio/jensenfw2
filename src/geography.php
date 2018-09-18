@@ -293,7 +293,7 @@ class geography {
 	public static function convert_coordinate_decimal_to_ddm($decimal, $type) {
 		$output = self::convert_coordinate_decimal_to_dms($decimal, $type);
 
-		$output['minutes'] = $output['minutes'] + ($output['seconds'] / 60);
+		$output['minutes'] = $output['minutes'] + round($output['seconds'] / 60, 5);
 		unset($output['seconds']);
 
 		return $output;
