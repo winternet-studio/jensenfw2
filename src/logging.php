@@ -93,7 +93,7 @@ class logging {
 			}
 		}
 		$logSQL .= "log_ip = :ip, ";
-		$logSQL_vars['ip'] = $_SERVER['REMOTE_ADDR'];
+		$logSQL_vars['ip'] = ($_SERVER['HTTP_X_FORWARDED_FOR'] ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']);
 		$logSQL .= "log_action = :action, ";
 		$logSQL_vars['action'] = $action;
 		if ($subaction) {

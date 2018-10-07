@@ -670,7 +670,7 @@ class core {
 		// Process other info
 		$errordata .= 'Referer: '. $_SERVER['HTTP_REFERER'] ."\r\n";
 		$errordata .= 'User agent: '. $_SERVER['HTTP_USER_AGENT'] . "\r\n";
-		$errordata .= 'IP: '. $_SERVER['REMOTE_ADDR'] . "\r\n";
+		$errordata .= 'IP: '. ($_SERVER['HTTP_X_FORWARDED_FOR'] ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']) . "\r\n";
 		if (is_callable($cfg['errorlog_extra'])) {
 			$extradata = (array) $cfg['errorlog_extra']();
 			foreach ($extradata as $clabel => $cdata) {

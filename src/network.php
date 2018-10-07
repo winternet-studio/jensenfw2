@@ -529,7 +529,7 @@ class network {
 		} else {
 			$sql .= " accesstime ";
 		}
-		$sql .= "FROM `". $cfg['limit_ip_access_db_name'] ."`.`". $cfg['limit_ip_access_db_table'] ."` WHERE resource_id = '". core::sql_esc($resource_id) ."' AND ip_addr = '". core::sql_esc($_SERVER['REMOTE_ADDR']) ."' AND TIMESTAMPDIFF(". $timeperiod_unit .", accesstime, NOW()) <= ". $timeperiod;
+		$sql .= "FROM `". $cfg['limit_ip_access_db_name'] ."`.`". $cfg['limit_ip_access_db_table'] ."` WHERE resource_id = '". core::sql_esc($resource_id) ."' AND ip_addr = '". core::sql_esc(($_SERVER['HTTP_X_FORWARDED_FOR'] ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'])) ."' AND TIMESTAMPDIFF(". $timeperiod_unit .", accesstime, NOW()) <= ". $timeperiod;
 		if ($options['variation_key']) {
 			$sql .= " AND resource_variation_key IS NOT NULL";
 			$sql .= " AND resource_variation_key <> '". core::sql_esc($options['variation_key']) ."'";
@@ -576,7 +576,7 @@ class network {
 			case 'YEAR':
 				$expiredays = ceil($timeperiod * 365); break;
 			}
-			$sql = "INSERT INTO `". $cfg['limit_ip_access_db_name'] ."`.`". $cfg['limit_ip_access_db_table'] ."` SET `resource_id` = '". core::sql_esc($resource_id) ."', `ip_addr` ='". core::sql_esc($_SERVER['REMOTE_ADDR']) ."', `expire_days` = ". $expiredays;
+			$sql = "INSERT INTO `". $cfg['limit_ip_access_db_name'] ."`.`". $cfg['limit_ip_access_db_table'] ."` SET `resource_id` = '". core::sql_esc($resource_id) ."', `ip_addr` ='". core::sql_esc(($_SERVER['HTTP_X_FORWARDED_FOR'] ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'])) ."', `expire_days` = ". $expiredays;
 			if ($options['variation_key']) {
 				$sql .= ", resource_variation_key = '". core::sql_esc($options['variation_key']) ."'";
 			}
