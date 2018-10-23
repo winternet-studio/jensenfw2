@@ -4,19 +4,18 @@ namespace winternet\jensenfw2;
 use \Imagick;
 
 class imaging {
+	/**
+	 * Get information about an image
+	 *
+	 * @param string $input_filepath
+	 *
+	 * @return array : Associative array:
+	 *   - `w` (number) : width in pixels
+	 *   - `h` (number) : height in pixels
+	 *   - `ratio` (number) : aspect ratio (width divided by height)
+	 *   - `is_vertical` (boolean) : is image vertical/portrait or horizontal/landscape
+	 */
 	static public function image_info($input_filepath) {
-		/*
-		DESCRIPTION:
-		- get information about an image
-		INPUT:
-		- $input_filepath
-		OUTPUT:
-		- associative array:
-			- 'w' (number) : width in pixels
-			- 'h' (number) : height in pixels
-			- 'ratio' (number) : aspect ratio (width divided by height)
-			- 'is_vertical' (boolean) : is image vertical/portrait or horizontal/landscape
-		*/
 		$size = getimagesize($input_filepath);
 		if ($size == false) {
 			return false;
@@ -33,16 +32,15 @@ class imaging {
 		);
 	}
 
+	/**
+	 * Detect if a PNG has alpha channel (transparency)
+	 *
+	 * Source: http://stackoverflow.com/a/8750947/2404541
+	 *
+	 * @param string $filepath
+	 * @return boolean
+	 */
 	static public function png_has_transparency($filepath) {
-		/*
-		DESCRIPTION:
-		- detect if a PNG has alpha channel (transparency)
-		- source: http://stackoverflow.com/a/8750947/2404541
-		INPUT:
-		- $filepath
-		OUTPUT:
-		- boolean
-		*/
 		if (!file_exists($filepath)) {
 			core::system_error('File to check transparency for does not exist.');
 		}
@@ -50,22 +48,20 @@ class imaging {
 		return ($byte == 6 || $byte == 4 ? true : false);
 	}
 
+	/**
+	 * Calculate the portion of a source image that must fit into a specific width and height
+	 *
+	 * If changing proportion of the image is necessary the exceeding image material is cropped away.
+	 * The cropped image will be a centered part of the source.
+	 *
+	 * @return array : Associative array with 3 elements:
+	 *   - `w` is the width we want to use of the source
+	 *   - `h` is the height we want to use of the source
+	 *   - `x` is the x coordinate on the source image that will be the upper left corner in the new image
+	 *   - `y` is the y coordinate on the source image that will be the upper left corner in the new image
+	 *   - `cuttingboundary` tells whether the width or the height has been cut in order to obtain the new image size and proportions
+	 */
 	static public function resize_and_crop_calc($input_width, $input_height, $target_width, $target_height) {
-		/*
-		DESCRIPTION:
-		- calculate the portion of a source image that must fit into a specific width and height
-		- if changing proportion of the image is necessary the exceeding image material is cropped away
-		- the cropped image will be a centered part of the source
-		INPUT:
-		- see arguments above
-		OUTPUT:
-		- associative array with 3 elements:
-			- 'w' is the width we want to use of the source
-			- 'h' is the height we want to use of the source
-			- 'x' is the x coordinate on the source image that will be the upper left corner in the new image
-			- 'y' is the y coordinate on the source image that will be the upper left corner in the new image
-			- 'cuttingboundary' tells whether the width or the height has been cut in order to obtain the new image size and proportions
-		*/
 		$input_ratio = $input_width / $input_height;
 		$target_ratio = $target_width / $target_height;
 		//determine which length to cut
@@ -96,18 +92,15 @@ class imaging {
 		return array('w' => $src_width, 'h' => $src_height, 'x' => $src_x, 'y' => $src_y, 'cuttingboundary' => $cutwhat);
 	}
 
+	/**
+	 * Calculate the new size for a image to fit into a max width and height
+	 *
+	 * @return array : Associative array with 3 elements:
+	 *   - `w` is the new width
+	 *   - `h` is the new height
+	 *   - `is_resized` is true/false depending on if new size was calculated at all (it is not calculated is source image is within the allowed size)
+	 */
 	static public function resize_calc($curr_width, $curr_height, $max_width, $max_height) {
-		/*
-		DESCRIPTION:
-		- this function calculates the new size for a image to fit into a max width and height
-		INPUT:
-		- see arguments above
-		OUTPUT:
-		- array with 3 elements:
-			- 'w' is the new width
-			- 'h' is the new height
-			- 'is_resized' is true/false depending on if new size was calculated at all (it is not calculated is source image is within the allowed size)
-		*/
 		if ($curr_width > $max_width || $curr_height > $max_height) {  //only do calculation if image is actually bigger than allowed
 			//determine if width or height is the one being the max size
 			$curr_ratio = $curr_width / $curr_height;
@@ -348,17 +341,15 @@ class imaging {
 		return $result;
 	}
 
+	/**
+	 * Convert RGB image to CMYK
+	 *
+	 * Requires Imagick extension
+	 *
+	 * @param string $image_path_rgb : Full path required (if $use_image_own_profile = true: is only used if image doesn't contain it's own profile)
+	 * @param string $image_path_cmyk : Full path required
+	 */
 	static public function convert_rgb_to_cmyk($image_path_rgb, $image_path_cmyk, $options = array() ) {
-		/*
-		DESCRIPTION:
-		- convert RGB image to CMYK
-		- requires Imagick extension
-		INPUT:
-		- $image_path_rgb : full path required (if $use_image_own_profile = true: is only used if image doesn't contain it's own profile)
-		- $image_path_cmyk : full path required
-		OUTPUT:
-		-
-		*/
 		$defaults = array(
 			'rgb_icc_profile_path' => '',
 			'cmyk_icc_profile_path' => '',
@@ -549,19 +540,21 @@ class imaging {
 		}
 	}
 
+	/**
+	 * Optimizes PNG file with pngquant 1.8 or later
+	 *
+	 * Reduces file size of 24-bit/32-bit PNG images.
+	 * You need to install pngquant 1.8 on the server (ancient version 1.0 won't work).
+	 * There's package for Debian/Ubuntu and RPM for other distributions on http://pngquant.org
+	 *
+	 * Source: https://pngquant.org/php.html
+	 *
+	 * @param string $input_file_png : Path to a PNG file
+	 * @param array $options : Associative array with keys according to code (see $defaults)
+	 *
+	 * @return mixed : Depending on options: either nothing when it writes output to file, or a string with content of PNG file after conversion
+	 */
 	static public function compress_png($input_file_png, $options = []) {
-		/*
-		DESCRIPTION:
-		- Optimizes PNG file with pngquant 1.8 or later (reduces file size of 24-bit/32-bit PNG images)
-		- You need to install pngquant 1.8 on the server (ancient version 1.0 won't work).
-		- There's package for Debian/Ubuntu and RPM for other distributions on http://pngquant.org
-		- source: https://pngquant.org/php.html
-		INPUT:
-		- $input_file_png : path to a PNG file
-		- $options : associative array with keys according to code (see $defaults)
-		OUTPUT:
-		- depending on options: either nothing when it writes output to file, or a string with content of PNG file after conversion
-		*/
 		$defaults = [
 			'min_quality' => 60,  //guarantee that quality won't be worse than that.
 			'max_quality' => 90,  //conversion quality, useful values from 60 to 100 (smaller number = smaller file)
