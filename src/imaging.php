@@ -35,7 +35,7 @@ class imaging {
 	/**
 	 * Detect if a PNG has alpha channel (transparency)
 	 *
-	 * Source: http://stackoverflow.com/a/8750947/2404541
+	 * Source: https://stackoverflow.com/a/43996262/2404541
 	 *
 	 * @param string $filepath
 	 * @return boolean
@@ -44,8 +44,36 @@ class imaging {
 		if (!file_exists($filepath)) {
 			core::system_error('File to check transparency for does not exist.');
 		}
-		$byte = ord(file_get_contents($filepath, null, null, 25, 1));
-		return ($byte == 6 || $byte == 4 ? true : false);
+
+		//32-bit pngs
+		//4 checks for "greyscale + alpha" and "RGB + alpha"
+		if ((ord(file_get_contents($filepath, false, null, 25, 1)) & 4) > 0) {  //check if 25th byte being "4" or "6" (according to https://stackoverflow.com/a/8750947/2404541)
+			return true;
+		}
+
+		//8 bit pngs
+		$fd = fopen($filepath, 'r');
+		$continue = true;
+		$plte = $trns = $idat = false;
+		$line = '';
+		while ($continue === true) {
+			$continue = false;
+			$line .= fread($fd, 1024);
+			if ($plte === false) {
+				$plte = (stripos($line, 'PLTE') !== false);
+			}
+			if ($trns === false) {
+				$trns = (stripos($line, 'tRNS') !== false);
+			}
+			if ($idat === false) {
+				$idat = (stripos($line, 'IDAT') !== false);
+			}
+			if ($idat === false and !($plte === true and $trns === true)) {
+				$continue = true;
+			}
+		}
+		fclose($fd);
+		return ($plte === true and $trns === true);
 	}
 
 	/**
