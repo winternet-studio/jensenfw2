@@ -23,6 +23,8 @@ class system_administration {
 	/**
 	 * Backup MySQL
 	 *
+	 * Meant to be run in CLI mode.
+	 *
 	 * Sample cron job:
 	 * `10 0 * * *	root	php /var/www/domain.com/mysql-backup.phpcli >/var/www/domain.com/mysql-backup.log 2> /var/www/domain.com/mysql-backup.error.log`
 	 *
@@ -88,6 +90,9 @@ class system_administration {
 
 		if (!is_numeric($options['purge_after'])) {
 			$options['purge_after'] = 30;
+		}
+		if (!is_array($options['databases'])) {
+			$this->system_error('List of databases is not an array.');
 		}
 
 		$starttime = time();
@@ -208,10 +213,89 @@ class system_administration {
 		$this->ln();
 	}
 
-	public function backup_files() {
+	/**
+	 * Backup files
+	 *
+	 * Meant to be run in CLI mode.
+	 *
+	 * @param array $options : Array with the following keys:
+	 *   - `source_path` (req.) : path to backup. End with slash to copy all contents, leave slash out to copy including the folder itself.
+	 *   - `destination_server` (req.) : user and server to backup to. Eg. `someuser@yourbackupserver.com`. Private key authentication, port, etc must be put in ~/.ssh/config for the user running this script, eg.:
+	 *      ```
+	 *      Host tn1.sharehim.org
+	 *          Port 22100
+	 *          IdentityFile ~/tn1_swiftbck.pem
+	 *          IdentitiesOnly yes
+	 *      ```
+	 *      Note: The user we connect as should be owner of all files and folders in the destination.
+	 *   - `destination_path` (req.) : path on destination server to backup to. Eg. `/storage/backup/`
+	 *   - `exclude_folders` (opt.) : array of folders to be excluded. Wildcards (eg. *) can be used according to rsync documentation on the --exclude parameter. Root is anchored to $source_path so don't specify full physical path. Eg. `['/runtime', '/somepath/cached_*_prod/*']`
+	 */
+	public function backup_files($options = array()) {
 		$this->check_base_config();
 
-		// TODO
+		$starttime = time();
+		$this->ln('Making file backup');
+		$this->ln('--------------------');
+		$this->ln();
+
+		$excl_parms = [];
+		if (!empty($options['exclude_folders'])) {
+			foreach ($options['exclude_folders'] as $folder) {
+				$excl_parms[] = "--exclude '". str_replace("'", '', $folder) ."'";
+			}
+		}
+		$excl_parms = implode(' ', $excl_parms);
+
+		$cmd = "rsync -larvzi --checksum --delete-during --omit-dir-times ". $excl_parms ." ". $options['source_path'] ." ". $options['destination_server'] .":". $options['destination_path'] ." 2>&1";
+		// echo PHP_EOL . implode(PHP_EOL, str_split($cmd, 120)) . PHP_EOL . PHP_EOL; exit;
+		$handle = popen($cmd, 'r');
+
+		$unknown_lines = $files_processed = $files_uploaded = $files_deleted = $folders_processed = $folders_added = $folders_deleted = 0;
+		$unknown = [];
+		while (!feof($handle)) {
+			$buffer = fgets($handle);
+			if (trim($buffer)) {
+				if (preg_match("/rsync: failed to set times on/", $buffer)) {
+					// ignore errors about not being able to set time attributes on destination files
+				} elseif (preg_match("/rsync: chgrp.*failed: Operation not permitted \\(1\\)/", $buffer)) {
+					// ignore errors about not being able to change group permissions on destination files
+				} elseif (preg_match("/^(sent |total size|rsync error: some files.attrs were not transferred|sending incremental file list)/", $buffer)) {
+					// ignore the summary lines
+				} elseif (preg_match("/^\\*deleting.*\\/$/", $buffer)) {  //folders end with a slash
+					$folders_deleted++;
+				} elseif (preg_match("/^\\*deleting.*$/", $buffer)) {  //file do not end with a slash
+					$files_deleted++;
+				} elseif (preg_match("/^[\\.<]f/", $buffer)) {
+					$files_processed++;
+					if ($match[1] == '<') {
+						$files_uploaded++;
+					}
+				} elseif (preg_match("/^([c\\.<])d/", $buffer, $match)) {
+					$folders_processed++;
+					if ($match[1] == '<') {
+						$folders_added++;
+					}
+				} else {
+					$unknown_lines++;
+					$unknown[] = $buffer;
+				}
+				//CAN'T ENABLE THIS AS IT WILL BE INCLUDED IN THE CRON RESULT MAIL. echo 'Unknown lines: '. $unknown_lines .' '.'Files processed: '. $files_processed .' '.'Files uploaded: '. $files_uploaded .' '.'Files deleted: '. $files_deleted .' '.'Folders processed: '. $folders_processed .' '.'Folders added: '. $folders_added .' '.'Folders deleted: '. $folders_deleted ."\r";
+			}
+		}
+
+		$this->ln();
+		$this->ln('Unknown lines: '. $unknown_lines . PHP_EOL .'Files processed: '. $files_processed . PHP_EOL .'Files uploaded: '. $files_uploaded . PHP_EOL .'Files deleted: '. $files_deleted . PHP_EOL .'Folders processed: '. $folders_processed . PHP_EOL .'Folders added: '. $folders_added . PHP_EOL .'Folders deleted: '. $folders_deleted);
+		$this->ln();
+
+		if ($unknown_lines > 0) {
+			$this->notify_error('Unknown lines: '. $unknown_lines . PHP_EOL .'Files processed: '. $files_processed . PHP_EOL .'Files uploaded: '. $files_uploaded . PHP_EOL .'Files deleted: '. $files_deleted . PHP_EOL .'Folders processed: '. $folders_processed . PHP_EOL .'Folders added: '. $folders_added . PHP_EOL .'Folders deleted: '. $folders_deleted . PHP_EOL . PHP_EOL . implode('', $unknown));
+		}
+
+		$endtime = time();
+		$duration_secs = $endtime - $starttime;
+		$this->ln('Duration: '. $duration_secs .' secs');
+		$this->ln();
 	}
 
 	public function check_mysql_backup() {
@@ -252,10 +336,19 @@ class system_administration {
 		}
 	}
 
+
 	// ========== UTILITY METHODS ======================================================
 
 	private function ln($line = false) {
 		echo PHP_EOL. $line;
+	}
+
+	private function system_error($message, $notify = true) {
+		if ($notify) {
+			$this->notify_error($message);
+		}
+		$this->ln($message);
+		exit;
 	}
 
 	private function notify_error($mailbody) {
