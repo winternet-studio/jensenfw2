@@ -910,4 +910,14 @@ class filesystem {
 	public static function cleanup_path($path) {
 		return str_replace('\\', '/', $path);
 	}
+
+	/**
+	 * Concatenate path and filename, or two paths, making sure there is a slash and only one slash between them
+	 */
+	public static function concat_path($path1, $path2) {
+		// TODO: make it possible to use endless number of arguments that will be concatenated
+		$path1 = rtrim($path1, '/\\');
+		$path2 = ltrim($path2, '/\\');
+		return $path1 .'/'. $path2;
+	}
 }
