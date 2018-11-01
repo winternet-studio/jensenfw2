@@ -251,6 +251,7 @@ class imaging {
 
 		if (count($err_msg) == 0) {
 			if ($src_ext == 'tif') {
+				// NOTE: had an issue converting "billund pigekantori logo.tif" outputted image would have the right size, but the content was not scaled
 				$result = $img_src->resizeImage($new_width, $new_height, \Imagick::FILTER_GAUSSIAN, 1);
 			} else {
 				$img_dst = imagecreatetruecolor($new_width, $new_height);
