@@ -351,6 +351,18 @@ class system_administration {
 		// TODO
 	}
 
+	public function status_beacon($options) {
+		$this->check_base_config();
+
+		// TODO
+	}
+
+	public function status_receptor($options) {
+		$this->check_base_config();
+
+		// TODO
+	}
+
 	public function download_production_database() {
 		$this->check_base_config();
 
