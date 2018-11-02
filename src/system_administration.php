@@ -11,6 +11,8 @@ class system_administration {
 	private $_sent_error_notif = false;
 
 	public function __construct($config = array()) {
+		error_reporting(E_ALL ^ E_NOTICE);
+
 		$config_vars = array('system_name', 'email_sender_address');
 
 		foreach ($config_vars as $var) {
@@ -298,13 +300,52 @@ class system_administration {
 		$this->ln();
 	}
 
-	public function check_mysql_backup() {
+	/**
+	 * @param array $options : Identical to $options for backup_mysql() method plus these:
+	 *   - `max_hours_since_last_backup` (opt.) : Max age of latest backup we find before triggering an alert. Defaults to 48.
+	 */
+	public function check_mysql_backup($options) {
 		$this->check_base_config();
 
-		// TODO
+		if (!$options['mysq_dump_path']) {
+			$this->system_error('MySQL dump path unknown for checking backup.');
+		}
+		if (!is_numeric($options['max_hours_since_last_backup'])) {
+			$options['max_hours_since_last_backup'] = 48;
+		}
+
+		$latest_backup_timestamp = 0;
+
+		$files = filesystem::get_files($options['mysq_dump_path']);
+		foreach ($files as $file) {
+			if (preg_match("/BACKUP_(\\d\\d\\d\\d-\\d\\d-\\d\\d)_(\\d\\d)(\\d\\d)_.*". preg_quote(".sql.") ."/", $file, $match)) {
+				$timestamp = strtotime($match[1] .' '. $match[2] .':'. $match[3]);  //recreating yyyy-mm-dd hh:mm
+				if ($timestamp > $latest_backup_timestamp) {
+					$latest_backup_timestamp = $timestamp;
+				}
+			}
+		}
+
+		$age_hours = round((time() - $latest_backup_timestamp) / 60 / 60, 3);
+		if ($age_hours <= $options['max_hours_since_last_backup']) {
+			return [
+				'status' => 'ok',
+				'age_hours' => $age_hours,
+				'summary' => $this->system_name .':mysql_backup_is_okay:'. $age_hours .'hrs',
+			];
+		} else {
+			return [
+				'status' => 'error',
+				'age_hours' => $age_hours,
+				'summary' => $this->system_name .': Most recent MySQL backup is '. $age_hours .' hours old',
+			];
+		}
 	}
 
-	public function check_file_backup() {
+	/**
+	 * @param array $options : Identical to $options for backup_files() method
+	 */
+	public function check_file_backup($options) {
 		$this->check_base_config();
 
 		// TODO
