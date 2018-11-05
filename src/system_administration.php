@@ -363,16 +363,215 @@ class system_administration {
 		// TODO
 	}
 
-	public function download_production_database() {
+	/**
+	 * Dwnload production database to this machine
+	 * 
+	 * IMPORTANT! For Yii2 this requires also $this->enableCsrfValidation = false in beforeAction() and preferably only allowing POST for action `send-production-database`
+	 *
+	 * @param array $options : Array with the following keys:
+	 *   - `productionURL` (req.) : URL to download the production database from
+	 *   - `allow_receive_callback` (req.) : callable function that returns a boolean as to whether or not this machine is allowed to receive the production database. No arguments passed.
+	 *   - `key` (req.) : a key that matches the key used on the sending side
+	 *   - `database_host` (req.) : MySQL host for the local database to import production database into. Or set `USE-YII` to automatically retrieve it from Yii's configuration.
+	 *   - `database_username` (req.)
+	 *   - `database_password` (req.)
+	 *   - `database_name` (req.)
+	 *   - `skip_confirmation` (opt.) : set true to skip asking before downloading and overwritten the local database
+	 */
+	public function download_production_database($options) {
 		$this->check_base_config();
 
-		// TODO
+		ob_start();
+
+		if (!is_callable($options['allow_receive_callback'])) {
+			core::system_error('Callback for determining if this machine is allowed to receive a database is missing.');
+		} else {
+			if (!call_user_func($options['allow_receive_callback'])) {
+				core::system_error('Not allowed on this machine.');
+			}
+		}
+
+		if (!$options['skip_confirmation']) {
+			if (@constant('YII_BEGIN_TIME')) {
+				$is_confirmed = \Yii::$app->request->get('confirm');
+				$curr_url_confirmed = \yii\helpers\Url::current(['confirm' => 1]);
+			} else {
+				$is_confirmed = $_GET['confirm'];
+				$curr_url_confirmed = core::page_url(['confirm' => 1]);
+			}
+			if (!$is_confirmed) {
+				echo '<div class="jumbotron">';
+				echo '<h1>Please confirm...</h1>';
+				echo 'Are you sure you want to download the database tables from the production server? Your existing tables will be overwritten!';
+				echo ' <a href="'. $curr_url_confirmed .'">Yes, I want to do this</a>';
+				echo '</div>';
+				return ob_get_clean();
+			}
+		}
+
+		$starttime = microtime(true);
+
+		if ($options['database_host'] == 'USE-YII') {
+			$this->use_yii_db($options);
+		}
+
+		// Receive the database
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $options['productionURL']);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(array('key' => $options['key'])));
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+		$dump = curl_exec($ch);
+		if (curl_errno($ch)) {
+			echo '<div class="alert alert-danger">Error code '. curl_errno($ch) .' when downloading file: '. curl_error($ch) .'</div>';
+			echo '<div class="alert alert-danger">cURL info:<pre>'. json_encode(curl_getinfo($ch), JSON_PRETTY_PRINT) .'</pre></div>';
+		}
+
+		curl_close($ch);
+
+		$link = mysqli_connect($options['database_host'], $options['database_username'], $options['database_password'], $options['database_name']);
+		if (mysqli_connect_errno()) {
+			core::system_error('Connect failed: '. mysqli_connect_error());
+		}
+
+		// Disable foreign key check
+		// NOTE: this can potentially break foreign key integrity between tables that are imported and those that are not, but it is okay because only developers will be using this feature
+		$link->query("SET FOREIGN_KEY_CHECKS = 0");
+
+		echo '<div>Downloaded (compressed): '. number_format(strlen($dump)) .' bytes</div>';
+
+		if (true) {
+			file_put_contents(\Yii::getAlias('@runtime/prod_database_dump.txt'), $dump);
+		}
+		if ($dump && strpos($dump, '<html') !== false) {
+			echo '<div class="alert alert-danger">Response from production server unexpectedly contained HTML:<br><br><i>'. nl2br(trim(strip_tags($dump))) .'</i></div>';
+			return ob_get_clean();
+		}
+
+		try {
+			$dump = gzuncompress($dump);
+		} catch (\Exception $e) {
+			echo '<div class="alert alert-danger">Failed to uncompress response from production server: '. $e->getMessage() .'</div>';
+			return ob_get_clean();
+		}
+		echo '<div>Uncompressed: '. number_format(strlen($dump)) .' bytes</div>';
+
+		// Split the dump into parts (one table per part), otherwise it is bigger than max_allowed_packet and MySQL will fail (source: https://stackoverflow.com/a/26021324/2404541)
+		$dump_parts = preg_split("@(?=(DROP TABLE IF EXISTS|INSERT INTO `))@", $dump);
+
+		// source: http://stackoverflow.com/questions/1463987/execute-sql-query-from-sql-file
+		$errors = false;
+		foreach ($dump_parts as $tkey => $curr_part) {
+			if ($curr_part) {
+				$firstline = substr($curr_part, 0, strpos($curr_part, "\n"));
+				if ($hasValues = strpos($firstline, ' VALUES (')) {
+					$firstline = substr($firstline, 0, $hasValues);
+				}
+				echo '<div>'. ++$partcounter .'. <code>'. $firstline .' ...</code></div>';
+				$counter = 0;
+				if (mysqli_multi_query($link, $curr_part)) {
+					while ($link->more_results()) {
+						$counter++;
+						$result = $link->next_result();
+						if (!$result) {
+							$errors = true;
+							echo '<br>Part #'. $partcounter .', query #'. $counter .': ';
+							echo $link->error;
+						}
+					}
+
+				} else {
+					echo '<div class="alert alert-danger">Error: '. mysqli_error($link) .'</div>';
+				}
+			}
+		}
+
+		// Reenable foreign key check
+		$link->query("SET FOREIGN_KEY_CHECKS = 1");
+
+		if (!$errors) {
+			echo '<div class="alert alert-success">Database downloaded successfully in '. round(microtime(true) - $starttime, 3) .' secs</div>';
+		}
+
+		return ob_get_clean();
 	}
 
-	public function send_production_database() {
+	/**
+	 * Send production database to another machine
+	 *
+	 * Uses `mysqldump`.
+	 * 
+	 * @param array $options : Array with the following keys:
+	 *   - `allow_send_callback` (req.) : callable function that returns a boolean as to whether or not this machine is allowed to send its database to another machine. No arguments passed.
+	 *   - `key` (req.) : a key that matches the key used on the sending side
+	 *   - `database_host` (req.) : MySQL host for the local database to import production database into. Or set `USE-YII` to automatically retrieve it from Yii's configuration.
+	 *   - `database_username` (req.)
+	 *   - `database_password` (req.)
+	 *   - `database_name` (req.)
+	 */
+	public function send_production_database($options) {
 		$this->check_base_config();
 
-		// TODO
+		// IDEAS:
+		//   https://www.phpclasses.org/package/10137-PHP-Dump-MySQL-database-tables-for-file-download.html
+		//   http://stackoverflow.com/questions/6750531/using-a-php-file-to-generate-a-mysql-dump
+
+		if (!is_callable($options['allow_send_callback'])) {
+			core::system_error('Callback for determining if this machine is allowed to send its database is missing.');
+		} else {
+			if (!call_user_func($options['allow_send_callback'])) {
+				core::system_error('This machine is not allowed to send its database.');
+			}
+		}
+
+		if ($_POST['key'] !== $options['key']) {
+			core::system_error('Invalid key.');
+		}
+
+		$output = '';
+
+		if ($options['database_host'] == 'USE-YII') {
+			$this->use_yii_db($options);
+		}
+
+		$tempname = 'database_out'. time() .'_'. rand(10000, 99999) .'.sql';
+		if (@constant('YII_BEGIN_TIME')) {
+			$fullpath_tempfile = \Yii::getAlias('@runtime/'. $tempname);
+		} else {
+			$fullpath_tempfile = sys_get_temp_dir() .'/'. $tempname;
+		}
+
+		$cmd = 'mysqldump --compact --add-drop-table --add-locks --user='. $options['database_username'] .' --password='. $options['database_password'] .' --host='. $options['database_host'] .' '. $options['database_name'] .' '. implode(' ', $options['tables']) .' > '. $fullpath_tempfile;
+		exec($cmd);
+		if (!file_exists($fullpath_tempfile)) {
+			core::system_error('Database dump file was not found.');
+		}
+
+		// Echo file as the response
+		// Source: http://stackoverflow.com/questions/6914912/streaming-a-large-file-using-php
+		$buffer = '';
+		$sentbytes = 0;
+		$handle = fopen($fullpath_tempfile, 'rb');
+		if (!$handle) {
+			core::system_error('Failed to open SQL dump file for transmission.');
+		}
+		while (!feof($handle)) {
+			$buffer = fread($handle, 1024*1024);  //chunk size is in bytes
+			$output .= $buffer;
+			// $sentbytes += strlen($buffer);
+		}
+		fclose($handle);
+
+		unlink($fullpath_tempfile);
+
+		while (ob_end_clean()) {
+			// cleans output buffers
+		}
+		echo gzcompress($output);
+		exit;
 	}
 
 
@@ -408,5 +607,17 @@ class system_administration {
 		$headers = "From: \"". $this->system_name ."\" <". $this->email_sender_address .">\r\n";
 		mail($this->email_sender_address, $this->system_name .': Possible database backup failure', $mailbody, $headers);
 		$this->_sent_error_notif = true;
+	}
+
+	private function use_yii_db(&$options) {
+		$db_config = require(\Yii::getAlias('@app/config/db.php'));
+		$options['database_username'] = $db_config['username'];
+		$options['database_password'] = $db_config['password'];
+
+		preg_match("/host=([^;]+)/", $db_config['dsn'], $dbhost_match);
+		$options['database_host'] = $dbhost_match[1];
+
+		preg_match("/dbname=(.*)/", $db_config['dsn'], $dbname_match);
+		$options['database_name'] = $dbname_match[1];
 	}
 }
