@@ -376,6 +376,7 @@ class system_administration {
 	 *   - `database_username` (req.)
 	 *   - `database_password` (req.)
 	 *   - `database_name` (req.)
+	 *   - `where_condition` (opt.) : array with keys `table` and `where` with name of table and WHERE condition respectively (possible to specify multiple tables separated with spaces)
 	 *   - `skip_confirmation` (opt.) : set true to skip asking before downloading and overwritten the local database
 	 */
 	public function download_production_database($options) {
@@ -415,12 +416,17 @@ class system_administration {
 			$this->use_yii_db($options);
 		}
 
+		$postfields = array('key' => $options['key']);
+		if ($options['where_condition']) {
+			$postfields['where_condition'] = $options['where_condition'];
+		}
+
 		// Receive the database
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $options['productionURL']);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(array('key' => $options['key'])));
+		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postfields));
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 		curl_setopt($ch, CURLOPT_TIMEOUT, 30);
@@ -443,7 +449,7 @@ class system_administration {
 
 		echo '<div>Downloaded (compressed): '. number_format(strlen($dump)) .' bytes</div>';
 
-		if (true) {
+		if (false) {
 			file_put_contents(\Yii::getAlias('@runtime/prod_database_dump.txt'), $dump);
 		}
 		if ($dump && strpos($dump, '<html') !== false) {
@@ -460,7 +466,7 @@ class system_administration {
 		echo '<div>Uncompressed: '. number_format(strlen($dump)) .' bytes</div>';
 
 		// Split the dump into parts (one table per part), otherwise it is bigger than max_allowed_packet and MySQL will fail (source: https://stackoverflow.com/a/26021324/2404541)
-		$dump_parts = preg_split("@(?=(DROP TABLE IF EXISTS|INSERT INTO `))@", $dump);
+		$dump_parts = preg_split("@(?=(DROP TABLE IF EXISTS|INSERT INTO `|REPLACE INTO `))@", $dump);
 
 		// source: http://stackoverflow.com/questions/1463987/execute-sql-query-from-sql-file
 		$errors = false;
@@ -468,9 +474,17 @@ class system_administration {
 			if ($curr_part) {
 				$firstline = substr($curr_part, 0, strpos($curr_part, "\n"));
 				if ($hasValues = strpos($firstline, ' VALUES (')) {
-					$firstline = substr($firstline, 0, $hasValues);
+					if ($options['where_condition']) {
+						// include the beginning of VALUES so we see at least the first of the specific records we are downloading
+						$firstline = substr($firstline, 0, $hasValues + 100);
+					} else {
+						// cut before VALUES
+						$firstline = substr($firstline, 0, $hasValues);
+					}
 				}
-				echo '<div>'. ++$partcounter .'. <code>'. $firstline .' ...</code></div>';
+				if (substr($firstline, 0, 11) != 'LOCK TABLES') {  //skip writing out LOCK TABLES statements
+					echo '<div>'. ++$partcounter .'. <code>'. htmlentities($firstline) .' ...</code></div>';
+				}
 				$counter = 0;
 				if (mysqli_multi_query($link, $curr_part)) {
 					while ($link->more_results()) {
@@ -544,7 +558,31 @@ class system_administration {
 			$fullpath_tempfile = sys_get_temp_dir() .'/'. $tempname;
 		}
 
-		$cmd = 'mysqldump --compact --add-drop-table --add-locks --user='. $options['database_username'] .' --password='. $options['database_password'] .' --host='. $options['database_host'] .' '. $options['database_name'] .' '. implode(' ', $options['tables']) .' > '. $fullpath_tempfile;
+		$cmd = 'mysqldump --compact';
+		if ($_POST['where_condition']) {
+			$cmd .= ' --no-create-info --replace';
+		} else {
+			$cmd .= ' --add-drop-table';
+		}
+		$cmd .= ' --add-locks --user='. $options['database_username'] .' --password='. $options['database_password'] .' --host='. $options['database_host'];
+		if ($_POST['where_condition']) {
+			if ($_POST['where_condition']['where'] && preg_match("/^[a-z0-9_\\-\\(\\)=<>'% ]+$/i", $_POST['where_condition']['where'])) {
+				$cmd .= ' --where="'. $_POST['where_condition']['where'] .'"';
+			} else {
+				core::system_error('Invalid where condition for table.', ['Table' => $_POST['where_condition']['table'], 'Where' => $_POST['where_condition']['where']]);
+			}
+		}
+		$cmd .= ' '. $options['database_name'];
+		if ($_POST['where_condition']) {
+			if ($_POST['where_condition']['table'] && preg_match("/^[a-z0-9_ ]+$/i", $_POST['where_condition']['table'])) {
+				$cmd .= ' '. $_POST['where_condition']['table'];
+			} else {
+				core::system_error('Invalid table for where condition.', ['Table' => $_POST['where_condition']['table']]);
+			}
+		} else {
+			$cmd .= ' '. implode(' ', $options['tables']);
+		}
+		$cmd .= ' > '. $fullpath_tempfile;
 		exec($cmd);
 		if (!file_exists($fullpath_tempfile)) {
 			core::system_error('Database dump file was not found.');
