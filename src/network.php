@@ -230,7 +230,7 @@ class network {
 			//NOTE: don't know if the following content headers should be sent of not forced to download???
 			header('Content-Length: '. $filesize);
 			#header('Content-Disposition: attachment; filename='. $download_filename);  //when using this one instead, it doesn't show you the filename in the _first_ dialog box, not until you select a location on your harddrive to save it in
-			header("Content-Disposition: inline; filename=". $download_filename);
+			header('Content-Disposition: inline; filename="'. $download_filename .'"');  //see eg. dompdf/src/Adapter/PDFLib.php method stream() for how to deal with special characters
 			header('Last-Modified: '. date('D, j M Y G:i:s T')); //(not required though) something like Thu, 03 Oct 2002 18:01:08 GMT
 
 			if ($fileinmemory) {
