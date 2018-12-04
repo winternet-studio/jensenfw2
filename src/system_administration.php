@@ -232,6 +232,7 @@ class system_administration {
 	 *      Note: The user we connect as should be owner of all files and folders in the destination.
 	 *   - `destination_path` (req.) : path on destination server to backup to. Eg. `/storage/backup/`
 	 *   - `exclude_folders` (opt.) : array of folders to be excluded. Wildcards (eg. *) can be used according to rsync documentation on the --exclude parameter. Root is anchored to $source_path so don't specify full physical path. Eg. `['/runtime', '/somepath/cached_*_prod/*']`
+	 *   - `skip_checksum` (opt.) : set true to only compare files using modification time and size - instead of checksum
 	 */
 	public function backup_files($options = array()) {
 		$this->check_base_config();
@@ -249,7 +250,7 @@ class system_administration {
 		}
 		$excl_parms = implode(' ', $excl_parms);
 
-		$cmd = "rsync -larvzi --checksum --delete-during --omit-dir-times ". $excl_parms ." ". $options['source_path'] ." ". $options['destination_server'] .":". $options['destination_path'] ." 2>&1";
+		$cmd = "rsync -larvzi". ($options['skip_checksum'] ? '' : ' --checksum') ." --delete-during --omit-dir-times ". $excl_parms ." ". $options['source_path'] ." ". $options['destination_server'] .":". $options['destination_path'] ." 2>&1";
 		// echo PHP_EOL . implode(PHP_EOL, str_split($cmd, 120)) . PHP_EOL . PHP_EOL; exit;
 		$handle = popen($cmd, 'r');
 
