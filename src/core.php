@@ -836,7 +836,7 @@ class core {
 				if ($cfg['debug_level']) {
 					echo '   DEBUG: '. print_r($_SESSION['sys_errordata_mail'], true) . PHP_EOL;
 				}
-				exit;
+				exit(1);
 			}
 		} else {
 			if ($silent) {
