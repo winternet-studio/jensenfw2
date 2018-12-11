@@ -563,7 +563,7 @@ class core {
 
 		$cfg = self::get_class_defaults(__CLASS__);
 		if (!$cfg['administrator_email'] || !$cfg['developer_email']) {
-			echo 'Jensenfw2 library has not been configured with basic settings. Error handling reduced to this message: '. $msg;
+			echo 'JFW2 basic cfg missing. Reduced handling. '. $msg;
 			exit;
 		}
 
