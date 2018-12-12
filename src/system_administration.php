@@ -97,10 +97,18 @@ class system_administration {
 			$this->system_error('List of databases is not an array.');
 		}
 
+		$this->check_path($options['mysql_config_file'], true);
+		$this->check_path($options['mysq_dump_path'], true);
+		if ($options['publickey_path']) {
+			$this->check_path($options['publickey_path'], true);
+		}
+
 		$starttime = time();
 		$this->ln('Making MySQL backups');
 		$this->ln('--------------------');
 		foreach ($options['databases'] as $db => $db_details) {
+			$this->check_database_table_name($db);
+
 			if ($options['publickey_path']) {
 				$filename = 'BACKUP_'. date('Y-m-d_Hi', $starttime) .'_'. $db .'.sql.enc';
 			} else {
@@ -113,6 +121,7 @@ class system_administration {
 			$command = "/usr/bin/mysqldump --defaults-extra-file=". $options['mysql_config_file'] ." --opt --allow-keywords ". $db;
 			if (!empty($db_details['ignore_tables'])) {
 				foreach ($db_details['ignore_tables'] as $skip_table) {
+					$this->check_database_table_name($skip_table);
 					$command .= ' --ignore-table='. $db .'.'. $skip_table;
 				}
 			}
@@ -242,6 +251,12 @@ class system_administration {
 		$this->ln('--------------------');
 		$this->ln();
 
+		$this->check_path($options['source_path'], true);
+		$this->check_path($options['destination_path'], false);
+		if ($options['backups_path']) {
+			$this->check_path($options['backups_path'], false);
+		}
+
 		$excl_parms = [];
 		if (!empty($options['exclude_folders'])) {
 			foreach ($options['exclude_folders'] as $folder) {
@@ -250,7 +265,12 @@ class system_administration {
 		}
 		$excl_parms = implode(' ', $excl_parms);
 
-		$cmd = "rsync -larvzi". ($options['skip_checksum'] ? '' : ' --checksum') ." --delete-during --omit-dir-times ". $excl_parms ." ". $options['source_path'] ." ". $options['destination_server'] .":". $options['destination_path'] ." 2>&1";
+		$backup_parms = '';
+		if ($options['backups_path']) {
+			$backup_parms = ' --backup --suffix=DLTD'. gmdate('Ymd') .' --backup-dir='. $options['backups_path'];
+		}
+
+		$cmd = "rsync -larvzi". ($options['skip_checksum'] ? '' : ' --checksum') ." --delete-during --omit-dir-times ". $excl_parms . $backup_parms ." ". $options['source_path'] ." ". $options['destination_server'] .":". $options['destination_path'] ." 2>&1";
 		// echo PHP_EOL . implode(PHP_EOL, str_split($cmd, 120)) . PHP_EOL . PHP_EOL; exit;
 		$handle = popen($cmd, 'r');
 
@@ -658,5 +678,30 @@ class system_administration {
 
 		preg_match("/dbname=(.*)/", $db_config['dsn'], $dbname_match);
 		$options['database_name'] = $dbname_match[1];
+	}
+
+	public function check_path($path, $check_existence = false) {
+		if (preg_match("|^[a-z0-9_\\-\\/\\.]+$|i", $path)) {
+			if ($check_existence) {
+				if (!file_exists($path)) {
+					core::system_error('Path does not exist.', ['Path' => $path]);
+				} else {
+					// ok, do nothing
+				}
+			} else {
+				// ok, do nothing
+			}
+		} else {
+			core::system_error('Path is invalid.', ['Path' => $path]);
+		}
+	}
+
+	/**
+	 * Check a MySQL database or table name
+	 */
+	public function check_database_table_name($database_or_table_name) {
+		if (!preg_match("|^[a-z0-9_\\-\\.]+$|i", $database_or_table_name)) {
+			core::system_error('Database name is invalid.', ['Database name' => $database_or_table_name]);
+		}
 	}
 }
