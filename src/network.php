@@ -72,39 +72,21 @@ class network {
 	/**
 	 * Determine if a URL exists/is valid
 	 *
-	 * Currently only works with regular and unencrypted HTTP.
-	 *
 	 * @param string $url
 	 * @return boolean
 	 */
 	public static function url_exists($url) {
-		// Parse URL
-		$url_parts = parse_url($url);
-		$path = $url_parts['path'];
-		if ($url_parts['query']) {
-			$path .= '?'. $url_parts['query'];
-		}
-		if ($url_parts['anchor']) {
-			$path .= '#'. $url_parts['anchor'];
-		}
-		if ($url_parts['port']) {
-			$port = (int) $url_parts['port'];
+		$ch = curl_init($url);
+		curl_setopt($ch, CURLOPT_NOBODY, true);
+		curl_exec($ch);
+		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);
+		// $http_code >= 400 -> not found, $http_code = 200 -> found.
+		if ($http_code >= 400) {
+			return false;
 		} else {
-			$port = 80;  //default
+			return true;
 		}
-		// Open socket and retrieve result
-		$rsp = '';
-		$timeout = ($url_parts['host'] == 'localhost' ? 1 : 2);  //seconds to try connecting to host before timing out (is not passed-by-ref)
-		$errno  = '';  //must be passed by reference
-		$errstr = '';  //must be passed by reference
-		if ($sock = @fsockopen($url_parts['host'], $port, $errno, $errstr, $timeout)) {
-			fputs($sock, "HEAD ". $path ." HTTP/1.0\r\n\r\n");
-			while (!feof($sock)) {
-				$rsp .= fgets($sock);
-			}
-		}
-		$exists = (strpos($rsp, '200 OK') !== false ? true : false);
-		return $exists;
 	}
 
 	/**
