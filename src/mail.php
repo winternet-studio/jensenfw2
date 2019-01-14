@@ -1051,18 +1051,16 @@ class mail {
 		}
 	}
 
+	/**
+	 * Scrample all email addresses in a piece of HTML code
+	 *
+	 * @param string $html : (req.) HTML code
+	 * @param array $options : (opt.) Associative array with any of the following keys:
+	 *   - any options according to scrample_email_addressHTML()
+	 *   - `remove_existing_links` : set to true to remove existing <a href="mailto:..."> tags before processing
+	 * @return string : HTML code (incl. Javascript blocks for each email address), OR according to scrample mode
+	 */
 	public static function scrample_all_email_addressesHTML($html, $options = []) {
-		/*
-		DESCRIPTION:
-		- scrample all email addresses in a piece of HTML code
-		INPUT:
-		- $html (req.) : HTML code
-		- $options (opt.) : associative array with any of the following keys:
-			- any options according to scrample_email_addressHTML()
-			- 'remove_existing_links' : set to true to remove existing <a href="mailto:..."> tags before processing
-		OUTPUT:
-		- HTML code (incl. Javascript blocks for each email address), OR according to scrample mode
-		*/
 		if ($options['remove_existing_links']) {
 			//NOTE: removes existing <a href="mailto:..."></a> tags and leaves just the email address (code between the opening and closing tag is discarded)
 			$html = preg_replace("|<a href=[\"']?mailto:([^\"' ]+)[\"']?[^>]*>(.*)</a>|siU", '$1', $html);
@@ -1070,23 +1068,22 @@ class mail {
 		return preg_replace_callback('|\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b|i', create_function('$matches', 'return \winternet\jensenfw2\mail::scrample_email_addressHTML($matches[0], '. var_export($options, true) .');'), $html);
 	}
 
+	/**
+	 * Log sent email to the database
+	 *
+	 * See database schema in class_defaults() method in the beginning of this file
+	 *
+	 * @param array $data : (req.) Associative subarrays having the following keys:
+	 *   - `from`
+	 *   - `to`
+	 *   - `replyto`
+	 *   - `subject`
+	 *   - `body`
+	 *   - `send_status` (opt.)
+	 *   - `intervowen_id` (opt.)
+	 * @return integer : emaillog_rawID of the created log record
+	 */
 	public static function log_email_db($data = []) {
-		/*
-		DESCRIPTION:
-		- log sent email to the database
-		- see database schema in class_defaults() method in the beginning of this file
-		INPUT:
-		- $data (req.) : array with associative subarrays having the following keys:
-			- 'from'
-			- 'to'
-			- 'replyto'
-			- 'subject'
-			- 'body'
-			- 'send_status' (opt.)
-			- 'intervowen_id' (opt.)
-		OUTPUT:
-		-
-		*/
 		$cfg = core::get_class_defaults(__CLASS__);
 
 		$parentfunc = core::get_parent_function(2);
@@ -1150,16 +1147,12 @@ class mail {
 		return $emaillog_rawID;
 	}
 
+	/**
+	 * @param integer $emaillog_rawID : IF the email record from temp_emaillog_raw
+	 * @param string $add_note : Note to add in the top of the email (plain text)
+	 * @return array : Same as send_email(), eg. the new raw email log ID as 'emaillog_rawID'
+	 */
 	public static function resend_email_from_raw_log($emaillog_rawID, $add_note = '') {
-		/*
-		DESCRIPTION:
-		-
-		INPUT:
-		- $emaillog_rawID : IF the email record from temp_emaillog_raw
-		- $add_note : note to add in the top of the email (plain text)
-		OUTPUT:
-		- same as send_email(), eg. the new raw email log ID as 'emaillog_rawID'
-		*/
 		core::require_database();
 
 		if (!is_numeric($emaillog_rawID)) {
@@ -1253,15 +1246,13 @@ class mail {
 		return $result;
 	}
 
+	/**
+	 * Retrieve body from raw email log
+	 *
+	 * @param string $eml_raw
+	 * @return array : Associative array with `plain` and `html`
+	 */
 	public static function retrieve_body_from_raw_email_log($eml_raw) {
-		/*
-		DESCRIPTION:
-		- retrieve body from raw email log
-		INPUT:
-		- $eml_raw
-		OUTPUT:
-		- associative array with 'plain' and 'html'
-		*/
 		if (preg_match("|==============================[\\r\\n]+(.*)|s", $eml_raw, $bodymatch)) {
 			$bodyplain = $bodymatch[1];
 			$bodyhtml = false;
