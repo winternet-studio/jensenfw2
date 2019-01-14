@@ -1064,8 +1064,8 @@ class mail {
 		- HTML code (incl. Javascript blocks for each email address), OR according to scrample mode
 		*/
 		if ($options['remove_existing_links']) {
-			//NOTE: removes existing <a href="mailto:..."></a> tags and leaves just the code remaining between the opening and closing tag
-			$html = preg_replace("|<a href=[\"']?mailto:[^\"' ]+[\"']?[^>]*>(.*)</a>|siU", '$1', $html);
+			//NOTE: removes existing <a href="mailto:..."></a> tags and leaves just the email address (code between the opening and closing tag is discarded)
+			$html = preg_replace("|<a href=[\"']?mailto:([^\"' ]+)[\"']?[^>]*>(.*)</a>|siU", '$1', $html);
 		}
 		return preg_replace_callback('|\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b|i', create_function('$matches', 'return \winternet\jensenfw2\mail::scrample_email_addressHTML($matches[0], '. var_export($options, true) .');'), $html);
 	}
