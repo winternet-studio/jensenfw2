@@ -399,6 +399,8 @@ class imaging {
 		}
 
 		$img = new Imagick($image_path_rgb);
+		$file_format = strtolower(pathinfo($image_path_cmyk, PATHINFO_EXTENSION));
+		if ($file_format === 'tif') $file_format = 'tiff';
 
 		$use_image_own_profile = true;
 
@@ -424,11 +426,15 @@ class imaging {
 
 		$img->stripImage();
 
-		$img->setImageCompression(Imagick::COMPRESSION_JPEG);
-		$img->setImageCompressionQuality($options['jpg_compression_quality']);
-		$img->setImageFormat('jpg');   // (png doesn't support CMYK)
+		if ($file_format === 'jpg' || $file_format === 'jpeg') {
+			$img->setImageCompression(Imagick::COMPRESSION_JPEG);
+			$img->setImageCompressionQuality($options['jpg_compression_quality']);
+		}
+		$img->setImageFormat($file_format);   // (png doesn't support CMYK)
 
-		$img->writeImage($image_path_cmyk);
+		if (!$img->writeImage($image_path_cmyk)) {
+			core::system_error('Writing the CMYK file failed when converting RGB.', array('File' => $image_path_cmyk));
+		}
 		$img->clear();
 		$img->destroy();
 		$img = null;
