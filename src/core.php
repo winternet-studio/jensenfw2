@@ -981,9 +981,9 @@ class core {
 	}
 
 	/**
-	 * Search a two-dimensional array for a certain key/value pair (= 'column'), case-insensitive
+	 * Search a two-dimensional array, or array with objects, for a certain key/value pair (= 'column'), case-insensitive
 	 *
-	 * This differs from array_keys(array, search_arg) and in_array() in that this searches on the SECOND level.
+	 * This differs from array_keys(array, search_arg) and in_array() in that this searches on the SECOND level, and supports objects on that level as well.
 	 *
 	 * @param array $array : Array to search
 	 * @param string $key : Key which need to contain the value that we search for
@@ -996,8 +996,14 @@ class core {
 		} else {
 			$value_lc = mb_strtolower($value);
 			foreach ($array as $curr_key => $curr_val) {
-				if (mb_strtolower($curr_val[$key]) == $value_lc) {
-					return $curr_key;
+				if (gettype($curr_val) == 'object') {
+					if (mb_strtolower($curr_val->$key) == $value_lc) {
+						return $curr_key;
+					}
+				} else {
+					if (mb_strtolower($curr_val[$key]) == $value_lc) {
+						return $curr_key;
+					}
 				}
 			}
 			return false;  //if we get this far the key/value pair does not exist
