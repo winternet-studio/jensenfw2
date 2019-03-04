@@ -1137,7 +1137,9 @@ class mail {
 			$purgeSQL = "DELETE FROM `". $cfg['log_to_database'] ."`.`". $cfg['db_log_table'] ."` WHERE TO_DAYS(CURDATE()) - TO_DAYS(eml_timestamp) > ". (int) $cfg['purge_database_log_after'] ."";
 			if (@constant('YII_BEGIN_TIME')) {
 				\Yii::$app->db->createCommand($purgeSQL)->execute();
-				\Yii::$app->session->set('_purged_db_maillog_now', true);
+				if (PHP_SAPI != 'cli') {
+					\Yii::$app->session->set('_purged_db_maillog_now', true);
+				}
 			} else {
 				core::database_result(array('server_id' => $cfg['db_server_id'], $purgeSQL), false, 'Database query for purging raw database mail log failed.');
 				$_SESSION['_purged_db_maillog_now'] = true;

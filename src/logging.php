@@ -61,7 +61,7 @@ class logging {
 
 		// Don't register duplicate entries if requested
 		if (is_numeric($options['duplicate_window'])) {
-			if (@constant('YII_BEGIN_TIME')) {
+			if (@constant('YII_BEGIN_TIME') && PHP_SAPI != 'cli') {
 				\Yii::$app->session->open();  //ensure session has been started
 			}
 			$session_varname = '_logentry_dedupe_'. md5($action .'-'. $subaction .'-'. json_encode($primary_parms) .'-'. json_encode($secondary_parms));

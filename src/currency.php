@@ -19,7 +19,7 @@ class currency {
 		$from_currency = strtoupper($from_currency);
 		$to_currency = strtoupper($to_currency);
 
-		if (@constant('YII_BEGIN_TIME') && \Yii::$app->session) {
+		if (@constant('YII_BEGIN_TIME') && PHP_SAPI != 'cli' && \Yii::$app->session) {
 			$session_value = \Yii::$app->session['latest_exchrate_'. $from_currency .'_'. $to_currency];
 		} else {
 			$session_value = $_SESSION['latest_exchrate_'. $from_currency .'_'. $to_currency];
@@ -59,7 +59,7 @@ class currency {
 				$exchrate = $fallback_rate;
 			}
 
-			if (@constant('YII_BEGIN_TIME') && \Yii::$app->session) {
+			if (@constant('YII_BEGIN_TIME') && PHP_SAPI != 'cli' && \Yii::$app->session) {
 				\Yii::$app->session['latest_exchrate_'. $from_currency .'_'. $to_currency] = $session_value = $exchrate;
 			} else {
 				$_SESSION['latest_exchrate_'. $from_currency .'_'. $to_currency] = $session_value = $exchrate;
