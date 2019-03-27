@@ -87,9 +87,13 @@ class logging {
 		$counter = 0;
 		foreach ($primary_parms as $key => $value) {
 			if ($value !== '' && $value !== null && $value !== false) {
-				$counter++;
-				$logSQL .= "`log_". $key ."` = :prim". $counter .", ";
-				$logSQL_vars['prim'. $counter] = $value;
+				if (!preg_match("/^[a-z0-9_]+$/i", $key)) {
+					core::system_error('Invalid primary parameter name for logging action.', ['Name' => $key]);
+				} else {
+					$counter++;
+					$logSQL .= "`log_". $key ."` = :prim". $counter .", ";
+					$logSQL_vars['prim'. $counter] = $value;
+				}
 			}
 		}
 		$logSQL .= "log_ip = :ip, ";
