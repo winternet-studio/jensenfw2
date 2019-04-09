@@ -5,6 +5,8 @@ This file contains functions related to system/programming/PHP
 namespace winternet\jensenfw2;
 
 class system {
+	public static $command_line_return_status = null;
+
 	public static function class_defaults() {
 		$cfg = array();
 
@@ -127,22 +129,66 @@ class system {
 		return core::database_result($sql, 'onevalue', 'Database query for getting value from temporary buffer table failed.');
 	}
 
-	public static function shell_command($command) {
-		/*
-		DESCRIPTION:
-		- execute a shell command and return the output
-		- OBS! For some reason you cannot call php.exe using this without looping the output several times...!
-		INPUT:
-		- $command : shell command/DOS command/command line
-		OUTPUT:
-		- output created by the program called
-		- return status is found in $GLOBALS['command_line_return_status']
-		*/
-		ob_start();
-		unset($GLOBALS['command_line_return_status']);
-		passthru($command, $GLOBALS['command_line_return_status']);
-		$output = ob_get_clean();
-		return $output;
+	/**
+	 * Execute a shell command and return the output
+	 *
+	 * OBS! For some reason you cannot call php.exe using this without looping the output several times...
+	 *
+	 * @param string $command : Shell command/DOS command/command line
+	 * @param array $options : Available options:
+	 *   - `niceness` (number) (opt.) : add a `nice` value (process priority) to the command (mostly useful when running command in background)
+	 *     - values can range from -20 to 19 (higher means lower priority (= nicer to the system resources))
+	 *     - root privileges is required to use values below 0.
+	 *     - default is 0
+	 *   - `background` : set true to run the command in the background. The process id is then returned
+	 *   - `output_file` : path (incl. file) to send output to from the background process (requires background=true)
+	 *   - `append` : set true to append output from the background process to the output file (requires background=true and output_file set)
+	 *   - `skip_exitcode` : set true to not append exit code to the output file (requires background=true and output_file set)
+	 *   - `id` : set an ID that will be prepended to the exit code so it becomes eg. `412:EXITCODE:0` instead of just `EXITCODE:0`
+	 *   TODO: implement delayed execution using `at` (it doesn't work on Amazon Linux though)
+	 *
+	 * @return string|array : output from the command, or for background processes an array with the actually used command in `cmd` and the process id in `pid`
+	 *   - for non-background command return status is found in `system::$command_line_return_status`
+	 */
+	public static function shell_command($command, $options = []) {
+		if ($options['niceness']) {
+			$command = 'nice -'. (int) $options['niceness'] .' '. $command;
+		}
+
+		if ($options['background']) {
+			if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+				throw new \Exception('The method shell_command() with option background=true is not yet supported on Windows.');
+			}
+
+			// Source: https://stackoverflow.com/questions/45953/php-execute-a-background-process
+			// Composer package: https://github.com/diversen/background-job
+			if ($options['output_file']) {
+				if ($options['append']) {
+					$redir = '>>';
+				} else {
+					$redir = '>';
+				}
+				if ($options['id']) {
+					$options['id'] = preg_replace("/[^a-zA-Z0-9_\\-\\.]/", '', $options['id']);
+					$options['id'] .= ':';
+				}
+				if ($options['skip_exitcode']) {
+					exec(sprintf("%s ". $redir ." %s 2>&1 & echo $!", $command, escapeshellarg($options['output_file'])), $pidArr);
+				} else {
+					exec(sprintf("(%s; printf \"\\n". $options['id'] ."EXITCODE:$?\") ". $redir ." %s 2>&1 & echo $!", $command, escapeshellarg($options['output_file'])), $pidArr);
+				}
+			} else {
+				exec(sprintf("%s >/dev/null 2>&1 & echo $!", $command), $pidArr);
+			}
+			// exec(sprintf("%s > %s 2>&1 & echo $! >> %s", $cmd, $options['output_file'], $pidfile));  //write pid to a file instead
+			return ['cmd' => $command, 'pid' => $pidArr[0]];
+		} else {
+			ob_start();
+			static::$command_line_return_status = null;
+			passthru($command, static::$command_line_return_status);
+			$output = ob_get_clean();
+			return $output;
+		}
 	}
 
 	public static function check_php_syntax($file) {
