@@ -134,7 +134,7 @@ class system {
 	 *
 	 * OBS! For some reason you cannot call php.exe using this without looping the output several times...
 	 *
-	 * @param string $command : Shell command/DOS command/command line
+	 * @param string $command : Shell command/DOS command/command line. MUST have been properly escaped!
 	 * @param array $options : Available options:
 	 *   - `niceness` (number) (opt.) : add a `nice` value (process priority) to the command (mostly useful when running command in background)
 	 *     - values can range from -20 to 19 (higher means lower priority (= nicer to the system resources))
@@ -173,15 +173,16 @@ class system {
 					$options['id'] .= ':';
 				}
 				if ($options['skip_exitcode']) {
-					exec(sprintf("%s ". $redir ." %s 2>&1 & echo $!", $command, escapeshellarg($options['output_file'])), $pidArr);
+					$command = sprintf("%s ". $redir ." %s 2>&1 & echo $!", $command, escapeshellarg($options['output_file']));
 				} else {
-					exec(sprintf("(%s; printf \"\\n". $options['id'] ."EXITCODE:$?\") ". $redir ." %s 2>&1 & echo $!", $command, escapeshellarg($options['output_file'])), $pidArr);
+					$command = sprintf("(%s; printf \"\\n". $options['id'] ."EXITCODE:$?\") ". $redir ." %s 2>&1 & echo $!", $command, escapeshellarg($options['output_file']));
 				}
 			} else {
-				exec(sprintf("%s >/dev/null 2>&1 & echo $!", $command), $pidArr);
+				$command = sprintf("%s >/dev/null 2>&1 & echo $!", $command);
 			}
+			exec($command, $pid_array);
 			// exec(sprintf("%s > %s 2>&1 & echo $! >> %s", $cmd, $options['output_file'], $pidfile));  //write pid to a file instead
-			return ['cmd' => $command, 'pid' => $pidArr[0]];
+			return ['cmd' => $command, 'pid' => $pid_array[0]];
 		} else {
 			ob_start();
 			static::$command_line_return_status = null;
