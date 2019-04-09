@@ -267,7 +267,7 @@ class system_administration {
 
 		$backup_parms = '';
 		if ($options['backups_path']) {
-			$backup_parms = ' --backup --suffix=DLTD'. gmdate('Ymd') .' --backup-dir='. $options['backups_path'];
+			$backup_parms = ' --backup --suffix=".DLTD'. gmdate('Ymd') .'" --backup-dir='. $options['backups_path'];
 		}
 
 		$cmd = "rsync -larvzi". ($options['skip_checksum'] ? '' : ' --checksum') ." --delete-during --omit-dir-times ". $excl_parms . $backup_parms ." ". $options['source_path'] ." ". $options['destination_server'] .":". $options['destination_path'] ." 2>&1";
