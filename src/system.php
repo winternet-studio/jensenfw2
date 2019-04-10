@@ -140,17 +140,22 @@ class system {
 	 *     - values can range from -20 to 19 (higher means lower priority (= nicer to the system resources))
 	 *     - root privileges is required to use values below 0.
 	 *     - default is 0
+	 *   - `delay_secs` (opt.) : number of seconds to delay the job (by prefixing the command with "pause")
+	 *           TODO: also implement delayed execution using `at` (it doesn't work on Amazon Linux though). Do it the same way as we did in yii2-libs/JobQueue.
 	 *   - `background` : set true to run the command in the background. The process id is then returned
 	 *   - `output_file` : path (incl. file) to send output to from the background process (requires background=true)
 	 *   - `append` : set true to append output from the background process to the output file (requires background=true and output_file set)
 	 *   - `skip_exitcode` : set true to not append exit code to the output file (requires background=true and output_file set)
 	 *   - `id` : set an ID that will be prepended to the exit code so it becomes eg. `412:EXITCODE:0` instead of just `EXITCODE:0`
-	 *   TODO: implement delayed execution using `at` (it doesn't work on Amazon Linux though)
 	 *
 	 * @return string|array : output from the command, or for background processes an array with the actually used command in `cmd` and the process id in `pid`
 	 *   - for non-background command return status is found in `system::$command_line_return_status`
 	 */
 	public static function shell_command($command, $options = []) {
+		if (is_numeric($options['delay_secs'])) {
+			$command = 'sleep '. $options['delay_secs'] .' && '. $command;
+		}
+
 		if ($options['niceness']) {
 			$command = 'nice -'. (int) $options['niceness'] .' '. $command;
 		}
