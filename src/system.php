@@ -197,6 +197,34 @@ class system {
 		}
 	}
 
+	/**
+	 * Check if a given process is running
+	 *
+	 * @param string $process_pattern : The name or pattern of the process to check
+	 * @param array $options : Available options:
+	 *   - `match_full_command_line` : the pattern is normally only matched against the process name. When this is set to true, the full command line is used.
+	 * @return boolean|integer : Returns pid (process id) if running, or false if not running
+	 */
+	public static function is_process_running($process_pattern, $options = []) {
+		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+			throw new \Exception('The method is_process_running() is not yet supported on Windows.');
+		}
+
+		$cmd = 'pgrep ';
+		if ($options['match_full_command_line']) {
+			$cmd .= '-f ';
+		}
+		$cmd .= escapeshellcmd($process_pattern);
+		$output = array(); $exitcode = null;
+		exec($cmd, $output, $exitcode);
+		$output = trim(implode("\n", $output));
+		if (is_numeric($output)) {
+			return (int) $output;
+		} else {
+			return false;
+		}
+	}
+
 	public static function check_php_syntax($file) {
 		/*
 		DESCRIPTION:
