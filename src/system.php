@@ -142,22 +142,53 @@ class system {
 	 *     - default is 0
 	 *   - `delay_secs` (opt.) : number of seconds to delay the job (by prefixing the command with "pause")
 	 *           TODO: also implement delayed execution using `at` (it doesn't work on Amazon Linux though). Do it the same way as we did in yii2-libs/JobQueue.
+	 *   - `only_if_not_already_running` : to only execute this command if another process is not already running specify the string here we should look for among running processes to determine that
 	 *   - `background` : set true to run the command in the background. The process id is then returned
 	 *   - `output_file` : path (incl. file) to send output to from the background process (requires background=true)
 	 *   - `append` : set true to append output from the background process to the output file (requires background=true and output_file set)
 	 *   - `skip_exitcode` : set true to not append exit code to the output file (requires background=true and output_file set)
 	 *   - `id` : set an ID that will be prepended to the exit code so it becomes eg. `412:EXITCODE:0` instead of just `EXITCODE:0`
 	 *
-	 * @return string|array : output from the command, or for background processes an array with the actually used command in `cmd` and the process id in `pid`
+	 * @return array :
+	 *   - `executed` : boolean whether the command was executed or not (could be false due to `only_if_not_already_running`)
+	 *   - `output` : string output from the command (not available for background processes)
+	 *   - `command` : the effective command (`$command` might have been amended due to options)
+	 *   - `pid` : the process ID of the process (only for background processes and if command was executed)
+	 *   - `existing_pids` : array of existing process IDs (only when using `only_if_not_already_running`)
+	 *
 	 *   - for non-background command return status is found in `system::$command_line_return_status`
 	 */
 	public static function shell_command($command, $options = []) {
+		$return =[
+			'executed' => true,
+		];
+
 		if (is_numeric($options['delay_secs'])) {
 			$command = 'sleep '. $options['delay_secs'] .' && '. $command;
 		}
 
 		if ($options['niceness']) {
 			$command = 'nice -'. (int) $options['niceness'] .' '. $command;
+		}
+
+		$return['command'] = $command;
+
+		if ($options['only_if_not_already_running']) {
+			if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+				throw new \Exception('The method shell_command() with option only_if_not_already_running is not yet supported on Windows.');
+			}
+			$o = [];
+			exec('pgrep -f '. escapeshellarg($options['only_if_not_already_running']), $o);
+			$return['existing_pids'] = [];
+			foreach ($o as $oline) {
+				if (is_numeric($oline)) {
+					$return['existing_pids'][] = (int) $oline;
+				}
+			}
+			if (!empty($return['existing_pids'])) {
+				$return['executed'] = false;
+				return $return;
+			}
 		}
 
 		if ($options['background']) {
@@ -185,16 +216,20 @@ class system {
 			} else {
 				$command = sprintf("%s >/dev/null 2>&1 & echo $!", $command);
 			}
+			$return['command'] = $command;
 			exec($command, $pid_array);
 			// exec(sprintf("%s > %s 2>&1 & echo $! >> %s", $cmd, $options['output_file'], $pidfile));  //write pid to a file instead
-			return ['cmd' => $command, 'pid' => $pid_array[0]];
+
+			$return['pid'] = (int) $pid_array[0];
+
 		} else {
 			ob_start();
 			static::$command_line_return_status = null;
 			passthru($command, static::$command_line_return_status);
-			$output = ob_get_clean();
-			return $output;
+			$return['output'] = ob_get_clean();
 		}
+
+		return $return;
 	}
 
 	/**
