@@ -448,6 +448,16 @@ class datetime {
 		*/
 		//determine unit names
 		switch ($unit_names) {
+		case 'ultrashort':
+			$lbl_secs_one = 's'; $lbl_secs_more = 's';
+			$lbl_mins_one = 'm'; $lbl_mins_more = 'm';
+			$lbl_hours_one = 'h'; $lbl_hours_more = 'h';
+			$lbl_days_one = 'd'; $lbl_days_more = 'd';
+			$lbl_weeks_one = 'w'; $lbl_weeks_more = 'w';
+			$lbl_mnths_one = 'mo'; $lbl_mnths_more = 'mos';
+			$lbl_years_one = 'y'; $lbl_years_more = 'y';
+			$spacing = '';
+			break;
 		case 'short':
 			$lbl_secs_one = core::txt('second_short', 'sec.', '#'); $lbl_secs_more = core::txt('seconds_short', 'sec.', '#');
 			$lbl_mins_one = core::txt('minute_short', 'min.', '#'); $lbl_mins_more = core::txt('minutes_short', 'min.', '#');
@@ -456,6 +466,7 @@ class datetime {
 			$lbl_weeks_one = core::txt('week_short', 'week', '#'); $lbl_weeks_more = core::txt('weeks_short', 'weeks', '#');
 			$lbl_mnths_one = core::txt('month_short', 'month', '#'); $lbl_mnths_more = core::txt('months_short', 'months', '#');
 			$lbl_years_one = core::txt('year_short', 'year', '#'); $lbl_years_more = core::txt('years_short', 'yrs', '#');
+			$spacing = ' ';
 			break;
 		case 'long':
 			$lbl_secs_one = core::txt('second', 'second', '#'); $lbl_secs_more = core::txt('seconds', 'seconds', '#');
@@ -465,6 +476,7 @@ class datetime {
 			$lbl_weeks_one = core::txt('week', 'week', '#'); $lbl_weeks_more = core::txt('weeks', 'weeks', '#');
 			$lbl_mnths_one = core::txt('month', 'month', '#'); $lbl_mnths_more = core::txt('months', 'months', '#');
 			$lbl_years_one = core::txt('year', 'year', '#'); $lbl_years_more = core::txt('years', 'years', '#');
+			$spacing = ' ';
 			break;
 		default:
 			core::system_error('Configuration error. Unit format not defined.', array('Unit name' => $unit_names) );
@@ -479,31 +491,31 @@ class datetime {
 		$times['months']   = $times['days'] / 30;
 		$times['years']    = $times['days'] / 365;
 		if (abs($times['seconds']) < 60) {  //NOTE: use abs() so we also handle negative periods correctly
-			$times['general_guide'] = ($times['seconds'] == 1 ? '1 '. $lbl_secs_one : $times['seconds'] .' '. $lbl_secs_more);
+			$times['general_guide'] = ($times['seconds'] == 1 ? '1'. $spacing . $lbl_secs_one : $times['seconds'] . $spacing . $lbl_secs_more);
 			$times['appropriate_unit'] = 'seconds';
 		} elseif (round(abs($times['minutes']), $decimals) < 60) {
 			$rounded = round($times['minutes'], $decimals);
-			$times['general_guide'] = ($rounded == 1 ? '1 '. $lbl_mins_one : $rounded .' '. $lbl_mins_more);
+			$times['general_guide'] = ($rounded == 1 ? '1'. $spacing . $lbl_mins_one : $rounded . $spacing . $lbl_mins_more);
 			$times['appropriate_unit'] = 'minutes';
 		} elseif (round(abs($times['hours']), $decimals) < 24) {
 			$rounded = round($times['hours'], $decimals);
-			$times['general_guide'] = ($rounded == 1 ? '1 '. $lbl_hours_one : $rounded .' '. $lbl_hours_more);
+			$times['general_guide'] = ($rounded == 1 ? '1'. $spacing . $lbl_hours_one : $rounded . $spacing . $lbl_hours_more);
 			$times['appropriate_unit'] = 'hours';
 		} elseif ( (!$include_weeks && abs($times['days_rounded']) < 30)  ||  ($include_weeks && abs($times['days_rounded']) < 7) ) {  //if weeks are used, the period of using days is shorter
-			$times['general_guide'] = ($times['days_rounded'] == 1 ? '1 '. $lbl_days_one : $times['days_rounded'] .' '. $lbl_days_more);
+			$times['general_guide'] = ($times['days_rounded'] == 1 ? '1'. $spacing . $lbl_days_one : $times['days_rounded'] . $spacing . $lbl_days_more);
 			$times['appropriate_unit'] = 'days';
 		} elseif ($include_weeks && round(abs($times['weeks']), $decimals) < 5 && abs($times['days']) < 30) {  //skip to month if 30 or more days
 			$rounded = round($times['weeks'], $decimals);
-			$times['general_guide'] = ($rounded == 1 ? '1 '. $lbl_weeks_one : $rounded .' '. $lbl_weeks_more);
+			$times['general_guide'] = ($rounded == 1 ? '1'. $spacing . $lbl_weeks_one : $rounded . $spacing . $lbl_weeks_more);
 			$times['appropriate_unit'] = 'weeks';
 		} elseif (round(abs($times['months']), $decimals) < 12) {
 			$rounded = round($times['months'], $decimals);
-			$times['general_guide'] = ($rounded == 1 ? '1 '. $lbl_mnths_one : $rounded .' '. $lbl_mnths_more);
+			$times['general_guide'] = ($rounded == 1 ? '1'. $spacing . $lbl_mnths_one : $rounded . $spacing . $lbl_mnths_more);
 			$times['appropriate_unit'] = 'months';
 		} else {
 			//else write in years
 			$rounded = round(abs($times['years']), $decimals);
-			$times['general_guide'] = ($rounded == 1 ? '1 '. $lbl_years_one : $rounded .' '. $lbl_years_more);
+			$times['general_guide'] = ($rounded == 1 ? '1'. $spacing . $lbl_years_one : $rounded . $spacing . $lbl_years_more);
 			$times['appropriate_unit'] = 'years';
 		}
 		return $times;
