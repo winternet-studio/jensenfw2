@@ -305,4 +305,54 @@ class format {
 		}
 		return $out; 
 	}
+
+	/**
+	 * Very simple obfuscation of a number
+	 *
+	 * Is easily reversible with `deobfuscate_number()`. Do NOT use for sensitive data.
+	 */
+	public static function obfuscate_number($no) {
+		if (is_numeric($no) && $no > 0) {
+			return $no * 8651 + 17;
+		}
+	}
+
+	/**
+	 * Deobfuscate number encoded by `obfuscate_number()`
+	 */
+	public static function deobfuscate_number($no) {
+		if (is_numeric($no) && $no > 0) {
+			return ($no - 17) / 8651;
+		}
+	}
+
+	/**
+	 * URL-safe version of base64_encode()
+	 *
+	 * Base64 alphabet: http://www.garykessler.net/library/base64.html
+	 *
+	 * @param string $string : String to encode
+	 * @return string : Base64 string safe for URL use
+	 */
+	public static function base64_encode_url($string) {
+		//NOTE: replace slash (/) with dot (.) because otherwise mod_rewrite won't work. Remember to reverse this when parsing
+		$base64 = strtr(base64_encode($string), '+/', '-.');
+		$base64 = rtrim($base64, '=');  //trim = characters to make the string as short as possible
+		return $base64;
+	}
+
+	/**
+	 * URL-safe version of base64_decode()
+	 *
+	 * @param string $base64string : Base64 string encoded by `base64_encode_url()`
+	 * @return string : Plain text string
+	 */
+	public static function base64_decode_url($base64string) {
+	    $data = strtr($base64string, '-.', '+/');
+	    $mod4 = strlen($data) % 4;
+	    if ($mod4) {
+	        $data .= substr('====', $mod4);
+	    }
+	    return base64_decode($data);
+	}
 }
