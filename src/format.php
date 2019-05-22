@@ -82,6 +82,24 @@ class format {
 		return $str;
 	}
 
+	/**
+	 * @param array $options : Available options:
+	 *   - `separator` : set another separator than `<br>`
+	 *   - `chunks_guarantor` : override the default 20% added to the chunk length to ensure we only end up with the given number of chunks. If words are long we could end up with an extra chunk if this is set too low.
+	 */
+	public static function split_text_into_chunks($text, $number_of_chunks = 2, $options = array() ) {
+		$options = array_merge(array('separator' => '<br>', 'chunks_guarantor' => 20), $options);
+
+		$text_length = mb_strlen($text);
+		$chunk_length = $text_length / $number_of_chunks;
+		$chunk_length = round($chunk_length + $chunk_length * $options['chunks_guarantor'] / 100);
+		if ($text_length <= $chunk_length) {
+			return $text;
+		} else {
+			return wordwrap($text, $chunk_length, $options['separator']);
+		}
+	}
+
 	public static function strtotitle($str, $options = array() ) {
 		/*
 		DESCRIPTION:
