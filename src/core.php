@@ -1085,13 +1085,13 @@ class core {
 		if (preg_match_all("/#[A-Z0-9\\-]+:/". core::$preg_u, $translation, $matches, PREG_OFFSET_CAPTURE) > 0) {
 			foreach ($matches[0] as $key => $match) {
 				$fieldname = trim($match[0], '#:');
-				$start_pos = $match[1] + strlen($match[0]);  //cannot use mb_strlen() because works in bytes, not characters
+				$start_pos = $match[1] + strlen($match[0]);  //cannot use mb_strlen() because PREG_OFFSET_CAPTURE works in bytes, not characters. See also https://bugs.php.net/bug.php?id=37391 and https://stackoverflow.com/questions/1725227/preg-match-and-utf-8-in-php
 				if ($matches[0][$key+1]) {
 					$length = $matches[0][$key+1][1] - $start_pos;
 				} else {
 					$length = strlen($translation);   //may NOT be NULL! (see docs) So just set a high number.
 				}
-				$text = trim(substr($translation, $start_pos, $length));  //cannot use mb_substr() because works in bytes, not characters
+				$text = trim(substr($translation, $start_pos, $length));  //cannot use mb_substr() because PREG_OFFSET_CAPTURE works in bytes, not characters
 
 				// Insert text into template
 				$template = str_replace('#'. $fieldname .'#', $text, $template);
