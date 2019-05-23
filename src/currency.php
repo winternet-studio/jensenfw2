@@ -19,13 +19,23 @@ class currency {
 		$from_currency = strtoupper($from_currency);
 		$to_currency = strtoupper($to_currency);
 
-		if (@constant('YII_BEGIN_TIME') && PHP_SAPI != 'cli' && \Yii::$app->session) {
-			$session_value = \Yii::$app->session['latest_exchrate_'. $from_currency .'_'. $to_currency];
-		} else {
-			$session_value = $_SESSION['latest_exchrate_'. $from_currency .'_'. $to_currency];
+		$storage = null;
+		$storage_key = 'exchRate_'. $from_currency .'_'. $to_currency;
+		if (@constant('YII_BEGIN_TIME')) {
+			if (\Yii::$app->cache) {
+				$storage = 'yii_cache';
+				$current_value = \Yii::$app->cache->get($storage_key);
+			} elseif (PHP_SAPI !== 'cli' && \Yii::$app->session) {
+				$storage = 'yii_session';
+				$current_value = \Yii::$app->session[$storage_key];
+			}
+		}
+		if (!$storage) {
+			$storage = 'native_session';
+			$current_value = $_SESSION[$storage_key];
 		}
 
-		if (!$session_value) {
+		if (!$current_value) {
 			$ch = curl_init();
 			curl_setopt($ch, CURLOPT_URL, 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml');
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -55,17 +65,21 @@ class currency {
 				//use fallback below
 			}
 
-			if (!$exchrate) {
-				$exchrate = $fallback_rate;
-			}
-
-			if (@constant('YII_BEGIN_TIME') && PHP_SAPI != 'cli' && \Yii::$app->session) {
-				\Yii::$app->session['latest_exchrate_'. $from_currency .'_'. $to_currency] = $session_value = $exchrate;
+			if ($exchrate) {
+				$current_value = $exchrate;
+				if ($storage === 'yii_cache') {
+					\Yii::$app->cache->set($storage_key, $current_value, 21600);
+				} elseif ($storage === 'yii_session') {
+					\Yii::$app->session[$storage_key] = $current_value;
+				} elseif ($storage === 'native_session') {
+					$_SESSION[$storage_key] = $current_value;
+				}
 			} else {
-				$_SESSION['latest_exchrate_'. $from_currency .'_'. $to_currency] = $session_value = $exchrate;
+				$current_value = $fallback_rate;
+				// Register the problem so that we can be made aware of non-working systems
+				core::system_error('Failed to obtain exchange rate in get_ecb_live_exchange_rate().', array('XML' => $xmlStr), array('xsilent' => true, 'xterminate' => false, 'xsevere' => 'WARNING'));
 			}
-
 		}
-		return $session_value;
+		return $current_value;
 	}
 }
