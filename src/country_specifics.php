@@ -88,18 +88,18 @@ class country_specifics {
 	/**
 	 * Get countries that do not use postal codes
 	 *
-	 * @see https://gist.github.com/kennwilson/3902548
+	 * @see https://gist.github.com/bradydan/e172c3f99e211e6e47ad84f08f83dfe3
 	 *
 	 * @return array
 	 */
 	public static function countries_without_postalcodes() {
-		return ['AO','AG','AW','BS','BZ','BJ','BW','BF','BI','CM','CF','KM','CG','CD','CK','CI','DJ','DM','GQ','ER','FJ','TF','GM','GH','GD','GN','GY','HK','IE','JM','KE','KI','MO','MW','ML','MR','MU','MS','NR','AN','NU','KP','PA','QA','RW','KN','LC','ST','SA','SC','SL','SB','SO','ZA','SR','SY','TZ','TL','TK','TO','TT','TV','UG','AE','VU','YE','ZW'];
+		return ['AO','AG','AW','BS','BZ','BJ','BW','BF','BI','CM','CF','KM','CG','CD','CK','CI','DJ','DM','GQ','ER','FJ','TF','GM','GH','GD','GN','GY','HK','IE','JM','KE','KI','MO','MW','ML','MR','MU','MS','NR','AN','NU','KP','PA','QA','RW','KN','LC','ST','SC','SL','SB','SO','ZA','SR','SY','TZ','TL','TK','TO','TT','TV','UG','AE','VU','YE','ZW'];
 	}
 
 	/**
 	 * Validate the zip/postal code for at specific country
 	 *
-	 * @see https://gist.github.com/kennwilson/3902548
+	 * @see https://gist.github.com/bradydan/e172c3f99e211e6e47ad84f08f83dfe3
 	 *
 	 * @param object $options : Available options (opt.):
 	 * 	- `reformat` : reformat the value according to the country's format, eg. for Canada "K1G6Z3" or "k1g-6z3" would be converted to "K1G 6Z3"
