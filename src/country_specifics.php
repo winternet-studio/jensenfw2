@@ -24,25 +24,25 @@ class country_specifics {
 	}
 
 	public static function address_field_labels($country, &$city_label, &$state_label, &$zip_label) {
-		if ($country == 'US') {
+		if ($country === 'US') {
 			$labels = [
 				'city' => 'City', '_city' => 'City',
 				'state' => 'State', '_state' => 'State',
 				'zip' => 'ZIP', '_zip' => 'Zip',
 			];
-		} elseif ($country == 'CA') {
+		} elseif ($country === 'CA') {
 			$labels = [
 				'city' => 'City', '_city' => 'City',
 				'state' => 'Province', '_state' => 'Province',
 				'zip' => 'Postal Code', '_zip' => 'Postal_Code',
 			];
-		} elseif ($country == 'AU') {
+		} elseif ($country === 'AU') {
 			$labels = [
 				'city' => 'Town / Suburb', '_city' => 'Town_Suburb',
 				'state' => 'State / Territory', '_state' => 'State_Territory',
 				'zip' => 'Postcode', '_zip' => 'Postcode',
 			];
-		} elseif ($country == 'GB') {
+		} elseif ($country === 'GB') {
 			$labels = [
 				'city' => 'Town / City', '_city' => 'Town_City',
 				'state' => '', '_state' => '',
@@ -125,7 +125,7 @@ class country_specifics {
 			} elseif ($options['US_allow_zip4'] && preg_match("/^\\d{5}\\-\\d{4}$/", $zip_value)) {
 				$is_valid = true;
 			}
-		} elseif ($country == 'CA') {
+		} elseif ($country === 'CA') {
 			//require format "A1A 1A1", where A is a letter and 1 is a digit and with a space in the middle
 			if (preg_match("/^[A-Z]\\d[A-Z][\\.\\- ]?\\d[A-Z]\\d$/i", $zip_value)) {
 				$is_valid = true;
@@ -133,7 +133,7 @@ class country_specifics {
 					$zip_value = strtoupper(substr($zip_value, 0, 3) .' '. substr($zip_value, -3));
 				}
 			}
-		} elseif ($country == 'GB') {
+		} elseif ($country === 'GB') {
 			//require format specified on http://en.wikipedia.org/wiki/Postcodes_in_the_United_Kingdom#Validation
 			if (preg_match("/^([A-Z]{1,2}\\d[A-Z]?|[A-Z]{1,2}\\d{2})[\\.\\- ]?\\d[A-Z][A-Z]$/i", $zip_value)) {
 				$is_valid = true;
@@ -142,17 +142,17 @@ class country_specifics {
 					$zip_value = strtoupper(substr($zip_value, 0, -3) .' '. substr($zip_value, -3));
 				}
 			}
-		} elseif ($country == 'AU' || $country == 'DK' || $country == 'NO' || $country == 'AT' || $country == 'CH') {
+		} elseif ($country === 'AU' || $country === 'DK' || $country === 'NO' || $country === 'AT' || $country === 'CH') {
 			//exactly 4 digits
 			if (preg_match("/^\\d{4}$/", $zip_value)) {
 				$is_valid = true;
 			}
-		} elseif ($country == 'SE' || $country == 'DE' || $country == 'FI' || $country == 'ES' || $country == 'IT' || $country == 'FR') {
+		} elseif ($country === 'SE' || $country === 'DE' || $country === 'FI' || $country === 'ES' || $country === 'IT' || $country === 'FR') {
 			//exactly 5 digits
 			if (preg_match("/^\\d{5}$/", $zip_value)) {
 				$is_valid = true;
 			}
-		} elseif ($country == 'NL') {
+		} elseif ($country === 'NL') {
 			//4 digits followed by 2 uppercase letters (http://en.wikipedia.org/wiki/Postal_codes_in_the_Netherlands)
 			if ($do_reformat) {
 				if (preg_match("/^\\d{4}[ \\-]?[A-Z]{2}$/", $zip_value)) {
@@ -164,16 +164,16 @@ class country_specifics {
 					$is_valid = true;
 				}
 			}
-		} elseif ($country == 'BR') {
+		} elseif ($country === 'BR') {
 			//5 digits, a dash, then 3 digits (http://en.wikipedia.org/wiki/List_of_postal_codes_in_Brazil)
-			$zip_value = $zip_value.replace('.', '');  //some people seem to put a dot after the first two digits
-			if (preg_match("/^\\d{5}-?\\d{3}$/", $zip_value)) {
+			$zip_value = str_replace('.', '', $zip_value);  //some people seem to put a dot after the first two digits
+			if (preg_match("/^\\d{5}\\-?\\d{3}$/", $zip_value)) {
 				$is_valid = true;
 				if ($do_reformat) {
 					$zip_value = substr($zip_value, 0, 5) .'-'. substr($zip_value, -3);
 				}
 			}
-		} elseif ($country == 'KR') {
+		} elseif ($country === 'KR') {
 			//3 digits, a dash, then 3 digits
 			if ($do_reformat) {
 				if (preg_match("/^\\d{3}[^\\d]?\\d{3}$/", $zip_value)) {
@@ -243,7 +243,7 @@ class country_specifics {
 	 * @param {string} $country_code - Country dialing code (set $country to null)
 	 * @return {number}
 	 */
-	public static function minimum_phone_num_digits($country, $country_code) {
+	public static function minimum_phone_num_digits($country, $country_code = null) {
 		if (is_string($country_code)) $country_code = (int) $country_code;
 		if (in_array($country, ['US', 'CA']) || in_array($country_code, [1], true)) {
 			return 10;
