@@ -143,6 +143,7 @@ class system {
 	 *   - `delay_secs` (opt.) : number of seconds to delay the job (by prefixing the command with "pause")
 	 *           TODO: also implement delayed execution using `at` (it doesn't work on Amazon Linux though). Do it the same way as we did in yii2-libs/JobQueue.
 	 *   - `only_if_not_already_running` : to only execute this command if another process is not already running specify the string here we should look for among running processes to determine that
+	 *       - you can run `ps aux` to see what the command effectively looks like
 	 *   - `background` : set true to run the command in the background. The process id is then returned
 	 *   - `output_file` : path (incl. file) to send output to from the background process (requires background=true)
 	 *   - `append` : set true to append output from the background process to the output file (requires background=true and output_file set)
