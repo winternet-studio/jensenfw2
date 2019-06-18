@@ -576,6 +576,7 @@ class core {
 
 		// Use different mechanism in a Yii application that uses the winternet\yii2\SystemError module
 		if (@constant('YII_BEGIN_TIME') && \Yii::$app->system && get_class(\Yii::$app->system) == 'winternet\yii2\SystemError') {
+			self::$system_error_in_process = false;  //again allow new errors to occur
  			\Yii::$app->system->error($msg, $varinfo, ['silent' => $silent, 'register' => $register, 'notify' => $notify, 'terminate' => $terminate, 'severe' => $severe, 'expire' => $expire]);
 			return;
 		}
@@ -801,7 +802,7 @@ class core {
 		}
 
 		// MISC
-		$GLOBALS['system_error_in_process'] = false;  //again allow new errors to occur
+		self::$system_error_in_process = false;  //again allow new errors to occur
 
 		// OUTPUT/RETURN
 		if ($is_robot) {
