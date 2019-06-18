@@ -60,6 +60,10 @@ class currency {
 				}
 				if ($from_rate && $to_rate && is_numeric($from_rate) && is_numeric($to_rate)) {
 					$exchrate = $from_rate / $to_rate;
+				} else {
+					// One or both currencies were not found, register the problem so that we can be made aware of non-working systems
+					core::system_error('One or both currencies were not found in get_ecb_live_exchange_rate().'.$from_currency.$to_currency, array('From currency' => $from_currency, 'To currency' => $to_currency, 'XML' => $xmlStr), array('xsilent' => true, 'xterminate' => false, 'xsevere' => 'WARNING'));
+					return null;
 				}
 			} catch (\Exception $e) {
 				//use fallback below
