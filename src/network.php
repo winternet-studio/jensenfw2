@@ -464,13 +464,14 @@ class network {
 	 * Requires the table `system_ip_access` in the database:  (table name can be changed in config)
 	 * ```
 	 * CREATE TABLE `system_ip_access` (
-	 *		`accesstime` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	 *		`resource_id` VARCHAR(100) NOT NULL,
-	 *		`ip_addr` VARCHAR(45) NOT NULL,
-	 *		`expire_days` SMALLINT UNSIGNED NOT NULL,
-	 *		INDEX `resource_id` (`resource_id`),
-	 *		INDEX `ip_addr` (`ip_addr`)
-	 * );
+	 * 	`accesstime` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	 * 	`resource_id` VARCHAR(100) NOT NULL,
+	 * 	`resource_variation_key` VARCHAR(255) NULL DEFAULT NULL,
+	 * 	`ip_addr` VARCHAR(45) NOT NULL,
+	 * 	`expire_days` SMALLINT(5) UNSIGNED NOT NULL,
+	 * 	INDEX `resource_id` (`resource_id`),
+	 * 	INDEX `ip_addr` (`ip_addr`)
+	 * )
 	 * ```
 	 *
 	 * @param string $resource_id : A name/ID of the resource being accessed
@@ -483,10 +484,19 @@ class network {
 	 *		- automatically implies the option `return_status` as well
 	 *	- `custom_err_msg` : custom error message to show end-user when access to resource is blocked
 	 *	- `variation_key` : to limit number of varying requests (eg. different credit card numbers an IP address may try) set this to a key/ID identifying a variant (eg. the hash of a credit card number)
+	 *	- `override_db_name` : override limit_ip_access_db_name from the class defaults/configuration
+	 *	- `override_db_table` : override limit_ip_access_db_table from the class defaults/configuration
 	 * @return void|string : Normally nothing, unless the option `return_status` is set, in which case the strings `allow` or `prohibit` are returned
 	 */
 	public static function limit_ip_access($resource_id, $timeperiod, $timeperiod_unit, $allowed_hits, $options = []) {
 		$cfg = core::get_class_defaults(__CLASS__);
+
+		if ($options['override_db_name']) {
+			$cfg['limit_ip_access_db_name'] = $options['override_db_name'];
+		}
+		if ($options['override_db_table']) {
+			$cfg['limit_ip_access_db_table'] = $options['override_db_table'];
+		}
 
 		if (!is_numeric($timeperiod)) {
 			core::system_error('Invalid time period for IP address limitation.');
