@@ -10,6 +10,10 @@ class currency {
 	 *
 	 * Features a fallback option and caching in session
 	 *
+	 * @link https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html
+	 *
+	 * @todo Add option to get historic rates using https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml or https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.xml (but that is currently a 6 Mb file!)
+	 *
 	 * @param string $from_currency : (req.) From currency (if source amount is in this currency divide it with the return value)
 	 * @param string $to_currency : (req.) To currency (if source amount is in this currency multiply it with the return value)
 	 * @param float $fallback_rate : (req.) Fallback exchange rate to use if today's rate could not be retrieved. Set to null if you don't want any fallback but then check output for null as well.
