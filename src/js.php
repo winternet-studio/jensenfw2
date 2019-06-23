@@ -6,8 +6,6 @@ namespace winternet\jensenfw2;
 
 class js {
 
-	private static $pass_to_js_counter = 0;
-
 	static public function esc($str) {
 		/*
 		DESCRIPTION:
@@ -21,29 +19,36 @@ class js {
 		return strtr((string) $str, array("\r" => '\r', "\n" => '\n', "\t" => '\t', "'" => "\\'", '"' => '\"', '\\' => '\\\\'));
 	}
 
+	/**
+	 * Function to pass information from PHP to Javascript
+	 *
+	 * Call `getphp(ref)` or `getphp().ref` in Javascript to get the information from PHP, where ref is the key from the array provided to this function.
+	 *
+	 * Changes to the values using `getphp().ref = 'newValue'`will be retained.
+	 *
+	 * @param array $array : Associate array where keys are the references that will later be used in Javascript to retrieve the corresponding values
+	 *   - for translation system use the translation tag as the key and set to value to `_txt` in order for this function to retrieve the translation itself
+	 * @param array $options : Associative array with any of these flags:
+	 *   - `js_function_name` : use a different name for the Javascript function. Default is `getphp`
+	 *   - `is_js_context` : set to true when the output is placed directly in a Javascript block (= skip the <script> tags)
+	 *   - `storage_var` : specify a fixed name of variable where the information will be stored (otherwise a unique name will be used each time)
+	 *     - if only a local variable is used it will not be possible to change values, will effectively be read-only
+	 * @return string : HTML - a <script> block - or Javascript only if `is_js_context`=`true`
+	 */
 	static public function pass_to_js($array, $options = array() ) {
-		/*
-		DESCRIPTION:
-		- function to pass information (mainly translations of text) from PHP to Javascript when it's placed in a separate file
-		- call getphp(ref) in Javascript to get the information from PHP, where ref is the key from the array provided to this function
-		- changes to the values will be retained
-		INPUT:
-		- $array : associate array where keys are the references that will later be used in Javascript to retrieve the corresponding values
-			- for translation system use the translation tag as the key and set to value to '_txt' in order for this function to retrieve the translation itself
-		- $options : associative array with any of these flags:
-			- 'js_function_name' : use a different name for the Javascript function. Default is 'getphp'
-			- 'is_js_context' : set to true when the output is placed directly in a Javascript block (= skip the <script> tags)
-			- 'storage_var_prefix' : name of variable where the information will be stored. A number will be appended to the string.
-				- if only a local variable is used it will not be possible to change values, will effectively be read-only
-		OUTPUT:
-		- writes a block of Javascript to the browser
-		*/
+		// Provide backward compatibility with when the option was called `storage_var_prefix`
+		if (isset($options['storage_var_prefix'])) {
+			$options['storage_var'] = $options['storage_var_prefix'];
+		}
+
 		$default_options = array(
 			'js_function_name' => 'getphp',
 			'is_js_context' => false,
-			'storage_var_prefix' => 'window.jfwJsV',
 		);
 		$options = array_merge($default_options, (array) $options);
+		if (!isset($options['storage_var'])) {
+			$options['storage_var'] = 'window.jfwJsV'. str_replace('.', '', (string) microtime(true));
+		}
 
 		if (!is_array($array)) {
 			core::system_error('Invalid array to pass on to Javascript.');
@@ -61,14 +66,11 @@ class js {
 			$out .= "/* <![CDATA[ */\r\n";
 		}
 
-		self::$pass_to_js_counter++;
-		$varname = $options['storage_var_prefix'] . self::$pass_to_js_counter;
-
 		$out .= "function ". $options['js_function_name'] ."(ref){\r\n";  //default: function getphp()
-		$out .= "if(typeof ". $varname ."=='undefined')". $varname ."=". json_encode($a) .";\r\n";
-		$out .= "if(typeof ref==\"undefined\"){return ". $varname ."};\r\n";
-		$out .= "if(typeof ". $varname ."[ref]==\"undefined\"){alert(\"Configuration error. The reference '\"+ ref +\"' does not exist.\");return\"UNKNOWN_REFERENCE:\"+ref}";
-		$out .= "return ". $varname ."[ref];";
+		$out .= "if(typeof ". $options['storage_var'] ."==='undefined')". $options['storage_var'] ."=". json_encode($a) .";\r\n";  //only assign the first time we call the JS function (otherwise we can't change values)
+		$out .= "if(typeof ref===\"undefined\"){return ". $options['storage_var'] ."};\r\n";
+		$out .= "if(typeof ". $options['storage_var'] ."[ref]===\"undefined\"){alert(\"Configuration error. The reference '\"+ ref +\"' does not exist.\");return\"UNKNOWN_REFERENCE:\"+ref}";
+		$out .= "return ". $options['storage_var'] ."[ref];";
 		$out .= "}\r\n";
 		if (!$options['is_js_context']) {
 			$out .= "/* ]]> */\r\n";
