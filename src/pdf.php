@@ -156,32 +156,32 @@ class pdf {
 					break;
 				}
 
+				if ($options['output_format'] === 'jpg') {
+					$filename_dest = sprintf($image_path .'-%1$06d.jpg', $i);
+				} else {
+					$filename_dest = $filename_src;
+				}
+
+				$convert_options = array();
 				// Crop the image to the ArtBox
 				if ($crop_to_artbox) {
-					$cmd = 'convert '. escapeshellarg($filename_src) .' -gravity SouthWest -crop '. $px_width .'x'. $px_height .'+'. $px_ll_x .'+'. $px_ll_y .' '. escapeshellarg($filename_src) .' 2>&1';
-					$coutput = array();
-					exec($cmd, $coutput, $returncode);
-
-					if (!empty($coutput)) {
-						throw new \Exception('ImageMagick command for cropping image to ArtBox outputted unexpected data ((INTERNAL:'. json_encode($coutput) .'))');
-					} elseif ($returncode != 0) {
-						throw new \Exception('ImageMagick command for cropping image to ArtBox returned '. $returncode);
-					}
+					$convert_options[] = '-gravity SouthWest -crop '. $px_width .'x'. $px_height .'+'. $px_ll_x .'+'. $px_ll_y;
 				}
 
 				// xpdf doesn't support output in jpg so in that case we do this fill-in using ImageMagick to support that
 				if ($options['output_format'] === 'jpg') {
-					$filename_dest = sprintf($image_path .'-%1$06d.jpg', $i);
-					if (file_exists($filename_src)) {
-						$coutput = array(); $returncode = 0;
-						$cmd = 'convert '. escapeshellarg($filename_src) .' -alpha remove -quality '. $options['jpg_quality'] .' '. escapeshellarg($filename_dest) .' 2>&1';  //about alpha remove: You should use -alpha remove rather than mis-use -flatten. It has the same effect, but the alpha on is faster and more memory efficient. It also works with "mogrify", where -flatten will not. Source: https://www.imagemagick.org/discourse-server/viewtopic.php?t=24048
-						exec($cmd, $coutput, $returncode);
+					$convert_options[] = '-alpha remove -quality '. $options['jpg_quality'];  //about alpha remove: You should use -alpha remove rather than mis-use -flatten. It has the same effect, but the alpha on is faster and more memory efficient. It also works with "mogrify", where -flatten will not. Source: https://www.imagemagick.org/discourse-server/viewtopic.php?t=24048
+				}
 
-						if (!empty($coutput)) {
-							throw new \Exception('ImageMagick command for converting PNG to JPG outputted unexpected data ((INTERNAL:'. json_encode($coutput) .'))');
-						} elseif ($returncode != 0) {
-							throw new \Exception('ImageMagick command for converting PNG to JPG returned '. $returncode);
-						}
+				if (!empty($convert_options)) {
+					$cmd = 'convert '. escapeshellarg($filename_src) .' '. implode(' ', $convert_options) .' '. escapeshellarg($filename_dest) .' 2>&1';
+					$coutput = array();
+					exec($cmd, $coutput, $returncode);
+
+					if (!empty($coutput)) {
+						throw new \Exception('ImageMagick command for cropping image to ArtBox and/or converting to JPG outputted unexpected data ((INTERNAL:'. json_encode($coutput) .'))');
+					} elseif ($returncode != 0) {
+						throw new \Exception('ImageMagick command for cropping image to ArtBox and/or converting to JPG returned '. $returncode);
 					}
 				}
 			}
