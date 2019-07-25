@@ -25,6 +25,7 @@ class pdf {
 			'jpg_quality' => 90,
 			'xpdf_path' => '/usr/local/bin/pdftopng',  //full path to pdftopng
 			'ghostscript_path' => 'gs',
+			'single_page' => false,  //can be set to true when xpdf is used in order to automatically remove the "-000001.png" that it automatically adds to the file name
 			'transparency' => true,  //should transparency be maintained?
 			'use_box' => null,  //crop image to a specific box ('ArtBox', 'TrimBox', 'CropBox')
 			'TextAlphaBits' => 4,  //set these two to 1 to disable anti-aliasing (Ghostscript only)
@@ -194,5 +195,17 @@ class pdf {
 
 		// OTHER IMAGEMAGICK METHOD BUT SAME ISSUE
 		// echo exec("convert.exe ". __DIR__ .'/AutomatedDesignSample.pdf' ." ". __DIR__ .'/AutomatedDesignSample.jpg' ." 2>&1"); // Does not work and gives below error
+
+		// Remove the "-000001.png" that xpdf automatically adds to the file name when PDF is only a single page (Ghostscript doesn't automatically add the number, it only uses the %d parameter)
+		if ($options['engine'] === 'xpdf' && $options['single_page']) {
+			if ($options['output_format'] === 'jpg') {
+				$src = sprintf($image_path .'-%1$06d.jpg', 1);
+				$dst = $image_path;
+			} else {
+				$src = sprintf($image_path .'-%1$06d.png', 1);
+				$dst = $image_path;
+			}
+			rename($src, $dst);
+		}
 	}
 }
