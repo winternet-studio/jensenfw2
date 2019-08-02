@@ -377,6 +377,7 @@ class imaging {
 	 *
 	 * @param string $image_path_rgb : Full path required (if $use_image_own_profile = true: is only used if image doesn't contain it's own profile)
 	 * @param string $image_path_cmyk : Full path required
+	 * @return boolean : Whether the conversion actually took place
 	 */
 	static public function convert_rgb_to_cmyk($image_path_rgb, $image_path_cmyk, $options = array() ) {
 		$defaults = array(
@@ -384,6 +385,7 @@ class imaging {
 			'cmyk_icc_profile_path' => '',
 			'force_overwrite' => false,
 			'jpg_compression_quality' => 80,
+			'only_if_applicable' => false,
 		);
 
 		if (!extension_loaded('imagick')) {
@@ -395,7 +397,20 @@ class imaging {
 		$options = array_merge($defaults, (array) $options);
 
 		if (!$options['force_overwrite'] && file_exists($image_path_cmyk)) {
-			return;
+			return false;
+		}
+
+		if ($options['only_if_applicable']) {
+			$image_color_space = self::get_colorspace($image_path_rgb);
+			if (!$image_color_space) {
+				core::system_error('Could not determine the current colorspace of image.', ['Image' => $image_path_rgb]);
+			} elseif (in_array($image_color_space, ['GRAY'])) {  //a TIFF bitmap file (grene.tif) had the value "GRAY" - that should of course not be converted
+				return false;
+			} elseif ($image_color_space != 'CMYK') {
+				// do CMYK conversion, allow script to continue
+			} else {
+				return false;
+			}
 		}
 
 		$img = new Imagick($image_path_rgb);
@@ -438,6 +453,8 @@ class imaging {
 		$img->clear();
 		$img->destroy();
 		$img = null;
+
+		return true;
 	}
 
 	static public function get_colorspace($image_path) {
