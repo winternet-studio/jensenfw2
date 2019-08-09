@@ -184,6 +184,12 @@ class pdf {
 					} elseif ($returncode != 0) {
 						throw new \Exception('ImageMagick command for cropping image to ArtBox and/or converting to JPG returned '. $returncode);
 					}
+
+					if ($options['output_format'] === 'jpg') {
+						if (!unlink($filename_src)) {
+							throw new \Exception('Failed to deleted the xpdf generated png file that has been converted to jpg.');
+						}
+					}
 				}
 			}
 		}
