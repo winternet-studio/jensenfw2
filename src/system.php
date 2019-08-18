@@ -179,11 +179,11 @@ class system {
 				throw new \Exception('The method shell_command() with option only_if_not_already_running is not yet supported on Windows.');
 			}
 			$o = [];
-			exec('pgrep -f '. escapeshellarg($options['only_if_not_already_running']), $o);
+			exec('pgrep -fa '. escapeshellarg($options['only_if_not_already_running']), $o);
 			$return['existing_pids'] = [];
 			foreach ($o as $oline) {
-				if (is_numeric($oline)) {
-					$return['existing_pids'][] = (int) $oline;
+				if (strpos($oline, 'pgrep -fa') === false) {  //exclude the pgrep command itself (Is needed in Debian. The line pgrep returned was: "4176 sh -c pgrep -fa 'layout/background-preview-render 5541 ')" (4176 being the process ID, 5541 the layoutID we're checking)
+					$return['existing_pids'][] = (int) $oline;  //results in the number that the line starts with
 				}
 			}
 			if (!empty($return['existing_pids'])) {
