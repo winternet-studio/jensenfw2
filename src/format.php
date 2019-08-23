@@ -324,6 +324,113 @@ class format {
 		return $out; 
 	}
 
+    /**
+     * Extract tags, which might be nested, from a string
+     *
+     * Example: `This is a {leftOrRight,select,left{left} right{right}} page` becomes:
+     * ```
+	 * [
+	 *   "This is a ",
+	 *   [
+	 *     "leftOrRight",
+	 *     "select",
+	 *     "left{left} right{right}"
+	 *   ],
+	 *   " page"
+	 * ]
+     * ```
+     *
+	 * Originally copied from Yii2 \yii\i18n\MessageFormatter::tokenizePattern()
+	 *
+     * @param string $pattern : Pattern to tokenize
+     * @param array $options : Available options
+     *   - `open` : character designating tag open. Default is `{`
+     *   - `close` : character designating tag close. Default is `}`
+     *   - `field_separator` : character separating the fields in a tag. Default is `,`. Set to false to not split string into fields.
+     *   - `recursive` : set true to parse nested tags as well
+     *   - `charset` : character set to use. Default is `UTF-8`
+     *
+     * @return array|boolean : Array of tokens, or false on failure
+     */
+	public static function extract_tags($pattern, $options = []) {
+		$defaults = [
+			'open' => '{',
+			'close' => '}',
+			'field_separator' => ',',
+			'recursive' => false,
+			'charset' => 'UTF-8',
+		];
+		$options = array_merge($defaults, $options);
+
+		$open_length = strlen($options['open']);
+		$close_length = strlen($options['close']);
+
+		$depth = 1;
+		if (($start = $pos = mb_strpos($pattern, $options['open'], 0, $options['charset'])) === false) {
+			return [$pattern];
+		}
+		$tokens = [mb_substr($pattern, 0, $pos, $options['charset'])];
+		while (true) {
+			$open = mb_strpos($pattern, $options['open'], $pos + $open_length, $options['charset']);
+			$close = mb_strpos($pattern, $options['close'], $pos + $close_length, $options['charset']);
+			if ($open === false && $close === false) {
+				break;
+			}
+			if ($open === false) {
+				$open = mb_strlen($pattern, $options['charset']);
+			}
+			if ($close > $open) {
+				$depth++;
+				$pos = $open;
+			} else {
+				$depth--;
+				$pos = $close;
+			}
+			if ($depth === 0) {
+				$part = mb_substr($pattern, $start + $open_length, $pos - $start - $open_length, $options['charset']);
+				if ($options['recursive']) {
+					if ($options['field_separator'] !== false) {
+						$token = explode($options['field_separator'], $part, 3);
+						$token2 = [];
+						foreach ($token as $t) {
+							$token2[] = self::extract_tags($t, $options);
+						}
+						$tokens[] = $token2;
+					} else {
+						$tokens[] = self::extract_tags($part, $options);
+					}
+				} else {
+					if ($options['field_separator'] !== false) {
+						$tokens[] = explode($options['field_separator'], $part, 3);
+					} else {
+						$tokens[] = $part;
+					}
+				}
+				$start = $pos + $close_length;
+				$tokens[] = mb_substr($pattern, $start, $open - $start, $options['charset']);
+				$start = $open;
+			}
+
+			if ($depth !== 0 && ($open === false || $close === false)) {
+				break;
+			}
+		}
+		if ($depth !== 0) {
+			return false;
+		}
+
+		return $tokens;
+	}
+
+	public static function extractTags($pattern, $options = []) {
+		// Camel-case version
+		if (array_key_exists('fieldSeparator', $options)) {
+			$options['field_separator'] = $options['fieldSeparator'];
+			unset($options['fieldSeparator']);
+		}
+		return self::extract_tags($pattern, $options);
+	}
+
 	/**
 	 * Very simple obfuscation of a number
 	 *
@@ -366,11 +473,11 @@ class format {
 	 * @return string : Plain text string
 	 */
 	public static function base64_decode_url($base64string) {
-	    $data = strtr($base64string, '-.', '+/');
-	    $mod4 = strlen($data) % 4;
-	    if ($mod4) {
-	        $data .= substr('====', $mod4);
-	    }
-	    return base64_decode($data);
+		$data = strtr($base64string, '-.', '+/');
+		$mod4 = strlen($data) % 4;
+		if ($mod4) {
+			$data .= substr('====', $mod4);
+		}
+		return base64_decode($data);
 	}
 }
