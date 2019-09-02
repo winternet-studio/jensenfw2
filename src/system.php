@@ -18,18 +18,17 @@ class system {
 		return $cfg;
 	}
 
+	/**
+	 * Register a user setting
+	 *
+	 * - Use with caution! It is cookie based. If cookies are disabled it won't work.
+	 * - All data must be as short as possible since there are big limitations in storing data in cookies
+	 * - Should maybe add option for storing it in database instead
+	 *
+	 * @param string $name : Name of cookie (as short as possible)
+	 * @param string $value : Cookie value (false or a length of zero will delete the setting) (as short as possible)
+	 */
 	public static function user_setting($name, $value) {
-		/*
-		DESCRIPTION:
-		- register a user setting
-		- use with caution! It is cookie based. If cookies are disabled it won't work.
-		- all data must be as short as possible since there are big limitations in storing data in cookies
-		- should maybe add option for storing it in database instead
-		INPUT:
-		- $name : name of cookie (as short as possible)
-		- $value : cookie value (false or a length of zero will delete the setting) (as short as possible)
-		- read notes above!
-		*/
 		$host = strtolower($_SERVER['HTTP_HOST']);
 		if ($host == 'localhost') {
 			//running on localhost
@@ -59,21 +58,20 @@ class system {
 		}
 	}
 
+	/**
+	 * Set a value in the temporary buffer table
+	 *
+	 * Good for information that doesn't fit into the existing table structure and is temporary anyway.
+	 *
+	 * @param string|integer $key : Number or string with the key
+	 * @param string|integer $value : Number or string with the value to store
+	 * @param string $expiration : The expiration date (UTC) of this value in MySQL format (yyyy-mm-dd or yyyy-mm-dd hh:mm:ss)
+	 *   - or number of hours to expire (eg. 6 hours: `6h`)
+	 *   - or days to expire (eg. 14 days: `14d`)
+	 *   - or `NOW` in order to delete a buffer value before current expiration (when overwriting an existing one)
+	 * @return void
+	 */
 	public static function set_buffer_value($key, $value, $expiration = false) {
-		/*
-		DESCRIPTION:
-		- set a value in the temporary buffer table
-		- good for information that doesn't fit into the existing table structure and is temporary anyway
-		INPUT:
-		- $key : number or string with the key
-		- $value : number or string with the value to store
-		- $expiration : the expiration date (UTC) of this value in MySQL format (yyyy-mm-dd or yyyy-mm-dd hh:mm:ss)
-			- or number of hours to expire (eg. 6 hours: '6h')
-			- or days to expire (eg. 14 days: '14d')
-			- or 'NOW' in order to delete a buffer value before current expiration (when overwriting an existing one)
-		OUTPUT:
-		- nothing
-		*/
 		$cfg = core::get_class_defaults(__CLASS__);
 		core::require_database($cfg['db_server_id']);
 
@@ -103,17 +101,15 @@ class system {
 		core::database_result($sql, false, 'Database query for setting value in temporary buffer table failed.');
 	}
 
+	/**
+	 * Get a value from the temporary buffer table
+	 *
+	 * Also cleans the buffer table once per session.
+	 *
+	 * @param string $key : Key to get the value for
+	 * @return string|array : String with the value, or empty array if key was not found
+	 */
 	public static function get_buffer_value($key) {
-		/*
-		DESCRIPTION:
-		- get a value from the temporary buffer table
-		- also cleans the buffer table once per session
-		INPUT:
-		- $key : key to get the value for
-		OUTPUT:
-		- string with the value
-		- or empty array if key was not found
-		*/
 		$cfg = core::get_class_defaults(__CLASS__);
 		core::require_database($cfg['db_server_id']);
 
@@ -277,17 +273,15 @@ THIS DOESN'T WORK YET. IT EXECUTES BUT NOT IN THE BACKGROUND. USING output_file 
 		}
 	}
 
+	/**
+	 * Check for syntax errors in PHP file
+	 *
+	 * Source: http://feeds.feedburner.com/phpadvent (PHP Advent 2008)
+	 *
+	 * @param string $file : File to check
+	 * @return boolean : True if no errors, false if syntax errors. Cutput from php.exe can be found in $GLOBALS['checksyntax_output']
+	 */
 	public static function check_php_syntax($file) {
-		/*
-		DESCRIPTION:
-		- check for syntax errors in PHP file
-		- source: http://feeds.feedburner.com/phpadvent (PHP Advent 2008)
-		INPUT:
-		- $file : file to check
-		OUTPUT:
-		- true if no errors, false if syntax errors
-		- output from php.exe can be found in $GLOBALS['checksyntax_output']
-		*/
 		$filename_pattern = '/\.php$/';
 		if (!preg_match($filename_pattern, $file)) {
 			core::system_error('File to check syntax on is not a PHP file.', array('File' => $file) );

@@ -6,17 +6,16 @@ namespace winternet\jensenfw2;
 
 class js {
 
-	static public function esc($str) {
-		/*
-		DESCRIPTION:
-		- escape a string to be put into Javascript code
-		- (full name would have been js_escape_string() )
-		INPUT:
-		- $string : string to escape
-		OUTPUT:
-		- string
-		*/
-		return strtr((string) $str, array("\r" => '\r', "\n" => '\n', "\t" => '\t', "'" => "\\'", '"' => '\"', '\\' => '\\\\'));
+	/**
+	 * Escape a string to be put into Javascript code
+	 *
+	 * (full name would have been js_escape_string() )
+	 *
+	 * @param string $string : String to escape
+	 * @return string
+	 */
+	static public function esc($string) {
+		return strtr((string) $string, array("\r" => '\r', "\n" => '\n', "\t" => '\t', "'" => "\\'", '"' => '\"', '\\' => '\\\\'));
 	}
 
 	/**

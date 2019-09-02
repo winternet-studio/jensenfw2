@@ -37,15 +37,13 @@ class xml {
 		}
 	}
 
+	/**
+	 * Convert a string to use XML entities
+	 *
+	 * @param string $string
+	 * @return string : Converted string
+	 */
 	public static function xml_entities($string) {
-		/*
-		DESCRIPTION:
-		- convert a string to use XML entities
-		INPUT:
-		- $string
-		OUTPUT:
-		- converted string
-		*/
 		$string = (string) $string;
 		// Unlike HTML, XML supports only five "named character entities":
 		$named_entities = array(
@@ -78,20 +76,17 @@ class xml {
 		return $string;
 	}
 
+	/**
+	 * Parse an XML string into an array
+	 *
+	 * @param string $xml_string
+	 * @param array $options : Associative array with any of these keys:
+	 *   - `flatten_cdata` : set to true to flatten CDATA elements
+	 *   - `use_objects` : set to true to parse into objects instead of associative arrays
+	 *   - `convert_booleans` : set to true to cast string values 'true' and 'false' into booleans
+	 * @return array : Associative array
+	 */
 	public static function parse_xml_into_array($xml_string, $options = []) {
-		/*
-		DESCRIPTION:
-		- parse an XML string into an array
-		INPUT:
-		- $xml_string
-		- $options : associative array with any of these keys:
-			- 'flatten_cdata' : set to true to flatten CDATA elements
-			- 'use_objects' : set to true to parse into objects instead of associative arrays
-			- 'convert_booleans' : set to true to cast string values 'true' and 'false' into booleans
-		OUTPUT:
-		- associative array
-		*/
-
 		// Remove namespaces by replacing ":" with "_"
 		if (preg_match_all("|</([\\w\\-]+):([\\w\\-]+)>|", $xml_string, $matches, PREG_SET_ORDER)) {
 			foreach ($matches as $match) {

@@ -9,18 +9,17 @@ class datetime {
 	public static $scripttimer_meantimecount = null;
 	public static $scripttimer_lastmeantime = null;
 
+	/**
+	 * Format dates and/or times according to locale settings
+	 *
+	 * Based on strftime() but adjusted to work correctly
+	 *
+	 * @param string $format : According to strftime(), plus the following:  (literal % cannot be used)
+	 *   - ¤A : weekday name with abbreviated to 3 characters
+	 * @param integer $date_unix : UNIX timestamp of the date/time to be formatted
+	 * @return string
+	 */
 	public static function format_datetime_local($format, $date_unix) {
-		/*
-		DESCRIPTION:
-		- format dates and/or times according to locale settings (currently just according to strftime() )
-		- based on strftime() but adjusted to work correctly
-		INPUT:
-		- $format : according to strftime(), plus the following:  (literal % cannot be used)
-			- ¤A : weekday name with abbreviated to 3 characters
-		- $date_unix : UNIX timestamp of the date/time to be formatted
-		OUTPUT:
-		- string
-		*/
 		$output = $format;
 		$working = array('a', 'A', 'B', 'c', 'C', 'd', 'D', 'g', 'h', 'H', 'I', 'j', 'm', 'n', 'p', 'r', 'R', 'S', 't', 'T', 'u', 'U', 'V', 'W', 'w', 'x', 'X', 'y', 'Y', 'Z');
 		// Do all the working values
@@ -197,18 +196,17 @@ class datetime {
 		}
 	}
 
+	/**
+	 * Add or subtract a specified period from a date
+	 *
+	 * This is better than just multiplying the timestamp because this takes daylight savings time into consideration
+	 *
+	 * @param integer $time : UNIX timestamp
+	 * @param integer $adjust_by : The number, positive to add or negative to subtract, you want to adjust the time with
+	 * @param string $interval : the unit for the $adjust_by number. Possible values are: `hour`, `minute`, `second`, `day`, `month`, `year`
+	 * @return integer : UNIX timestamp
+	 */
 	public static function time_add($time, $adjust_by, $interval) {
-		/*
-		DESCRIPTION:
-		- add or subtract a specified period from a date
-		- this is better than just multiplying the timestamp because this takes daylight savings time into consideration
-		INPUT:
-		- $time : UNIX timestamp
-		- $adjust_by : the number, positive to add or negative to subtract, you want to adjust the time with
-		- $interval : the unit for the $adjust_by number. Possible values are:  hour|minute|second|day|month|year
-		OUTPUT:
-		- UNIX timestamp
-		*/
 		switch ($interval) {
 		case 'hour':
 		case 'hours':
@@ -248,19 +246,17 @@ class datetime {
 		return $newtime;
 	}
 
+	/**
+	 * Get the difference between two times expressed in a certain interval
+	 *
+	 * @param integer $time1 : first time in UNIX timestamp (beginning time)
+	 * @param integer $time1 : second time in UNIX timestamp (ending time)
+	 * @param string $interval : calculate the difference as months, weeks, days, hours, minutes, or seconds (see below for valid values)
+	 *   - note that a month is calculated as 30 days
+	 * @param boolean $return_absolute : return the absolute value? This means the order of times doesn't matter and result is always positive.
+	 * @return number : Possibly with decimals
+	 */
 	public static function time_diff($time1, $time2, $interval = 'days', $return_absolute = false) {
-		/*
-		DESCRIPTION:
-		- get the difference between two times expressed in a certain interval
-		INPUT:
-		- $time1 : first time in UNIX timestamp (beginning time)
-		- $time1 : second time in UNIX timestamp (ending time)
-		- $interval : calculate the difference as months, weeks, days, hours, minutes, or seconds (see below for valid values)
-			- note that a month is calculated as 30 days
-		- $return_absolute : return the absolute value? This means the order of times doesn't matter and result is always positive.
-		OUTPUT:
-		- number, possible with decimals
-		*/
 		$difference_seconds = $time2 - $time1;
 		if ($return_absolute) {
 			$difference_seconds = abs($difference_seconds);
@@ -657,19 +653,17 @@ class datetime {
 		return $output;
 	}
 
+	/**
+	 * Change the timezone of a given timestamp
+	 *
+	 * @param string $datetime : Timestamp to change. MySQL format: yyyy-mm-dd hh:mm:ss (or yyyy-mm-dd hh:mm, or any format accepted by the PHP DateTime constructor)
+	 *   - yyyy-mm-dd can also be used but conversion will then always be based on midnight of that date and might therefore be incorrect
+	 * @param string $curr_timezone : The current timezone of the timestamp, according to http://php.net/manual/en/timezones.php
+	 * @param string $new_timezone : The timezone to convert the timestamp to, according to http://php.net/manual/en/timezones.php
+	 * @param string $format : (opt.) Date format to return according to DateTime->format()
+	 * @return string : MySQL formatted timestamp or according to $format if specified
+	 */
 	public static function change_timestamp_timezone($datetime, $curr_timezone, $new_timezone, $format = false) {
-		/*
-		DESCRIPTION:
-		- change the timezone of a given timestamp
-		INPUT:
-		- $datetime : timestamp to change. MySQL format: yyyy-mm-dd hh:mm:ss (or yyyy-mm-dd hh:mm, or any format accepted by the PHP DateTime constructor)
-			- yyyy-mm-dd can also be used but conversion will then always be based on midnight of that date and might therefore be incorrect
-		- $curr_timezone : the current timezone of the timestamp, according to http://php.net/manual/en/timezones.php
-		- $new_timezone : the timezone to convert the timestamp to, according to http://php.net/manual/en/timezones.php
-		- $format (opt.) : date format to return according to DateTime->format()
-		OUTPUT:
-		- MySQL formatted timestamp or according to $format if specified
-		*/
 		if (!$format) {
 			$format = 'Y-m-d H:i:s';
 		}

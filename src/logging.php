@@ -15,50 +15,50 @@ class logging {
 		return $cfg;
 	}
 
+	/**
+	 * Log an action that happens in the system (eg. by a user or by some automated process)
+	 *
+	 * Example: `logging::log_action('', false, array('for_name' => '', 'for_userID' => 1), array('' => 1)  );`
+	 *
+	 * Requires the table 'log_actions' in the database:  (table name can be changed in config)
+	 * ```
+	 * CREATE TABLE `log_actions` (
+	 *   `log_actionID` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+	 *   `log_timestamp` DATETIME NULL DEFAULT NULL,
+	 *   `log_by_userID` INT(10) UNSIGNED NULL DEFAULT NULL,
+	 *   `log_by_name` VARCHAR(100) NULL DEFAULT NULL,
+	 *   `log_emulated_by` VARCHAR(100) NULL DEFAULT NULL,
+	 *   `log_action` VARCHAR(30) NULL DEFAULT NULL,
+	 *   `log_subaction` VARCHAR(30) NULL DEFAULT NULL,
+	 *   `log_for_userID` INT(10) UNSIGNED NULL DEFAULT NULL,
+	 *   `log_for_name` VARCHAR(100) NULL DEFAULT NULL,
+	 *   `log_parameters` MEDIUMTEXT NULL,
+	 *   `log_ip` VARCHAR(50) NULL DEFAULT NULL,
+	 *   `log_visitID` INT(10) UNSIGNED NULL DEFAULT NULL,
+	 *   PRIMARY KEY (`log_actionID`),
+	 *   INDEX `tempindx` (`log_action`, `log_for_userID`, `log_subaction`)
+	 * );
+	 * ```
+	 *
+	 * @param string $action : Main action keyword
+	 * @param string $subaction : (opt.) Sub action keyword
+	 * @param array $primary_parms : (opt.) An array with keys matching a table column name except the 'log_' prefix. Available by default are:
+	 *   - `by_name` (text)
+	 *   - `by_userID` (integer)
+	 *   - `emulated_by` (text)
+	 *   - `for_name` (text)
+	 *   - `for_userID` (integer)
+	 *   - `visitID` (integer)
+	 * @param array|string $secondary_parms : Either an array or a string:
+	 *   - array: have any keys and values, and will be formatted before they are all put into the parameters database field
+	 *   - string: will be put directly into the parameters field
+	 * @param array $options : Available options:
+	 *   - `duplicate_window` : set this to the number of seconds within which to not register the logentry if it with already registered previously
+	 *   - `reset_elapsed_time` : set this to true to reset the remaining time before registering the same logentry again when a duplicate entry was detected
+	 *   - `visitID` : visitID to set in the log_visitID column
+	 * @return integer|boolean : The operationID of the log entry that was created, or false if a duplicate entry was detected
+	 */
 	public static function log_action($action, $subaction = false, $primary_parms = [], $secondary_parms = false, $options = array() ) {
-		/*
-		DESCRIPTION:
-		- log an action that happens in the system (eg. by a user or by some automated process)
-		- example: logging::log_action('', false, array('for_name' => '', 'for_userID' => 1), array('' => 1)  );
-		- requires the table 'log_actions' in the database:  (table name can be changed in config)
-			CREATE TABLE `log_actions` (
-				`log_actionID` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-				`log_timestamp` DATETIME NULL DEFAULT NULL,
-				`log_by_userID` INT(10) UNSIGNED NULL DEFAULT NULL,
-				`log_by_name` VARCHAR(100) NULL DEFAULT NULL,
-				`log_emulated_by` VARCHAR(100) NULL DEFAULT NULL,
-				`log_action` VARCHAR(30) NULL DEFAULT NULL,
-				`log_subaction` VARCHAR(30) NULL DEFAULT NULL,
-				`log_for_userID` INT(10) UNSIGNED NULL DEFAULT NULL,
-				`log_for_name` VARCHAR(100) NULL DEFAULT NULL,
-				`log_parameters` MEDIUMTEXT NULL,
-				`log_ip` VARCHAR(50) NULL DEFAULT NULL,
-				`log_visitID` INT(10) UNSIGNED NULL DEFAULT NULL,
-				PRIMARY KEY (`log_actionID`),
-				INDEX `tempindx` (`log_action`, `log_for_userID`, `log_subaction`)
-			);
-		INPUT:
-		- $action : main action keyword
-		- $subaction (opt.) : sub action keyword
-		- $primary_parms (opt.) : an array keys matching a table column name except the 'log_' prefix. Available by default are:
-			- 'by_name' (text)
-			- 'by_userID' (integer)
-			- 'emulated_by' (text)
-			- 'for_name' (text)
-			- 'for_userID' (integer)
-			- 'visitID' (integer)
-		- $secondary_parms : either an array or a string:
-			- array: have any keys and values, and will be formatted before they are all put into the parameters database field
-			- string: will be put directly into the parameters field
-		- $options : array with any of these keys:
-			- 'duplicate_window' : set this to the number of seconds within which to not register the logentry if it with already registered previously
-			- 'reset_elapsed_time' : set this to true to reset the remaining time before registering the same logentry again when a duplicate entry was detected
-			- 'visitID' : visitID to set in the log_visitID column
-		OUTPUT:
-		- the operationID of the log entry that was created
-		- or false if a duplicate entry was detected
-		*/
-
 		// Don't register duplicate entries if requested
 		if (is_numeric($options['duplicate_window'])) {
 			if (@constant('YII_BEGIN_TIME') && PHP_SAPI != 'cli') {

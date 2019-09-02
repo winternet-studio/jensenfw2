@@ -5,11 +5,10 @@ This file contains functions related to misc formatting issues
 namespace winternet\jensenfw2;
 
 class format {
+	/**
+	 * Convert HTML to plain text
+	 */
 	public static function html_to_text($html, $extract_urls = true) {
-		/*
-		DESCRIPTION:
-		- convert HTML to plain text
-		*/
 		$text = $html;
 		$text = html_entity_decode($text);  //reverse HTML entities
 		$text = str_replace("\r", '', $text);  //first remove all newlines (source is text and therefore newlines are not considered)
@@ -32,18 +31,17 @@ class format {
 		return $text;
 	}
 
+	/**
+	 * Resolve to using the correct singular or plural form of a noun in a sentence
+	 *
+	 * Eg. "1 person" or "2 people"
+	 *
+	 * @param integer $number : Number used to determine singular or plural
+	 * @param string $sentence : The sentence where the singular and plural form of the word is written like this: `((person,people))`
+	 *   - example: `((There was,They were)) 2 ((person,people)) in the park, yes, just 2 ((person,people)).`
+	 * @return string : Text using the correct form of the noun
+	 */
 	public static function noun_plural($number, $sentence) {
-		/*
-		DESCRIPTION:
-		- resolve to using the correct singular or plural form of a noun in a sentence
-		- eg. "1 person" or "2 people"
-		INPUT:
-		- $number : number used to determine singular or plural
-		- $sentence : string with the sentence where the singular and plural form of the word is written like this: ((person,people))
-			- example: ((There was,They were)) 2 ((person,people)) in the park, yes, just 2 ((person,people)).
-		OUTPUT:
-		- string with text using the correct form of the noun
-		*/
 		if (preg_match_all("|(\\(\\(.*\\)\\))|U", $sentence, $matches, PREG_SET_ORDER)) {
 			foreach ($matches as $match) {
 				list($singular, $plural) = explode(',', substr($match[1], 2, -2), 2);
@@ -57,29 +55,30 @@ class format {
 		return $sentence;
 	}
 
-	public static function truncate($str, $len, $el = '...') {
-		/*
-		DESCRIPTION:
-		- truncate a sentence to a maximum length
-		- will always truncate at spaces so that words are not chopped up
-		INPUT:
-		- $str : string to truncate
-		- $len : maximum length of the string
-		- $el : string to add to the string to show that is has been truncated (default: '...')
-		*/
-		if (mb_strlen($str) > $len) {
+	/**
+	 * Truncate a sentence to a maximum length
+	 *
+	 * Will always truncate at spaces so that words are not chopped up.
+	 *
+	 * @param string $text : Text to truncate
+	 * @param integer $len : Maximum length of the string
+	 * @param string $el : String to add to the string to show that is has been truncated (default: '...')
+	 * @return string
+	 */
+	public static function truncate($text, $len, $el = '...') {
+		if (mb_strlen($text) > $len) {
 			$xl = mb_strlen($el);
 			if ($len < $xl) {
-				return mb_substr($str, 0, $len);
+				return mb_substr($text, 0, $len);
 			}
-			$str = mb_substr($str, 0, $len-$xl);
-			$spc = mb_strrpos($str, ' ');
+			$text = mb_substr($text, 0, $len-$xl);
+			$spc = mb_strrpos($text, ' ');
 			if ($spc > 0) {
-				$str = mb_substr($str, 0, $spc);
+				$text = mb_substr($text, 0, $spc);
 			}
-			return $str . $el;
+			return $text . $el;
 		}
-		return $str;
+		return $text;
 	}
 
 	/**
@@ -100,24 +99,23 @@ class format {
 		}
 	}
 
-	public static function strtotitle($str, $options = array() ) {
-		/*
-		DESCRIPTION:
-		- this function converts all letters to lower case and then capitalizes each word
-		- examples:
-			- (is_person=true) : the grapes of WratH  ==>  The Grapes Of Wrath
-			- (is_person=true) : MARIE-LOU VAN DER PLANCK-ST.JOHN  ==>  Marie-Lou van der Planc-St.John
-			- (is_person=false): to be or not to be  ==>  To Be or Not to Be
-			- mcdonald o'neil  ==>  McDonald O'Neil
-		INPUT:
-		- $str : string to correct capitalization in
-		- $options : associative array with any of these keys:
-			- 'is_person' : when true a different behaviour is applied which is more appropiate for person names
-			- 'is_address' : when true a different behaviour is applied which is more appropiate for an address line (implies 'fix_ordinals_numbers' as well)
-			- 'fix_ordinals_numbers' : ensure ordinal numbers like 1st, 2nd, 3rd, 4th keep proper case
-		OUTPUT:
-		- string
-		*/
+	/**
+	 * Convert all letters to lower case and then capitalizes each word
+	 *
+	 * - examples:
+	 *   - (is_person=true) : the grapes of WratH  ==>  The Grapes Of Wrath
+	 *   - (is_person=true) : MARIE-LOU VAN DER PLANCK-ST.JOHN  ==>  Marie-Lou van der Planc-St.John
+	 *   - (is_person=false): to be or not to be  ==>  To Be or Not to Be
+	 *   - mcdonald o'neil  ==>  McDonald O'Neil
+	 *
+	 * @param string $text : String to correct capitalization in
+	 * @param array $options : Associative array with any of these keys:
+	 *   - `is_person` : when true a different behaviour is applied which is more appropiate for person names
+	 *   - `is_address` : when true a different behaviour is applied which is more appropiate for an address line (implies `fix_ordinals_numbers` as well)
+	 *   - `fix_ordinals_numbers` : ensure ordinal numbers like 1st, 2nd, 3rd, 4th keep proper case
+	 * @return string
+	 */
+	public static function strtotitle($text, $options = array() ) {
 		if ($options['is_address']) {
 			$options['fix_ordinals_numbers'] = true;
 		}
@@ -149,51 +147,50 @@ class format {
 		};
 
 		// Captialize all first letters
-		$str = mb_convert_case(trim($str), MB_CASE_TITLE);
+		$text = mb_convert_case(trim($text), MB_CASE_TITLE);
 
 		// Capitalize acronymns and initialisms e.g. PHP
 		if ($all_uppercase) {
-			$str = preg_replace_callback("/\\b(". $all_uppercase .")\\b/". core::$preg_u, $cb_strtoupper1, $str);
+			$text = preg_replace_callback("/\\b(". $all_uppercase .")\\b/". core::$preg_u, $cb_strtoupper1, $text);
 		}
 		// Decapitalize short words e.g. and
 		if ($all_lowercase) {
 			if ($is_name) {
 				//all occurences will be changed to lowercase
-				$str = preg_replace_callback("/\\b(". $all_lowercase .")\\b/". core::$preg_u, $cb_strtolower1, $str);
+				$text = preg_replace_callback("/\\b(". $all_lowercase .")\\b/". core::$preg_u, $cb_strtolower1, $text);
 			} else {
 				//first and last word will not be changed to lower case (i.e. titles)
-				$str = preg_replace_callback("/(?<=\\W)(". $all_lowercase .")(?=\\W)/". core::$preg_u, $cb_strtolower1, $str);
+				$text = preg_replace_callback("/(?<=\\W)(". $all_lowercase .")(?=\\W)/". core::$preg_u, $cb_strtolower1, $text);
 			}
 		}
 		// Capitalize letter after certain name prefixes e.g 'Mc'
 		if ($prefixes) {
-			$str = preg_replace_callback("/\\b(". $prefixes .")(\\w)/". core::$preg_u, $cb_strtoupper2, $str);
+			$text = preg_replace_callback("/\\b(". $prefixes .")(\\w)/". core::$preg_u, $cb_strtoupper2, $text);
 		}
 		// Decapitalize certain word suffixes e.g. 's
 		if ($suffixes) {
-			$str = preg_replace_callback("/(\\w)(". $suffixes .")\\b/". core::$preg_u, $cb_strtolower2, $str);
+			$text = preg_replace_callback("/(\\w)(". $suffixes .")\\b/". core::$preg_u, $cb_strtolower2, $text);
 		}
 
 		if ($options['fix_ordinals_numbers']) {
-			$str = preg_replace_callback("/(\\d(St|Nd|Rd|Th)\\b)/". core::$preg_u, $cb_strtolower1, $str);
+			$text = preg_replace_callback("/(\\d(St|Nd|Rd|Th)\\b)/". core::$preg_u, $cb_strtolower1, $text);
 		}
 
-		return $str;
+		return $text;
 	}
 
-	public static function uc_percentage($string) {
-		/*
-		DESCRIPTION:
-		- this function return the percentage of characters that are upper-case
-		*/
-		$str_len = mb_strlen($string);
+	/**
+	 * Calculate the percentage of characters that are upper case
+	 */
+	public static function uc_percentage($text) {
+		$str_len = mb_strlen($text);
 		if ($str_len >= 1) {
 			$upper_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅÉÜÖ';
 			$lower_chars = 'abcdefghijklmnopqrstuvwxyzæøåéüö';
 			$upper_count = 0;
 			$lower_count = 0;
 			for ($i = 0; $i < $str_len; $i++) {
-				$curr_char = mb_substr($string, $i, 1);
+				$curr_char = mb_substr($text, $i, 1);
 				if (mb_strpos($upper_chars, $curr_char) !== false) {  //char was found in the upper characters
 					$upper_count++;
 				} elseif (mb_strpos($lower_chars, $curr_char) !== false) {  //char was found in the lower characters
@@ -212,37 +209,35 @@ class format {
 		}
 	}
 
-	public static function fix_wrong_title_case($string, $upper_percentage_low = 20, $upper_percentage_high = 50, $strtotitle_options = array() ) {
-		/*
-		DESCRIPTION:
-		- this function uses several functions to fix wrong case in a title where all words should start with an upper-case letter
-		- the word "tolerant" used below: a string that is tolerant has not wrong case and is therefore not converted -OR- how much it allows before it changes the case
-		INPUT:
-		- $string : string with text to fix
-		- $upper_percentage_low  : if the upper-case percentage is between 0 and this number it will be converted to title case (the higher the less tolerant)
-		- $upper_percentage_high : if the upper-case percentage is between this number and 100 it will be converted to title case (the lower the less tolerant)
-		- $strtotitle_options (array) : array with options for strtotitle()
-		OUTPUT:
-		- string
-		*/
-		$upper_percentage = self::uc_percentage($string);
+	/**
+	 * Fix wrong case in a title where all words should start with an upper-case letter
+	 *
+	 * Explanation of the word "tolerant" used below:
+	 * A string that is tolerant has not wrong case and is therefore not converted -OR- how much it allows before it changes the case.
+	 *
+	 * @param string $text : Text to fix
+	 * @param integer $upper_percentage_low  : If the upper-case percentage is between 0 and this number it will be converted to title case (the higher the less tolerant)
+	 * @param integer $upper_percentage_high : If the upper-case percentage is between this number and 100 it will be converted to title case (the lower the less tolerant)
+	 * @param array $strtotitle_options : Options for strtotitle()
+	 * @return string
+	 */
+	public static function fix_wrong_title_case($text, $upper_percentage_low = 20, $upper_percentage_high = 50, $strtotitle_options = array() ) {
+		$upper_percentage = self::uc_percentage($text);
 		if ($upper_percentage >= $upper_percentage_high || $upper_percentage <= $upper_percentage_low) {
-			$string = self::strtotitle($string, (array) $strtotitle_options);
+			$text = self::strtotitle($text, (array) $strtotitle_options);
 		}
-		return $string;
+		return $text;
 	}
 
-	public static function remove_multiple_spaces(&$string) {
-		/*
-		DESCRIPTION:
-		- remove multiple spaces from a string
-		INPUT:
-		- $string
-		OUTPUT:
-		- nothing, the passed argument is modified
-		*/
-		if (is_string($string)) {
-			$string = preg_replace("| {2,}|", ' ', $string);
+	/**
+	 * Remove multiple spaces from a string
+	 *
+	 * @param string $text : String to clean up. Variable is passed by reference and is hence modified.
+	 * @return void
+	 */
+	public static function remove_multiple_spaces(&$text) {
+		if (is_string($text)) {
+			$text = preg_replace("| {2,}|", ' ', $text);
 		}
 	}
 
@@ -265,63 +260,62 @@ class format {
 		return $number_string;
 	}
 
-	public static function convert_distance($dist, $from, $to) {
-		/*
-		DESCRIPTION:
-		- convert a distance (km, m, miles)
-		INPUT:
-		- $from : kilometers ('km'), meters ('m'), miles ('miles')
-		- $to   : kilometers ('km'), meters ('m'), miles ('miles')
-		*/
+	/**
+	 * Convert a distance (km, m, miles)
+	 *
+	 * @param float $distance : Distance to convert
+	 * @param string $from : Kilometers (`km`), meters (`m`), miles (`miles`)
+	 * @param string $to   : Kilometers (`km`), meters (`m`), miles (`miles`)
+	 */
+	public static function convert_distance($distance, $from, $to) {
 		$table = array(
 			'km' => 1,
 			'm' => 1000,
 			'miles' => 0.6214,
 		);
 		if ($from != 'km') {
-			$dist_km = $dist / $table[$from];
+			$dist_km = $distance / $table[$from];
 		} else {
-			$dist_to = $dist;
+			$dist_to = $distance;
 		}
 		if ($to != 'km') {
-			$dist_to = $dist * $table[$to];
+			$dist_to = $distance * $table[$to];
 		}
 		return $dist_to;
 	}
 
-	public static function replace_accents($str) {
-		/*
-		DESCRIPTION:
-		- replace special letter accents with normal letters
-		- source: http://php.net/manual/en/function.preg-replace.php  (user comment of 2010-03-06)
-		INPUT:
-		- $str : string
-		OUTPUT:
-		- string
-		*/
+	/**
+	 * Replace special letter accents with normal letters
+	 *
+	 * Source: http://php.net/manual/en/function.preg-replace.php  (user comment of 2010-03-06)
+	 *
+	 * @param string $text
+	 * @return string
+	 */
+	public static function replace_accents($text) {
 		$a = array('À', 'Á', 'Â', 'Ã', 'Ä', 'Å', 'Æ',  'Ç', 'È', 'É', 'Ê', 'Ë', 'Ì', 'Í', 'Î', 'Ï', 'Ð', 'Ñ', 'Ò', 'Ó', 'Ô', 'Õ', 'Ö', 'Ø', 'Ù', 'Ú', 'Û', 'Ü', 'Ý', 'ß', 'à', 'á', 'â', 'ã', 'ä', 'å', 'æ',  'ç', 'è', 'é', 'ê', 'ë', 'ì', 'í', 'î', 'ï', 'ñ', 'ò', 'ó', 'ô', 'õ', 'ö', 'ø', 'ù', 'ú', 'û', 'ü', 'ý', 'ÿ', 'Ð', '',  '',  '', '', '', '', '', '');
 		$b = array('A', 'A', 'A', 'A', 'A', 'A', 'AE', 'C', 'E', 'E', 'E', 'E', 'I', 'I', 'I', 'I', 'D', 'N', 'O', 'O', 'O', 'O', 'O', 'O', 'U', 'U', 'U', 'U', 'Y', 's', 'a', 'a', 'a', 'a', 'a', 'a', 'ae', 'c', 'e', 'e', 'e', 'e', 'i', 'i', 'i', 'i', 'n', 'o', 'o', 'o', 'o', 'o', 'o', 'u', 'u', 'u', 'u', 'y', 'y', 'D', 'OE', 'oe', 'S', 's', 'Y', 'Z', 'z', 'f');
-		return str_replace($a, $b, $str); 
+		return str_replace($a, $b, $text); 
 	}
 
-	public static function cleanup_title_url_safe($str, $flags = '') {
-		/*
-		DESCRIPTION:
-		- clean up a title to be safe to use in a URL
-		- example: $str = ' -Lo#&@rem  IPSUM. //Dolor-/sit - amét-\\-consectetür__! 12 -- ' outputs 'lorem-ipsum-dolor-sit-amet-consectetur-12'
-		- source: http://php.net/manual/en/function.preg-replace.php  (user comment of 2010-03-06)
-		INPUT:
-		- $str : string
-		- $flags : string with any combination of these options:
-			- 'maintain_case' : do not convert entire string to lower case
-		OUTPUT:
-		- string
-		*/
-		$out = preg_replace(array('/[^a-zA-Z0-9 -]/'. core::$preg_u, '/[ -]+/'. core::$preg_u, '/^-|-$/'. core::$preg_u), array('', '-', ''), self::replace_accents($str));
-		if (strpos($flags, 'maintain_case') === false) {
-			$out = strtolower($out);
+	/**
+	 * Clean up a title to be safe to use in a URL / generate slug
+	 *
+	 * Example:  ` -Lo#&@rem  IPSUM. //Dolor-/sit - amét-\\-consectetür__! 12 -- ` outputs `lorem-ipsum-dolor-sit-amet-consectetur-12`
+	 *
+	 * Source: http://php.net/manual/en/function.preg-replace.php  (user comment of 2010-03-06)
+	 *
+	 * @param string $title : string
+	 * @param array $options : Available options:
+	 *   - `maintain_case` : set true to not convert entire string to lower case
+	 * @return string
+	 */
+	public static function cleanup_title_url_safe($title, $options = array()) {
+		$output = preg_replace(array('/[^a-zA-Z0-9 -]/'. core::$preg_u, '/[ -]+/'. core::$preg_u, '/^-|-$/'. core::$preg_u), array('', '-', ''), self::replace_accents($title));
+		if (!$options['maintain_case']) {
+			$output = strtolower($output);
 		}
-		return $out; 
+		return $output; 
 	}
 
     /**
