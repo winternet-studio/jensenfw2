@@ -195,33 +195,49 @@ class system {
 		if ($options['background']) {
 			if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 				throw new \Exception('The method shell_command() with option background=true is not yet supported on Windows.');
-			}
-
-			// Source: https://stackoverflow.com/questions/45953/php-execute-a-background-process
-			// Composer package: https://github.com/diversen/background-job
-			if ($options['output_file']) {
-				if ($options['append']) {
-					$redir = '>>';
-				} else {
-					$redir = '>';
+/*
+THIS DOESN'T WORK YET. IT EXECUTES BUT NOT IN THE BACKGROUND. USING output_file HASN'T BEEN TESTED AT ALL.
+				if ($options['skip_exitcode'] || $options['id']) {
+					throw new \Exception('The method shell_command() with option background=true is not yet supported on Windows.');
 				}
-				if ($options['id']) {
-					$options['id'] = preg_replace("/[^a-zA-Z0-9_\\-\\.]/", '', $options['id']);
-					$options['id'] .= ':';
+				// NOTE: code copied from php_functions_cli__core.php
+				$startcmd = 'start /b /wait "PHP initiated program" '. $command;
+				if ($options['output_file']) {
+					if ($options['append']) {
+						$startcmd .= ' >> '. escapeshellarg($options['output_file']);
+					} else {
+						$startcmd .= ' > '. escapeshellarg($options['output_file']);
+					}
 				}
-				if ($options['skip_exitcode']) {
-					$command = sprintf("%s ". $redir ." %s 2>&1 & echo $!", $command, escapeshellarg($options['output_file']));
-				} else {
-					$command = sprintf("(%s; printf \"\\n". $options['id'] ."EXITCODE:$?\") ". $redir ." %s 2>&1 & echo $!", $command, escapeshellarg($options['output_file']));
-				}
+				pclose(popen($startcmd, 'r')); 
+*/
 			} else {
-				$command = sprintf("%s >/dev/null 2>&1 & echo $!", $command);
-			}
-			$return['command'] = $command;
-			exec($command, $pid_array);
-			// exec(sprintf("%s > %s 2>&1 & echo $! >> %s", $cmd, $options['output_file'], $pidfile));  //write pid to a file instead
+				// Source: https://stackoverflow.com/questions/45953/php-execute-a-background-process
+				// Composer package: https://github.com/diversen/background-job
+				if ($options['output_file']) {
+					if ($options['append']) {
+						$redir = '>>';
+					} else {
+						$redir = '>';
+					}
+					if ($options['id']) {
+						$options['id'] = preg_replace("/[^a-zA-Z0-9_\\-\\.]/", '', $options['id']);
+						$options['id'] .= ':';
+					}
+					if ($options['skip_exitcode']) {
+						$command = sprintf("%s ". $redir ." %s 2>&1 & echo $!", $command, escapeshellarg($options['output_file']));
+					} else {
+						$command = sprintf("(%s; printf \"\\n". $options['id'] ."EXITCODE:$?\") ". $redir ." %s 2>&1 & echo $!", $command, escapeshellarg($options['output_file']));
+					}
+				} else {
+					$command = sprintf("%s >/dev/null 2>&1 & echo $!", $command);
+				}
+				$return['command'] = $command;
+				exec($command, $pid_array);
+				// exec(sprintf("%s > %s 2>&1 & echo $! >> %s", $cmd, $options['output_file'], $pidfile));  //write pid to a file instead
 
-			$return['pid'] = (int) $pid_array[0];
+				$return['pid'] = (int) $pid_array[0];
+			}
 
 		} else {
 			ob_start();
