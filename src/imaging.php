@@ -571,22 +571,23 @@ class imaging {
 			$color_string = (int) $color_value['c'] .'\n'. (int) $color_value['m'] .'\n'. (int) $color_value['y'] .'\n'. (int) $color_value['k'] .'\n';
 		}
 
+		$cmd = 'echo -e "'. $color_string .'" | transicc -i '. escapeshellarg($from_icc) .' -o '. escapeshellarg($to_icc) .' -n 2>/dev/null';
 		$output = [];
-		exec('echo -e "'. $color_string .'" | transicc -i '. escapeshellarg($from_icc) .' -o '. escapeshellarg($to_icc) .' -n 2>/dev/null', $output);
+		exec($cmd, $output);
 		if ($output) {
 			$output = explode(' ', $output[0]);
 		} else {
-			core::system_error('File to check transparency for does not exist. Maybe LittleCMS is not installed.');
+			core::system_error('File to check transparency for does not exist. Maybe LittleCMS is not installed.', ['Command' => $cmd]);
 		}
 
 		if ($to_colorspace == 'rgb') {
 			if (!is_numeric($output[0]) || !is_numeric($output[1]) || !is_numeric($output[2])) {
-				core::system_error('At least one RGB output value is not numeric when converting colorspace. Maybe LittleCMS is not installed.', ['Values' => $output]);
+				core::system_error('At least one RGB output value is not numeric when converting colorspace. Maybe LittleCMS is not installed.', ['Values' => $output, 'Command' => $cmd]);
 			}
 			return ['r' => $output[0], 'g' => $output[1], 'b' => $output[2]];
 		} else {
 			if (!is_numeric($output[0]) || !is_numeric($output[1]) || !is_numeric($output[2]) || !is_numeric($output[3])) {
-				core::system_error('At least one CMYK output value is not numeric when converting colorspace. Maybe LittleCMS is not installed.', ['Values' => $output]);
+				core::system_error('At least one CMYK output value is not numeric when converting colorspace. Maybe LittleCMS is not installed.', ['Values' => $output, 'Command' => $cmd]);
 			}
 			return ['c' => $output[0], 'm' => $output[1], 'y' => $output[2], 'k' => $output[3]];
 		}
@@ -630,14 +631,14 @@ class imaging {
 			exec($cmd, $output, $exitcode);
 
 			if ($exitcode != 0 && !in_array($exitcode, $options['ignore_exitcodes']) && $options['ignore_exitcodes'][0] !== '*') {
-				core::system_error('Conversion to compressed PNG failed. Is pngquant 1.8+ installed?', ['File' => $input_file_png, 'Exit code' => $exitcode, 'Output' => $output]);
+				core::system_error('Conversion to compressed PNG failed. Is pngquant 1.8+ installed?', ['File' => $input_file_png, 'Command' => $cmd, 'Exit code' => $exitcode, 'Output' => $output]);
 			}
 		} else {
 			$cmd = 'pngquant --quality='. $options['min_quality'] .'-'. $options['max_quality'] .' - < '. escapeshellarg($input_file_png);
 			$compressed_png_content = shell_exec($cmd);
 
 			if (!$compressed_png_content) {
-				core::system_error('Conversion to compressed PNG failed. Is pngquant 1.8+ installed?', ['File' => $input_file_png]);
+				core::system_error('Conversion to compressed PNG failed. Is pngquant 1.8+ installed?', ['File' => $input_file_png, 'Command' => $cmd]);
 			}
 
 			return $compressed_png_content;
