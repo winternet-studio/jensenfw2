@@ -609,7 +609,7 @@ class imaging {
 	 */
 	static public function compress_png($input_file_png, $options = []) {
 		$defaults = [
-			'min_quality' => 60,  //guarantee that quality won't be worse than that.
+			'min_quality' => 40,  //guarantee that quality won't be worse than that.
 			'max_quality' => 90,  //conversion quality, useful values from 60 to 100 (smaller number = smaller file)
 			'save_to_file' => false,  //path to file where the new PNG will be saved to (if not set the function will return the file content)
 			'allow_overwrite' => false,  //allow output file path to be the same as the input file path?
