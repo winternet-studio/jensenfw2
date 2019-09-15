@@ -37,8 +37,8 @@ class format {
 	 * Eg. "1 person" or "2 people"
 	 *
 	 * @param integer $number : Number used to determine singular or plural
-	 * @param string $sentence : The sentence where the singular and plural form of the word is written like this: `((person,people))`
-	 *   - example: `((There was,They were)) 2 ((person,people)) in the park, yes, just 2 ((person,people)).`
+	 * @param string $sentence : The sentence where the singular and plural form of the word is written like `((person,people))` and the number like `{number}`
+	 *   - example: `((There was,They were)) {number} ((person,people)) in the park, yes, just {number} ((person,people)).`
 	 * @return string : Text using the correct form of the noun
 	 */
 	public static function noun_plural($number, $sentence) {
@@ -52,6 +52,7 @@ class format {
 				}
 			}
 		}
+		$sentence = str_replace('{number}', $number, $sentence);
 		return $sentence;
 	}
 
