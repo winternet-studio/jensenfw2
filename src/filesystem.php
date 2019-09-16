@@ -335,12 +335,16 @@ class filesystem {
 	 * @param integer $number_of_files : Number of recent files to get
 	 * @param array $options : Available options:
 	 *   - `unix_timestamps` : use Unix timestamps in the output - instead of MySQL formatted timestamps as yyyy-mm-dd hh:mm:ss in UTC
+	 *   - `min_size` : set minimum file size for the file to be considered (in bytes)
 	 * @return array : Keys being the file timestamp and the value the full path. Sorted by keys descendingly.
 	 */
 	public static function most_recent_files($path, $number_of_files = 10, $options = []) {
 		$latest_files = [];
 
 		self::iterate_folder_tree($path, function($fullpath, $filename) use (&$latest_files, &$number_of_files, &$trim_array) {
+			if ($options['min_size'] && filesize($fullpath) < $options['min_size']) {
+				return;
+			}
 			$timestamp = filemtime($fullpath);
 
 			if (empty($latest_files)) {
