@@ -329,6 +329,46 @@ class filesystem {
 	}
 
 	/**
+	 * Get the most recent files in a folder tree
+	 *
+	 * @param string $path : Path to check recursively for most recent files
+	 * @param integer $number_of_files : Number of recent files to get
+	 * @param array $options : Available options:
+	 *   - `unix_timestamps` : use Unix timestamps in the output - instead of MySQL formatted timestamps as yyyy-mm-dd hh:mm:ss in UTC
+	 * @return array : Keys being the file timestamp and the value the full path. Sorted by keys descendingly.
+	 */
+	public static function most_recent_files($path, $number_of_files = 10, $options = []) {
+		$latest_files = [];
+
+		self::iterate_folder_tree($path, function($fullpath, $filename) use (&$latest_files, &$number_of_files, &$trim_array) {
+			$timestamp = filemtime($fullpath);
+
+			if (empty($latest_files)) {
+				if ($options['unix_timestamps']) {
+					$latest_files[$fullpath] = $timestamp;
+				} else {
+					$latest_files[$fullpath] = gmdate('Y-m-d H:i:s', $timestamp);
+				}
+			} else {
+				if ($timestamp > current($latest_files)) {
+					if ($options['unix_timestamps']) {
+						$latest_files[$fullpath] = $timestamp;
+					} else {
+						$latest_files[$fullpath] = gmdate('Y-m-d H:i:s', $timestamp);
+					}
+					arsort($latest_files);
+
+					if (count($latest_files) > $number_of_files) {
+						array_pop($latest_files);  //remove the last one since we now have too many files
+					}
+				}
+			}
+		});
+
+		return $latest_files;
+	}
+
+	/**
 	 * Delete all files and folders within a given folder recursively
 	 *
 	 * Use delete_folder_tree() instead to also delete the folder itself.
