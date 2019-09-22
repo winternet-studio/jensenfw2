@@ -162,8 +162,8 @@ class geography {
 	 *
 	 * Source: http://www.etechpulse.com/2014/02/calculate-latitude-and-longitude-based.html
 	 *
-	 * @param float $lat
-	 * @param float $lng
+	 * @param float $lat : Origin point latitude
+	 * @param float $lng : Origin point longitude
 	 * @param float $angle : Bearing in degrees (0-360)
 	 * @param float $distance : Distance from the point in kilometers
 	 *
@@ -191,6 +191,24 @@ class geography {
 		$new_latlng[1] = rad2deg($new_lng);
 
 		return $new_latlng;
+	}
+
+	/**
+	 * Calculate the coordinates for a square around a center point
+	 *
+	 * @param float $lat : Center point latitude
+	 * @param float $lng : Center point longitude
+	 * @param float $distance : Distance from the center point to the edge in kilometers
+	 *
+	 * @return array : Array with keys `min_lng`, `min_lat`, `max_lng`, `max_lat`
+	 */
+	public static function square_around_point($lat, $lng, $distance) {
+		return [
+			'min_lng' => self::point_from_bearing_distance($lat, $lng, 270, $distance)[1],
+			'min_lat' => self::point_from_bearing_distance($lat, $lng, 180, $distance)[0],
+			'max_lng' => self::point_from_bearing_distance($lat, $lng, 90, $distance)[1],
+			'max_lat' => self::point_from_bearing_distance($lat, $lng, 0, $distance)[0],
+		];
 	}
 
 	/**
