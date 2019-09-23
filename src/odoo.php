@@ -47,7 +47,7 @@ class odoo {
 		if (!$this->common_client) {
 			$this->common_client = Ripcord::client($this->server_url . '/xmlrpc/2/common', null, $this->create_stream());
 			if (!$this->common_client) {
-				$this->throw_exception('Failed to create Odoo common client.');
+				$this->error('Failed to create Odoo common client.');
 			}
 		}
 	}
@@ -56,7 +56,7 @@ class odoo {
 		if (!$this->object_client) {
 			$this->object_client = Ripcord::client($this->server_url . '/xmlrpc/2/object', null, $this->create_stream());
 			if (!$this->object_client) {
-				$this->throw_exception('Failed to create Odoo object client.');
+				$this->error('Failed to create Odoo object client.');
 			}
 		}
 	}
@@ -65,7 +65,7 @@ class odoo {
 		if (!$this->report_client) {
 			$this->report_client = Ripcord::client($this->server_url . '/xmlrpc/2/report', null, $this->create_stream());
 			if (!$this->report_client) {
-				$this->throw_exception('Failed to create Odoo report client.');
+				$this->error('Failed to create Odoo report client.');
 			}
 		}
 	}
@@ -92,9 +92,34 @@ class odoo {
 			if ($this->authenticated_uid) {
 				$this->is_authenticated = true;
 			} else {
-				$this->throw_exception('Failed to authenticate to Odoo.');
+				$this->error('Failed to authenticate to Odoo.');
 			}
 		}
+	}
+
+	/**
+	 * Get Odoo version
+	 *
+	 * Only admin is usually allowed to do this.
+	 *
+	 * @return string : Example: `10.0.1.3`
+	 */
+	public function get_version() {
+		$this->authenticate();
+		$this->require_object_client();
+		$result = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'ir.module.module', 'search_read', array(array(array('name', '=', 'base'))) );
+		return $result[0]['installed_version'];
+	}
+
+	/**
+	 * Get all API models
+	 *
+	 * Only admin is usually allowed to do this.
+	 */
+	public function get_models() {
+		$this->authenticate();
+		$this->require_object_client();
+		return $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'ir.model', 'search_read', array() );
 	}
 
 	/**
@@ -273,7 +298,7 @@ class odoo {
 			if ($meta_options['soft_fail']) {
 				return false;
 			} else {
-				$this->throw_exception('Invoice not found.');
+				$this->error('Invoice not found.');
 			}
 		}
 	}
@@ -294,6 +319,11 @@ class odoo {
 	}
 
 	/**
+	 * Validate/finalize an invoice
+	 *
+	 * WARNING: Once an invoice has been validated and assigned an invoice number it can never be permanently deleted again.
+	 * At best you can cancel it and revert back to draft or canceled status - but not permanently deleted it.
+	 * 
 	 * @param integer $invoice_id : Odoo's internal invoice ID (not the invoice number! It doesn't have one yet!)
 	 */
 	public function validate_invoice($invoice_id) {
@@ -301,15 +331,15 @@ class odoo {
 		$this->require_object_client();
 
 		if (!is_numeric($invoice_id)) {
-			$this->throw_exception('Odoo invoice ID to be validated is not a number.');
+			$this->error('Odoo invoice ID to be validated is not a number.');
 		}
 
 		$invoice = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.invoice', 'read', array(array($invoice_id)));
 		if ($invoice[0]['state'] != 'draft') {
-			$this->throw_exception('Odoo invoice to be validated is not a draft (it is '. $invoice[0]['state'] .').');
+			$this->error('Odoo invoice to be validated is not a draft (it is '. $invoice[0]['state'] .').');
 		}
 
-		if ($odoo_version >= 10) {
+		if ($this->options['odoo_version'] >= 10) {
 			// From Odoo v10.0
 
 			// References:
@@ -337,10 +367,10 @@ class odoo {
 		$this->require_object_client();
 
 		if (!is_numeric($invoice_id)) {
-			$this->throw_exception('Odoo invoice ID to change invoice number for is not a number.');
+			$this->error('Odoo invoice ID to change invoice number for is not a number.');
 		}
 		if (!$new_invoice_number) {
-			$this->throw_exception('Odoo new invoice number is missing.');
+			$this->error('Odoo new invoice number is missing.');
 		}
 
 		// Change the journal entries
@@ -397,12 +427,12 @@ class odoo {
 		$this->require_object_client();
 
 		if (!is_numeric($payment_id)) {
-			$this->throw_exception('Odoo payment ID to be validated is not a number.');
+			$this->error('Odoo payment ID to be validated is not a number.');
 		}
 
 		$payment = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.payment', 'read', array(array($payment_id)));
 		if ($payment[0]['state'] != 'draft') {
-			$this->throw_exception('Payment to be validated is not a draft (it is '. $payment[0]['state'] .').');
+			$this->error('Payment to be validated is not a draft (it is '. $payment[0]['state'] .').');
 		}
 
 echo '<pre style="background-color: gold; border: solid chocolate 1px; padding: 10px"><div style="color: chocolate"><b>VARIABLE DUMP</b> '. (__FILE__ ? __FILE__ : '') .' : <b>'. (__LINE__ ? __LINE__ : '') .'</b>'. (__FUNCTION__ ? ' '. __FUNCTION__ .'()' : '') .'</div><div style="color: blue"><b>'; echo '</b></div><hr>';
@@ -425,7 +455,7 @@ exit;
 		$this->handle_exception($journal, 'Failed to get journal.');
 
 		if (empty($journal)) {
-			$this->throw_exception('Journal not found.');
+			$this->error('Journal not found.');
 		}
 
 		return $journal[0];
@@ -443,7 +473,7 @@ exit;
 		$this->handle_exception($account, 'Failed to get account.');
 
 		if (empty($account)) {
-			$this->throw_exception('Account not found.');
+			$this->error('Account not found.');
 		}
 
 		return $account[0];
@@ -480,7 +510,7 @@ exit;
 		$this->handle_exception($currency, 'Failed to get currency.');
 
 		if (empty($currency)) {
-			$this->throw_exception('Currency not found.');
+			$this->error('Currency not found.');
 		}
 
 		return $currency[0];
@@ -522,7 +552,7 @@ exit;
 
 					$rates_date = $data['Cube']['Cube']['@attributes']['time'];
 					if (!$rates_date) {
-						$this->throw_exception('Did not found date of the retrieved exchange rates.');
+						$this->error('Did not found date of the retrieved exchange rates.');
 					}
 
 					$new_rates = array($eff_source['base_currency'] => '1');
@@ -550,10 +580,10 @@ exit;
 					}
 				}
 			} else {
-				$this->throw_exception('Failed parsing the XML with exchange rates.');
+				$this->error('Failed parsing the XML with exchange rates.');
 			}
 		} else {
-			$this->throw_exception('Response with exchange rates was empty.');
+			$this->error('Response with exchange rates was empty.');
 		}
 
 		return $updated_currencies;
@@ -565,11 +595,14 @@ exit;
 				$enduser_message = $result['faultString'];
 			}
 			$this->last_fault_string = $result['faultString'];
-			$this->throw_exception($enduser_message, $result['faultCode']);
+			$this->error(rtrim($enduser_message, '.') .'. Please check odoo->last_fault_string for details.', $result['faultCode'], ['FaultString' => $result['faultString']]);
 		}
 	}
 
-	public function throw_exception($message, $code = null) {
-		throw new \Exception($message, $code);
+	/**
+	 * @param string $message : Error message for the end-user
+	 */
+	public function error($message, $code = null, $details = []) {
+		core::system_error($message .' (Code '. $code .')', $details);
 	}
 }
