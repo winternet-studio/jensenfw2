@@ -100,15 +100,32 @@ class odoo {
 	/**
 	 * Get Odoo version
 	 *
-	 * Only admin is usually allowed to do this.
-	 *
-	 * @return string : Example: `10.0.1.3`
+	 * @param string $flag : `cleanMajor` to only retrieve major version number (integer), or `base` to retrieve version of the base module, or `modules` to retrieve versions of all modules (usually only admin is allowed to do these two last ones)
+	 * @return mixed : Examples:
+	 *   - if no flag : array. Example: `['server_serie' => '10.0', 'server_version_info' => [10, 0, 0, 'final', 0, ''), 'server_version' => '10.0', 'protocol_version' => 1]`
+	 *   - if flag `cleanMajor` : `10`
+	 *   - if flag `base` : `10.0.1.3`
+	 *   - if flag `modules` : array
 	 */
-	public function get_version() {
-		$this->authenticate();
-		$this->require_object_client();
-		$result = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'ir.module.module', 'search_read', array(array(array('name', '=', 'base'))) );
-		return $result[0]['installed_version'];
+	public function get_version($flag = null) {
+		if ($flag === 'base' || $flag === 'modules') {
+			$this->authenticate();
+			$this->require_object_client();
+			if ($flag === 'base') {
+				$result = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'ir.module.module', 'search_read', array(array(array('name', '=', 'base'))) );
+				return $result[0]['installed_version'];
+			} elseif ($flag === 'modules') {
+				$result = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'ir.module.module', 'search_read', array() );
+				return $result;
+			}
+		} else {
+			$this->require_common_client();
+			if ($flag === 'cleanMajor') {
+				return $this->common_client->version()['server_version_info'][0];
+			} else {
+				return $this->common_client->version();
+			}
+		}
 	}
 
 	/**
