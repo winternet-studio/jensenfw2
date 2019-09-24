@@ -28,18 +28,12 @@ class odoo {
 	/**
 	 * @param array $options : Available options:
 	 *   - `skip_verify_certificates` : set true to disable certificate verification
-	 *   - `odoo_version` : set the version of Odoo, eg. `9` or `10`. Defaults to 10.
 	 */
 	public function __construct($server_url, $server_database, $server_username, $server_password, $options = array()) {
 		$this->server_url = $server_url;
 		$this->server_database = $server_database;
 		$this->server_username = $server_username;
 		$this->server_password = $server_password;
-
-		if (!array_key_exists('odoo_version', $options)) {
-			$options['odoo_version'] = 10;
-		}
-
 		$this->options = $options;
 	}
 
@@ -121,7 +115,7 @@ class odoo {
 		} else {
 			$this->require_common_client();
 			if ($flag === 'cleanMajor') {
-				return $this->common_client->version()['server_version_info'][0];
+				return (int) $this->common_client->version()['server_version_info'][0];
 			} else {
 				return $this->common_client->version();
 			}
@@ -356,7 +350,7 @@ class odoo {
 			$this->error('Odoo invoice to be validated is not a draft (it is '. $invoice[0]['state'] .').');
 		}
 
-		if ($this->options['odoo_version'] >= 10) {
+		if ($this->get_version('cleanMajor') >= 10) {
 			// From Odoo v10.0
 
 			// References:
