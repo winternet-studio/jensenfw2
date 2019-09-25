@@ -171,8 +171,10 @@ class odoo {
 	 *   ),
 	 * )
 	 * ```
+	 * @param array $options : Available options:
+	 *   - `skip_validate` : set true to skip validating the journal entry, only create draft
 	 */
-	public function create_journal_entry($journal_details, $lines) {
+	public function create_journal_entry($journal_details, $lines, $options = array()) {
 		$this->authenticate();
 		$this->require_object_client();
 
@@ -201,7 +203,9 @@ class odoo {
 		}
 
 		// Validate it
-		$this->object_client->execute($this->server_database, $this->authenticated_uid, $this->server_password, 'account.move', 'post', array($move_id));
+		if (!$options['skip_validate']) {
+			$this->object_client->execute($this->server_database, $this->authenticated_uid, $this->server_password, 'account.move', 'post', array($move_id));
+		}
 
 		return array(
 			'move_id' => $move_id,
@@ -488,6 +492,24 @@ exit;
 		}
 
 		return $account[0];
+	}
+
+	/**
+	 * @param stringer|integer $id : Example: `7052`, or `WinterNet Studio` if $by_name=true
+	 * @param boolean $by_name : Whether to search by name instead of partner ID. Default false.
+	 */
+	public function get_partner($id, $by_name = false) {
+		$this->authenticate();
+		$this->require_object_client();
+
+		$partner = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'res.partner', 'search_read', array(array(array( ($by_name ? 'name' : 'id'), '=', $id))));
+		$this->handle_exception($partner, 'Failed to get partner.');
+
+		if (empty($partner)) {
+			$this->error('Partner not found.');
+		}
+
+		return $partner[0];
 	}
 
 	public function get_currencies() {
