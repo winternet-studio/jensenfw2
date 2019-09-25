@@ -145,6 +145,7 @@ class system {
 	 *   - `append` : set true to append output from the background process to the output file (requires background=true and output_file set)
 	 *   - `skip_exitcode` : set true to not append exit code to the output file (requires background=true and output_file set)
 	 *   - `id` : set an ID that will be prepended to the exit code so it becomes eg. `412:EXITCODE:0` instead of just `EXITCODE:0`
+	 *   - `enable_pgrep_a` : enable using the `a` option on the pgrep command (not )
 	 *
 	 * @return array :
 	 *   - `executed` : boolean whether the command was executed or not (could be false due to `only_if_not_already_running`)
@@ -175,10 +176,15 @@ class system {
 				throw new \Exception('The method shell_command() with option only_if_not_already_running is not yet supported on Windows.');
 			}
 			$o = [];
-			exec('pgrep -fa '. escapeshellarg($options['only_if_not_already_running']), $o);
+			if ($options['enable_pgrep_a']) {
+				$pgrep_command = 'pgrep -fa';
+			} else {
+				$pgrep_command = 'pgrep -f';  //the "a" option is not available on AWS Amazon Linux
+			}
+			exec($pgrep_command .' '. escapeshellarg($options['only_if_not_already_running']), $o);
 			$return['existing_pids'] = [];
 			foreach ($o as $oline) {
-				if (strpos($oline, 'pgrep -fa') === false) {  //exclude the pgrep command itself (Is needed in Debian. The line pgrep returned was: "4176 sh -c pgrep -fa 'layout/background-preview-render 5541 ')" (4176 being the process ID, 5541 the layoutID we're checking)
+				if (strpos($oline, $pgrep_command) === false) {  //exclude the pgrep command itself (Is needed in Debian. The line pgrep returned was: "4176 sh -c pgrep -fa 'layout/background-preview-render 5541 ')" (4176 being the process ID, 5541 the layoutID we're checking)
 					$return['existing_pids'][] = (int) $oline;  //results in the number that the line starts with
 				}
 			}
