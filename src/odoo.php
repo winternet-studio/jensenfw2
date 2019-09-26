@@ -484,7 +484,7 @@ exit;
 		$this->authenticate();
 		$this->require_object_client();
 
-		$account = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.account', 'search_read', array(array(array( ($by_name ? 'name' : 'code'), '=', $account_code))));
+		$account = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.account', 'search_read', array(array(array( ($by_name ? 'name' : 'code'), '=', (string) $account_code))));
 		$this->handle_exception($account, 'Failed to get account.');
 
 		if (empty($account)) {
@@ -492,6 +492,19 @@ exit;
 		}
 
 		return $account[0];
+	}
+
+	/**
+	 * Get all accounts
+	 */
+	public function get_accounts() {
+		$this->authenticate();
+		$this->require_object_client();
+
+		$accounts = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.account', 'search_read', $this->odoo_search_parameters(['order' => 'code']));
+		$this->handle_exception($accounts, 'Failed to get accounts.');
+
+		return $accounts;
 	}
 
 	/**
@@ -547,6 +560,244 @@ exit;
 		}
 
 		return $currency[0];
+	}
+
+	public function get_account_opening_balance() {
+		// TODO: both for all time and for a given year
+		$this->error('get_account_opening_balance is not yet implemented.');
+	}
+
+	/**
+	 * @param array $params : Available parameters:
+	 *   `filters` : Example: `[ ['account_id', '=', 7034], ['date', '>=', '2019-01-01'], ['date', '<=', '2019-12-31'] ]`
+	 *   `fields` : Example: `['display_name', 'contact_address', 'credit']`
+	 *   `offset` : 
+	 *   `limit` : 
+	 *   `order` : Example: `date, move_id` or `account_id, date` or `account_id, date DESC`
+	 */
+	public function odoo_search_parameters($params = array()) {
+		return array($params['filters'], $params['fields'], $params['offset'], $params['limit'], $params['order']);
+	}
+
+	/**
+	 * @param array $accounts : Account codes
+	 * @param string $from : From date in MySQL format: yyyy-mm-dd
+	 * @param string $to : To date in MySQL format: yyyy-mm-dd
+	 */
+	public function get_general_ledger($accounts = array(), $from = null, $to = null, $order = null) {
+		$this->authenticate();
+		$this->require_object_client();
+
+		if ($from && !preg_match("/^\\d+-\\d+-\\d+$/", $from)) {
+			$this->error('Invalid starting date when getting general ledger.', null, ['Date' => $from]);
+		}
+		if ($to && !preg_match("/^\\d+-\\d+-\\d+$/", $to)) {
+			$this->error('Invalid ending date when getting general ledger.', null, ['Date' => $to]);
+		}
+
+		$filters = [];
+		if (!empty($accounts)) {
+			if (count($accounts) === 1) {
+				$filters[] = array('account_id', '=', $this->get_account(current($accounts))['id']);
+			} else {
+				// NOTE: tried to understand how to write "logical OR" but didn't quite get it: https://www.odoo.com/th_TH/forum/help-1/question/how-to-use-logical-or-operator-with-xml-rpc-25694
+				// So instead we just filter it manually below!
+				$manual_account_filter = true;
+				// Protect the regular expression further below by checking numeric values
+				foreach ($accounts as $curr_account) {
+					if (!is_numeric($curr_account)) {
+						$this->error('Invalid account code when getting general ledger.', null, ['Accounts' => $accounts, 'Curr account' => $curr_account]);
+					}
+				}
+			}
+		}
+		if ($from) {
+			$filters[] = array('date', '>=', $from);
+		}
+		if ($to) {
+			$filters[] = array('date', '<=', $to);
+		}
+		if ($order === 'date') {
+			$order = 'date, move_id';
+		} elseif ($order === 'account') {
+			$order = 'account_id, date';  //order descendingly: eg. 'date DESC'
+		}
+		$params = $this->odoo_search_parameters(array(
+			'filters' => $filters,
+			'order' => $order,
+		));
+
+		$data = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.move.line', 'search_read', $params);
+		$this->handle_exception($data, 'Failed to get general ledger data.');
+
+		if ($manual_account_filter && !empty($data)) {
+			$filtered = false;
+			foreach ($data as $curr_key => $curr_item) {
+				if (!preg_match("/^(". implode('|', $accounts) .") /", $curr_item['account_id'][1])) {
+					unset($data[$curr_key]);
+					$filtered = false;
+				}
+			}
+			if ($filtered) {
+				// Reset keys so they are sequential
+				$data = array_values($data);
+			}
+		}
+
+		return $data;
+	}
+
+	/**
+	 * @param array $data : Output from get_general_ledger()
+	 * @param string $from : From date in MySQL format: yyyy-mm-dd
+	 * @param string $to : To date in MySQL format: yyyy-mm-dd
+	 */
+	public function get_general_ledger_html($data, $accounts = array(), $from = null, $to = null, $orderby = null, $options = array()) {
+		ob_start();
+
+		// About getting account's initial balance: https://stackoverflow.com/questions/57231479/how-can-i-get-opening-and-closing-balance-using-function-for-partner-ledger-repo
+
+		if ($orderby === 'date') {
+			$title = 'Transaction List by Date';
+		} elseif ($orderby === 'account') {
+			$title = 'Transaction List by Account';
+		} elseif ($orderby) {
+			$title = 'Transaction List by '. $orderby;
+		} else {
+			$title = 'Transaction List';
+		}
+?>
+<h3 class="text-center"><?= $title ?></h3>
+<?php
+		if ($from || $to) {
+?>
+<div class="text-center">Period: <b><?= $from ?> - <?= $to ?></b></div>
+<?php
+		}
+		if (!empty($accounts)) {
+?>
+<div class="text-center"><?= (count($accounts) === 1 ? 'Account' : 'Accounts') ?>: <b><?= implode(', ', $accounts) ?></b></div>
+<?php
+}
+?>
+<div class="text-right"><small>Report generated: <?= (new \DateTime(null, new \DateTimeZone(($options['timezone'] ? $options['timezone'] : 'Europe/Copenhapen'))))->format('Y-m-d H:i:s') ?></small></div>
+<table class="table table-condensed table-striped table-hover">
+<?php
+		if ($orderby === 'date') {
+?>
+<tr>
+	<th class="dont-print">ID</th>
+	<th>Date</th>
+	<th>Account</th>
+	<th>Partner</th>
+	<th>Description</th>
+	<th class="text-right">Currency</th>
+	<th class="text-right">Debit</th>
+	<th class="text-right">Credit</th>
+	<th class="text-right">
+<?php
+			if (count($accounts) === 1) {
+				echo 'Balance';
+			}
+?>
+	</th>
+</tr>
+<?php
+		}
+		$count = 0;
+		foreach ($data as $line) {
+			if ($orderby !== 'date' && $last_account !== $line['account_id'][1]) {
+?>
+<tr>
+	<th colspan="8" class="account-header"><h4 style="padding-top: 15px; padding-bottom: 0"><strong><?= $line['account_id'][1] ?></strong></h4></th>
+</tr>
+<tr>
+	<th class="dont-print">ID</th>
+	<th>Date</th>
+	<th>Partner</th>
+	<th>Description</th>
+	<th class="text-right">Currency</th>
+	<th class="text-right">Debit</th>
+	<th class="text-right">Credit</th>
+	<th class="text-right">Balance</th>
+</tr>
+<?php
+				$last_account = $line['account_id'][1];
+				$total = 0;
+			}
+
+			$total += $line['debit'] - $line['credit'];
+			$total = round($total, 2);
+
+			if ($options['enable_date_warnings']) {
+				// Gør opmærksom på årets postering bogført i tidligere år - vil sandsynligvis være en fejl!
+				$next_year = substr($line['date'], 0, 4) + 1;
+			}
+
+			$count++;
+?>
+<tr>
+	<td class="dont-print">
+<?php
+			if ($options['odoo_url']) {
+?>
+	<a href="<?= $options['odoo_url'] ?>/web#id=<?= $line['move_id'][0] ?>&view_type=form&model=account.move" rel="noopener noreferrer" target="_blank"><?= $line['id'] ?></a>
+<?php
+			} else {
+				echo $line['id'];
+			}
+?>
+	</td>
+	<td nowrap><?= $line['date'] ?> <?php
+if ($options['enable_date_warnings']) {
+	echo (strtotime($line['create_date']) > strtotime($next_year .'-07-01') ? ' <span style="font-weight: bold; color: red" title="Possibly used wrong date!">Created '. $line['create_date'] .'!</span>' : '');
+}
+?></td>
+<?php
+			if ($orderby === 'date') {
+?>
+	<td><?= $line['account_id'][1] ?></td>
+<?php
+			}
+?>
+	<td><?= $line['partner_id'][1] . ($line['invoice_id'][1] ? ', '. $line['invoice_id'][1] : '') ?></td>
+	<td><?= trim($line['name'], '/') . ($line['ref'] ? '<br><small>'. $line['ref'] .'</small>' : '') ?></td>
+	<td class="text-right" nowrap><?= ($line['amount_currency'] ? number_format($line['amount_currency'], 2, ',', '.') .' '. $line['currency_id'][1] : '') ?></td>
+	<td class="text-right" nowrap><?= (0 == $line['debit'] ? '' : number_format($line['debit'], 2, ',', '.')) ?></td>
+	<td class="text-right" nowrap><?= (0 == $line['credit'] ? '' : number_format($line['credit'], 2, ',', '.')) ?></td>
+	<td class="text-right" nowrap><?= ($orderby !== 'date' || count($accounts) === 1 ? number_format($total, 2, ',', '.') : '') ?></td>
+<?php
+// echo '<td><pre style="background-color: gold; border: solid chocolate 1px; padding: 10px"><div style="color: chocolate"><b>VARIABLE DUMP</b> '. (__FILE__ ? __FILE__ : '') .' : <b>'. (__LINE__ ? __LINE__ : '') .'</b>'. (__FUNCTION__ ? ' '. __FUNCTION__ .'()' : '') .'</div><div style="color: blue"><b>'; echo '</b></div><hr>';
+// var_dump($line);     echo '</pre></td>';
+?>
+</tr>
+<?php	
+		}
+?>
+</table>
+<div class="small">Transactions: <?= $count ?></div>
+<?php
+		return ob_get_clean();
+	}
+
+	public function get_profit_and_loss_data($year = null) {
+		$this->authenticate();
+		$this->require_object_client();
+
+		if (!is_numeric($year)) {
+			$year = date('Y');
+		}
+
+		$this->odoo_search_parameters(array(
+			'filters' => array(
+				array('date', '>=', $year .'-01-01'), array('date', '<=', $year .'-12-31')
+			),
+		));
+
+		$data = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'res.currency', 'search_read', $params);
+		$this->handle_exception($data, 'Failed to get profit and loss data.');
+
+		return $data;
 	}
 
 	public function update_exchange_rates() {
