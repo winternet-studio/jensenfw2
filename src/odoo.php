@@ -91,30 +91,130 @@ class odoo {
 		}
 	}
 
+	public function execute_kw($model, $operation, $args) {
+		$this->authenticate();
+		$this->require_object_client();
+		return $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, $model, $operation, $args);
+	}
+
+	/**
+	 * Generic read method
+	 *
+	 * @param string $model : Example: `account.invoices`
+	 * @param array $args
+	 */
+	public function read($model, $args) {
+		$this->authenticate();
+		$this->require_object_client();
+		return $this->execute_kw($model, 'read', $args);
+	}
+
+	/**
+	 * Generic search and read method
+	 *
+	 * @param string $model : Example: `account.invoices`
+	 * @param array $args : Example: `[[['name', '=', 'base'], ['date', '>', '2019-01-01']]]`
+	 */
+	public function search_read($model, $args) {
+		$this->authenticate();
+		$this->require_object_client();
+		return $this->execute_kw($model, 'search_read', $args);
+	}
+
+	/**
+	 * Generic read and group method
+	 *
+	 * @param string $model : Example: `account.invoices`
+	 * @param array $args
+	 */
+	public function read_group($model, $args) {
+		$this->authenticate();
+		$this->require_object_client();
+		return $this->execute_kw($model, 'read_group', $args);
+	}
+
+	/**
+	 * Generic update method
+	 *
+	 * @param string $model : Example: `account.invoices`
+	 * @param array $args
+	 */
+	public function update($model, $args) {
+		$this->authenticate();
+		$this->require_object_client();
+		return $this->execute_kw($model, 'update', $args);
+	}
+
+	/**
+	 * Generic create method
+	 *
+	 * @param string $model : Example: `account.invoices`
+	 * @param array $args
+	 */
+	public function create($model, $args) {
+		$this->authenticate();
+		$this->require_object_client();
+		return $this->execute_kw($model, 'create', $args);
+	}
+
+	/**
+	 * Generic write method
+	 *
+	 * @param string $model : Example: `account.invoices`
+	 * @param array $args
+	 */
+	public function write($model, $args) {
+		$this->authenticate();
+		$this->require_object_client();
+		return $this->execute_kw($model, 'write', $args);
+	}
+
+	/**
+	 * Generic unlink method
+	 *
+	 * @param string $model : Example: `account.invoices`
+	 * @param array $args
+	 */
+	public function unlink($model, $args) {
+		$this->authenticate();
+		$this->require_object_client();
+		return $this->execute_kw($model, 'unlink', $args);
+	}
+
+	/**
+	 * @param array $params : Available parameters:
+	 *   `filters` : Example: `[ ['account_id', '=', 7034], ['date', '>=', '2019-01-01'], ['date', '<=', '2019-12-31'] ]`
+	 *   `fields` : Example: `['display_name', 'contact_address', 'credit']`
+	 *   `offset` : 
+	 *   `limit` : 
+	 *   `order` : Example: `date, move_id` or `account_id, date` or `account_id, date DESC`
+	 */
+	public function search_parameters($params = array()) {
+		return array($params['filters'], $params['fields'], $params['offset'], $params['limit'], $params['order']);
+	}
+
 	/**
 	 * Get Odoo version
 	 *
-	 * @param string $flag : `cleanMajor` to only retrieve major version number (integer), or `base` to retrieve version of the base module, or `modules` to retrieve versions of all modules (usually only admin is allowed to do these two last ones)
+	 * @param string $flag : `majorVersion` to only retrieve major version number (integer), or `base` to retrieve version of the base module, or `modules` to retrieve versions of all modules (usually only admin is allowed to do these two last ones)
 	 * @return mixed : Examples:
 	 *   - if no flag : array. Example: `['server_serie' => '10.0', 'server_version_info' => [10, 0, 0, 'final', 0, ''), 'server_version' => '10.0', 'protocol_version' => 1]`
-	 *   - if flag `cleanMajor` : `10`
+	 *   - if flag `majorVersion` : `10`
 	 *   - if flag `base` : `10.0.1.3`
 	 *   - if flag `modules` : array
 	 */
 	public function get_version($flag = null) {
 		if ($flag === 'base' || $flag === 'modules') {
-			$this->authenticate();
-			$this->require_object_client();
 			if ($flag === 'base') {
-				$result = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'ir.module.module', 'search_read', array(array(array('name', '=', 'base'))) );
+				$result = $this->search_read('ir.module.module', array(array(array('name', '=', 'base'))) );
 				return $result[0]['installed_version'];
 			} elseif ($flag === 'modules') {
-				$result = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'ir.module.module', 'search_read', array() );
+				$result = $this->search_read('ir.module.module', array() );
 				return $result;
 			}
 		} else {
 			$this->require_common_client();
-			if ($flag === 'cleanMajor') {
+			if ($flag === 'majorVersion') {
 				return (int) $this->common_client->version()['server_version_info'][0];
 			} else {
 				return $this->common_client->version();
@@ -128,9 +228,7 @@ class odoo {
 	 * Only admin is usually allowed to do this.
 	 */
 	public function get_models() {
-		$this->authenticate();
-		$this->require_object_client();
-		return $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'ir.model', 'search_read', array() );
+		return $this->search_read('ir.model', array() );
 	}
 
 	/**
@@ -175,11 +273,8 @@ class odoo {
 	 *   - `skip_validate` : set true to skip validating the journal entry, only create draft
 	 */
 	public function create_journal_entry($journal_details, $lines, $options = array()) {
-		$this->authenticate();
-		$this->require_object_client();
-
 		// Create journal
-		$move_id = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.move', 'create', array($journal_details));
+		$move_id = $this->create('account.move', array($journal_details));
 		$this->handle_exception($move_id, 'Failed to create journal entry.');
 
 		// Create journal items
@@ -196,7 +291,7 @@ class odoo {
 			} else {
 				$context = array('context' => array('check_move_validity' => true));
 			}
-			$item_id = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.move.line', 'create', array($line), $context);
+			$item_id = $this->create('account.move.line', array($line), $context);
 			$this->handle_exception($item_id, 'Failed to create journal item.');
 
 			$line_ids[] = $item_id;
@@ -250,12 +345,9 @@ class odoo {
 	 * ```
 	 */
 	public function create_invoice_draft($invoice_fields, $invoice_lines) {
-		$this->authenticate();
-		$this->require_object_client();
-
 		// TODO: option to specify currency_id with the 3-letter currency code instead (eg. 'USD')
 
-		$invoice_id = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.invoice', 'create', array($invoice_fields));
+		$invoice_id = $this->create('account.invoice', array($invoice_fields));
 		$this->handle_exception($invoice_id, 'Failed to create invoice.');
 
 		// Calculate taxes if applicable
@@ -269,7 +361,7 @@ class odoo {
 		// Add invoice lines
 		$successful_lines = $invoice_line_ids = array();
 		foreach ($invoice_lines as $key => $invoice_line) {
-			$result_invline = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.invoice.line', 'create', array($invoice_line));
+			$result_invline = $this->create('account.invoice.line', array($invoice_line));
 			$this->handle_exception($result_invline, 'Failed to create Odoo invoice line.');
 			// throw new \Exception(': '. $result_invline['faultString'] .' ['. @base64_encode(@openssl_encrypt(json_encode(array($successful_lines, $invoice_line_ids)), 'AES-128-CBC', 'error96')) .']');
 
@@ -342,19 +434,16 @@ class odoo {
 	 * @param integer $invoice_id : Odoo's internal invoice ID (not the invoice number! It doesn't have one yet!)
 	 */
 	public function validate_invoice($invoice_id) {
-		$this->authenticate();
-		$this->require_object_client();
-
 		if (!is_numeric($invoice_id)) {
 			$this->error('Odoo invoice ID to be validated is not a number.');
 		}
 
-		$invoice = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.invoice', 'read', array(array($invoice_id)));
+		$invoice = $this->read('account.invoice', array(array($invoice_id)));
 		if ($invoice[0]['state'] != 'draft') {
 			$this->error('Odoo invoice to be validated is not a draft (it is '. $invoice[0]['state'] .').');
 		}
 
-		if ($this->get_version('cleanMajor') >= 10) {
+		if ($this->get_version('majorVersion') >= 10) {
 			// From Odoo v10.0
 
 			// References:
@@ -378,9 +467,6 @@ class odoo {
 		// TODO: finish making this method
 		exit;
 
-		$this->authenticate();
-		$this->require_object_client();
-
 		if (!is_numeric($invoice_id)) {
 			$this->error('Odoo invoice ID to change invoice number for is not a number.');
 		}
@@ -393,7 +479,7 @@ class odoo {
 		$move_ids = '????????';  //find these
 		$done_IDs = array();
 		foreach ($move_ids as $key => $move_id) {
-			$result = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.move', 'write', array(array($move_id), array('name' => $new_invoice_number)));
+			$result = $this->write('account.move', array(array($move_id), array('name' => $new_invoice_number)));
 			$this->handle_exception($result, 'Failed to change invoice number.');
 			// throw new \Exception('Failed to change invoice number: '. $result['faultString'] .' ['. @base64_encode(@openssl_encrypt(json_encode(array($move_id, $done_IDs)), 'AES-128-CBC', 'error96')) .']');
 			$done_IDs[] = $move_id;
@@ -423,12 +509,9 @@ class odoo {
 	 * ```
 	 */
 	public function create_payment_draft($payment_fields) {
-		$this->authenticate();
-		$this->require_object_client();
-
 		// Is this of any interest? https://www.odoo.com/fr_FR/forum/aide-1/question/how-to-apply-payment-to-invoice-via-xml-rpc-37795
 
-		$payment_id = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.payment', 'create', array($payment_fields));
+		$payment_id = $this->create('account.payment', array($payment_fields));
 		$this->handle_exception($payment_id, 'Failed to create payment draft.');
 
 		return $payment_id;
@@ -438,14 +521,11 @@ class odoo {
 		throw new \Exception('Validating payment is not yet implemented.');
 		return;
 
-		$this->authenticate();
-		$this->require_object_client();
-
 		if (!is_numeric($payment_id)) {
 			$this->error('Odoo payment ID to be validated is not a number.');
 		}
 
-		$payment = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.payment', 'read', array(array($payment_id)));
+		$payment = $this->read('account.payment', array(array($payment_id)));
 		if ($payment[0]['state'] != 'draft') {
 			$this->error('Payment to be validated is not a draft (it is '. $payment[0]['state'] .').');
 		}
@@ -466,7 +546,7 @@ exit;
 		$this->authenticate();
 		$this->require_object_client();
 
-		$journal = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.journal', 'search_read', array(array(array('name', '=', $journal_name))));
+		$journal = $this->search_read('account.journal', array(array(array('name', '=', $journal_name))));
 		$this->handle_exception($journal, 'Failed to get journal.');
 
 		if (empty($journal)) {
@@ -481,10 +561,7 @@ exit;
 	 * @param boolean $by_name : Whether to search by name instead of code. Default false.
 	 */
 	public function get_account($account_code, $by_name = false) {
-		$this->authenticate();
-		$this->require_object_client();
-
-		$account = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.account', 'search_read', array(array(array( ($by_name ? 'name' : 'code'), '=', (string) $account_code))));
+		$account = $this->search_read('account.account', array(array(array( ($by_name ? 'name' : 'code'), '=', (string) $account_code))));
 		$this->handle_exception($account, 'Failed to get account.');
 
 		if (empty($account)) {
@@ -498,10 +575,7 @@ exit;
 	 * Get all accounts
 	 */
 	public function get_accounts() {
-		$this->authenticate();
-		$this->require_object_client();
-
-		$accounts = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.account', 'search_read', $this->odoo_search_parameters(['order' => 'code']));
+		$accounts = $this->search_read('account.account', $this->search_parameters(['order' => 'code']));
 		$this->handle_exception($accounts, 'Failed to get accounts.');
 
 		return $accounts;
@@ -512,10 +586,7 @@ exit;
 	 * @param boolean $by_name : Whether to search by name instead of partner ID. Default false.
 	 */
 	public function get_partner($id, $by_name = false) {
-		$this->authenticate();
-		$this->require_object_client();
-
-		$partner = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'res.partner', 'search_read', array(array(array( ($by_name ? 'name' : 'id'), '=', $id))));
+		$partner = $this->search_read('res.partner', array(array(array( ($by_name ? 'name' : 'id'), '=', $id))));
 		$this->handle_exception($partner, 'Failed to get partner.');
 
 		if (empty($partner)) {
@@ -531,7 +602,7 @@ exit;
 
 		$output = array();
 
-		$currencies = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'res.currency', 'search_read', array());
+		$currencies = $this->search_read('res.currency', array());
 		$this->handle_exception($currencies, 'Failed to get currencies.');
 
 		foreach ($currencies as $currency) {
@@ -552,7 +623,7 @@ exit;
 		$this->authenticate();
 		$this->require_object_client();
 
-		$currency = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'res.currency', 'search_read', array(array(array('name', '=', $currency))));
+		$currency = $this->search_read('res.currency', array(array(array('name', '=', $currency))));
 		$this->handle_exception($currency, 'Failed to get currency.');
 
 		if (empty($currency)) {
@@ -562,21 +633,14 @@ exit;
 		return $currency[0];
 	}
 
-	public function get_account_opening_balance() {
-		// TODO: both for all time and for a given year
-		$this->error('get_account_opening_balance is not yet implemented.');
-	}
-
 	/**
-	 * @param array $params : Available parameters:
-	 *   `filters` : Example: `[ ['account_id', '=', 7034], ['date', '>=', '2019-01-01'], ['date', '<=', '2019-12-31'] ]`
-	 *   `fields` : Example: `['display_name', 'contact_address', 'credit']`
-	 *   `offset` : 
-	 *   `limit` : 
-	 *   `order` : Example: `date, move_id` or `account_id, date` or `account_id, date DESC`
+	 * @param array $accounts : Account codes
+	 * @param string $type : `alltime` or `year`
+	 * @param string $until_date : date you want opening balance as of. Eg. `2019-05-01` will give you opening balance on the morning of that date.
 	 */
-	public function odoo_search_parameters($params = array()) {
-		return array($params['filters'], $params['fields'], $params['offset'], $params['limit'], $params['order']);
+	public function get_account_opening_balance($accounts, $type, $until_date) {
+		// TODO
+		$this->error('get_account_opening_balance is not yet implemented.');
 	}
 
 	/**
@@ -585,9 +649,6 @@ exit;
 	 * @param string $to : To date in MySQL format: yyyy-mm-dd
 	 */
 	public function get_general_ledger($accounts = array(), $from = null, $to = null, $order = null) {
-		$this->authenticate();
-		$this->require_object_client();
-
 		if ($from && !preg_match("/^\\d+-\\d+-\\d+$/", $from)) {
 			$this->error('Invalid starting date when getting general ledger.', null, ['Date' => $from]);
 		}
@@ -597,19 +658,11 @@ exit;
 
 		$filters = [];
 		if (!empty($accounts)) {
-			if (count($accounts) === 1) {
-				$filters[] = array('account_id', '=', $this->get_account(current($accounts))['id']);
-			} else {
-				// NOTE: tried to understand how to write "logical OR" but didn't quite get it: https://www.odoo.com/th_TH/forum/help-1/question/how-to-use-logical-or-operator-with-xml-rpc-25694
-				// So instead we just filter it manually below!
-				$manual_account_filter = true;
-				// Protect the regular expression further below by checking numeric values
-				foreach ($accounts as $curr_account) {
-					if (!is_numeric($curr_account)) {
-						$this->error('Invalid account code when getting general ledger.', null, ['Accounts' => $accounts, 'Curr account' => $curr_account]);
-					}
-				}
+			$accountIDs = [];
+			foreach ($accounts as $curr_account) {
+				$accountIDs[] = $this->get_account($curr_account)['id'];
 			}
+			$filters[] = array('account_id', 'in', $accountIDs);
 		}
 		if ($from) {
 			$filters[] = array('date', '>=', $from);
@@ -622,27 +675,13 @@ exit;
 		} elseif ($order === 'account') {
 			$order = 'account_id, date';  //order descendingly: eg. 'date DESC'
 		}
-		$params = $this->odoo_search_parameters(array(
+		$params = $this->search_parameters(array(
 			'filters' => $filters,
 			'order' => $order,
 		));
 
-		$data = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.move.line', 'search_read', $params);
+		$data = $this->search_read('account.move.line', $params);
 		$this->handle_exception($data, 'Failed to get general ledger data.');
-
-		if ($manual_account_filter && !empty($data)) {
-			$filtered = false;
-			foreach ($data as $curr_key => $curr_item) {
-				if (!preg_match("/^(". implode('|', $accounts) .") /", $curr_item['account_id'][1])) {
-					unset($data[$curr_key]);
-					$filtered = false;
-				}
-			}
-			if ($filtered) {
-				// Reset keys so they are sequential
-				$data = array_values($data);
-			}
-		}
 
 		return $data;
 	}
@@ -781,29 +820,23 @@ if ($options['enable_date_warnings']) {
 	}
 
 	public function get_profit_and_loss_data($year = null) {
-		$this->authenticate();
-		$this->require_object_client();
-
 		if (!is_numeric($year)) {
 			$year = date('Y');
 		}
 
-		$this->odoo_search_parameters(array(
+		$this->search_parameters(array(
 			'filters' => array(
 				array('date', '>=', $year .'-01-01'), array('date', '<=', $year .'-12-31')
 			),
 		));
 
-		$data = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'res.currency', 'search_read', $params);
+		$data = $this->search_read('res.currency', $params);
 		$this->handle_exception($data, 'Failed to get profit and loss data.');
 
 		return $data;
 	}
 
 	public function update_exchange_rates() {
-		$this->authenticate();
-		$this->require_object_client();
-
 		// Possible alternatives: https://github.com/yelizariev/addons-yelizariev/blob/8.0/currency_rate_update/currency_rate_update.py
 		$sources = array(
 			'ecb' => array(
@@ -830,7 +863,7 @@ if ($options['enable_date_warnings']) {
 			$data = json_decode(json_encode(simplexml_load_string($xml)), true);
 
 			if ($data) {
-				$curr_rates = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'res.currency', 'search_read', array());
+				$curr_rates = $this->search_read('res.currency', array());
 				$this->handle_exception($curr_rates, 'Failed to get currencies.');
 				if ($curr_rates) {
 
@@ -853,7 +886,7 @@ if ($options['enable_date_warnings']) {
 									'name' => $rates_date .' 00:00:00',
 									'rate' => $new_rates[$curr_rate['name']],
 								);
-								$result = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'res.currency.rate', 'create', array($fields));
+								$result = $this->create('res.currency.rate', array($fields));
 								$this->handle_exception($result, 'Failed to update Odoo exchange rate for '. $curr_rate['name']);
 
 								$updated_currencies[$curr_rate['name']] = $new_rates[$curr_rate['name']];
