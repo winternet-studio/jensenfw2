@@ -631,6 +631,7 @@ class imaging {
 			exec($cmd, $output, $exitcode);
 
 			if ($exitcode != 0 && !in_array($exitcode, $options['ignore_exitcodes']) && $options['ignore_exitcodes'][0] !== '*') {
+				// Possible exit codes: https://github.com/kornelski/pngquant/blob/master/rwpng.h#L22
 				core::system_error('Conversion to compressed PNG failed. Is pngquant 1.8+ installed?', ['File' => $input_file_png, 'Command' => $cmd, 'Exit code' => $exitcode, 'Output' => $output]);
 			}
 		} else {
