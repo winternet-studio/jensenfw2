@@ -426,7 +426,7 @@ class filesystem {
 	 * @param string $err_msg_var : If present any error message (associative array with `code` and `desc`) will be written to this variable
 	 * @return boolean : True if success, false if failure
 	 */
-	public static function delete_folder_tree($dir, &$err_msg_var = null) {
+	public static function delete_folder_tree($folder, &$err_msg_var = null) {
 		if (!is_dir($folder)) {
 			$err_msg_var = array('code' => 'folder_nonexist', 'desc' => 'Folder to delete does not exist.', 'path' => $folder);
 			return false;
