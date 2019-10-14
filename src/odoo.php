@@ -91,10 +91,10 @@ class odoo {
 		}
 	}
 
-	public function execute_kw($model, $operation, $args) {
+	public function execute_kw($model, $operation, $args, $context = null) {
 		$this->authenticate();
 		$this->require_object_client();
-		return $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, $model, $operation, $args);
+		return $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, $model, $operation, $args, $context);
 	}
 
 	/**
@@ -150,11 +150,12 @@ class odoo {
 	 *
 	 * @param string $model : Example: `account.invoices`
 	 * @param array $args
+	 * @param array $context
 	 */
-	public function create($model, $args) {
+	public function create($model, $args, $context = null) {
 		$this->authenticate();
 		$this->require_object_client();
-		return $this->execute_kw($model, 'create', $args);
+		return $this->execute_kw($model, 'create', $args, $context);
 	}
 
 	/**
