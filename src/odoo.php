@@ -91,6 +91,17 @@ class odoo {
 		}
 	}
 
+	public function change_active_company($companyID, $userID = null) {
+		$this->authenticate();
+
+		if (!$userID) {
+			$userID = $this->authenticated_uid;
+		}
+
+		$write = $this->write('res.users', array(array($userID), array('company_id' => $companyID)));
+		$this->handle_exception($write, 'Failed to change active company.');
+	}
+
 	public function execute_kw($model, $operation, $args, $context = null) {
 		$this->authenticate();
 		$this->require_object_client();
@@ -123,6 +134,8 @@ class odoo {
 
 	/**
 	 * Generic read and group method
+	 *
+	 * Source code for read_group: https://github.com/odoo/odoo/blob/d4d5181285196f6c3e311a6afdd356f4dc2851ef/openerp/models.py#L2027
 	 *
 	 * @param string $model : Example: `account.invoices`
 	 * @param array $args
@@ -635,13 +648,84 @@ exit;
 	}
 
 	/**
-	 * @param array $accounts : Account codes
+	 * @param integer|array $accounts : Single account ID or array of account IDs (not the account codes)
 	 * @param string $type : `alltime` or `year`
 	 * @param string $until_date : date you want opening balance as of. Eg. `2019-05-01` will give you opening balance on the morning of that date.
+	 * @param array $options : Available options:
+	 *   - `rawResult` : set true to return the raw result from Odoo
+	 * @return float|array : Only the balance number when single account is requested, or array with keys being account ID and value being the balance when multiple accounts were requested, eg.:
+	 * ```
+	 * [
+	 * 	"6105": -615.81,
+	 * 	"6165": -2381.79
+	 * ]
+	 * ```
+	 *
+	 * Example if rawResult option is set:  (not sure if there would ever be a difference between `balance` and `balance2`...)
+	 *
+	 * ```
+	 * [
+	 * 	{
+	 * 		"account_id": [
+	 * 			6105,
+	 * 			"1011 Salg af Layout til Danmark"
+	 * 		],
+	 * 		"account_id_count": 4,
+	 * 		"balance2": 615.81,
+	 * 		"balance": -615.81
+	 * 	},
+	 * 	{
+	 * 		"account_id": [
+	 * 			6165,
+	 * 			"7825 Bank, Nykredit"
+	 * 		],
+	 * 		"account_id_count": 9,
+	 * 		"balance2": 2381.79,
+	 * 		"balance": -2381.79
+	 * 	}
+	 * ]
+	 * ```
 	 */
-	public function get_account_opening_balance($accounts, $type, $until_date) {
-		// TODO
-		$this->error('get_account_opening_balance is not yet implemented.');
+	public function get_account_opening_balance($accounts, $type, $until_date, $options = array()) {
+		if (!preg_match("/^(\\d{4})-(\\d{1,2})-(\\d{1,2})$/", $until_date, $match)) {
+			$this->error('Invalid date for getting opening balance.');
+		}
+
+		if (!is_array($accounts)) {
+			$accounts = array($accounts);
+		}
+
+		$year = $match[1];
+		$month = $match[2];
+		$day = $match[3];
+
+		$domain = array();
+		if ($type === 'year') {
+			$domain[] = array('year', '=', $year);
+		}
+		// $domain[] = array('year', '<', $year);
+		// $domain[] = array('month', '<', $month);
+		$domain[] = ['date', '<', $until_date];
+		$domain[] = array('account_id', 'in', $accounts);
+		$fields = array('account_id', 'date', 'balance', 'balance2');
+		$groupby = array('account_id');
+
+		$data = $this->read_group('account.budget.report', array($domain, $fields, $groupby));
+		$this->handle_exception($data, 'Failed to get opening balance.');
+
+		if (!$options['rawResult']) {
+			if (count($accounts) === 1) {
+				return $data[0]['balance'];
+			} else {
+				$output = array();
+				foreach ($data as $acc) {
+					$output[ $acc['account_id'][0] ] = $acc['balance'];
+				}
+				return $output;
+			}
+		}
+
+		return $data;
 	}
 
 	/**
