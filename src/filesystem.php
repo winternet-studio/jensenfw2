@@ -262,18 +262,26 @@ class filesystem {
 	 * @param string $path : The path to the folder to start in
 	 * @param callable $callback_function : Function to call for each file
 	 *   - is passed two arguments: 1) full path to the file incl. its name, 2) file name only
+	 * @param array $options : Available options:
+	 *   - `error_on_unreadble` : set true to raise error if encountering a file/folder that is unreadable (specify integer 2 to show the file name in the error message)
 	 * @return void : But `$GLOBALS['jfw_iterated_paths']` will be an array of paths we have gone through
 	 */
-	public static function iterate_folder_tree($path, $callback_function, $_internal = false) {
+	public static function iterate_folder_tree($path, $callback_function, $options = array(), $_internal = false) {
 		if (!$_internal) $GLOBALS['jfw_iterated_paths'] = array();
 		foreach (scandir($path) as $file) {
 			$pathfile = rtrim($path, '/') .'/'. $file;
 			if (!is_readable($pathfile)) {
-				continue;
+				if ($options['error_on_unreadble'] == 2) {
+					core::system_error('Failed to read file/folder '. basename($pathfile) .' when iterating folder tree.', ['Path' => $path, 'File' => $pathfile]);
+				} elseif ($options['error_on_unreadble']) {
+					core::system_error('Failed to read file/folder when iterating folder tree.', ['Path' => $path, 'File' => $pathfile]);
+				} else {
+					continue;
+				}
 			}
 			if ($file != '.' && $file != '..') {
 				if (is_dir($pathfile)) {
-					self::iterate_folder_tree($pathfile, $callback_function, true);
+					self::iterate_folder_tree($pathfile, $callback_function, $options, true);
 					$GLOBALS['jfw_iterated_paths'][] = $pathfile;
 				} else {
 					$callback_function($pathfile, $file);
@@ -336,6 +344,7 @@ class filesystem {
 	 * @param array $options : Available options:
 	 *   - `unix_timestamps` : use Unix timestamps in the output - instead of MySQL formatted timestamps as yyyy-mm-dd hh:mm:ss in UTC
 	 *   - `min_size` : set minimum file size for the file to be considered (in bytes)
+	 *   - `error_on_unreadble` : set true to raise error when encountering a file/folder that is unreadable (specify integer 2 to show the file name in the error message)
 	 * @return array : Keys being the file timestamp and the value the full path. Sorted by keys descendingly.
 	 */
 	public static function most_recent_files($path, $number_of_files = 10, $options = []) {
@@ -367,7 +376,7 @@ class filesystem {
 					}
 				}
 			}
-		});
+		}, ['error_on_unreadble' => $options['error_on_unreadble']]);
 
 		return $latest_files;
 	}
