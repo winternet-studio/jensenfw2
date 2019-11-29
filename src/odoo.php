@@ -554,6 +554,19 @@ exit;
 	}
 
 	/**
+	 * Get all journals
+	 */
+	public function get_journals() {
+		$this->authenticate();
+		$this->require_object_client();
+
+		$journals = $this->search_read('account.journal', array(array()));
+		$this->handle_exception($journals, 'Failed to get journals.');
+
+		return $journals;
+	}
+
+	/**
 	 * @param string $journal_name : Example: `Credit Card - Stripe`
 	 */
 	public function get_journal($journal_name) {
