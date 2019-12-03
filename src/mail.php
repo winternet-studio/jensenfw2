@@ -1106,6 +1106,7 @@ class mail {
 			$data['to'] = json_encode($data['to']);
 		}
 
+		core::require_database();
 		$sql  = "INSERT INTO `". $cfg['log_to_database'] ."`.`". $cfg['db_log_table'] ."` SET ";
 		$sql .= "eml_intervowen_id = :id, ";
 		$sql .= "eml_timestamp = UTC_TIMESTAMP(), ";
