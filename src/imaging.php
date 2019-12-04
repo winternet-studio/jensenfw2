@@ -632,7 +632,23 @@ class imaging {
 
 			if ($exitcode != 0 && !in_array($exitcode, $options['ignore_exitcodes']) && $options['ignore_exitcodes'][0] !== '*') {
 				// Possible exit codes: https://github.com/kornelski/pngquant/blob/master/rwpng.h#L22
-				core::system_error('Conversion to compressed PNG failed. Is pngquant 1.8+ installed?', ['File' => $input_file_png, 'Command' => $cmd, 'Exit code' => $exitcode, 'Output' => $output]);
+				$exitcode_map = array(
+					0 => 'SUCCESS',
+					1 => 'MISSING_ARGUMENT',
+					2 => 'READ_ERROR',
+					4 => 'INVALID_ARGUMENT',
+					15 => 'NOT_OVERWRITING_ERROR',
+					16 => 'CANT_WRITE_ERROR',
+					17 => 'OUT_OF_MEMORY_ERROR',
+					18 => 'WRONG_ARCHITECTURE',
+					24 => 'PNG_OUT_OF_MEMORY_ERROR',
+					25 => 'LIBPNG_FATAL_ERROR',
+					26 => 'WRONG_INPUT_COLOR_TYPE',
+					35 => 'LIBPNG_INIT_ERROR',
+					98 => 'TOO_LARGE_FILE',
+					99 => 'TOO_LOW_QUALITY',
+				);
+				core::system_error('Conversion to compressed PNG failed. '. $exitcode_map[$exitcode], ['File' => $input_file_png, 'Command' => $cmd, 'Exit code' => $exitcode, 'Output' => $output]);
 			}
 		} else {
 			$cmd = 'pngquant --quality='. $options['min_quality'] .'-'. $options['max_quality'] .' - < '. escapeshellarg($input_file_png);
