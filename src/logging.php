@@ -98,6 +98,11 @@ class logging {
 		}
 		$logSQL .= "log_ip = :ip, ";
 		$logSQL_vars['ip'] = ($_SERVER['HTTP_X_FORWARDED_FOR'] ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']);
+		// Sometimes HTTP_X_FORWARDED_FOR can contain multiple addresses, eg. `212.98.86.98, 165.225.64.70`. Use the left-most one (according to wikipedia - I hope that's correct...!). See https://en.wikipedia.org/wiki/X-Forwarded-For#Format
+		if (strpos($logSQL_vars['ip'], ',') !== false) {
+			$logSQL_vars['ip'] = explode(',', $logSQL_vars['ip']);
+			$logSQL_vars['ip'] = trim($logSQL_vars['ip'][0]);
+		}
 		$logSQL .= "log_action = :action, ";
 		$logSQL_vars['action'] = $action;
 		if ($subaction) {
