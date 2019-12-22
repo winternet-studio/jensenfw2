@@ -285,6 +285,8 @@ class system_administration {
 					// ignore errors about not being able to change group permissions on destination files
 				} elseif (preg_match("/^(sent |total size|rsync error: some files.attrs were not transferred|sending incremental file list)/", $buffer)) {
 					// ignore the summary lines
+				} elseif (preg_match("/^Permanently added .* to the list of known hosts/", $buffer)) {
+					// ignore notification about host being added to list of known hosts
 				} elseif (preg_match("/^\\*deleting.*\\/$/", $buffer)) {  //folders end with a slash
 					$folders_deleted++;
 				} elseif (preg_match("/^\\*deleting.*$/", $buffer)) {  //file do not end with a slash
@@ -312,7 +314,7 @@ class system_administration {
 		$this->ln();
 
 		if ($unknown_lines > 0) {
-			$this->notify_error('Unknown lines: '. $unknown_lines . PHP_EOL .'Files processed: '. $files_processed . PHP_EOL .'Files uploaded: '. $files_uploaded . PHP_EOL .'Files deleted: '. $files_deleted . PHP_EOL .'Folders processed: '. $folders_processed . PHP_EOL .'Folders added: '. $folders_added . PHP_EOL .'Folders deleted: '. $folders_deleted . PHP_EOL . PHP_EOL . implode('', $unknown));
+			$this->notify_error('Unknown lines: '. $unknown_lines . PHP_EOL .'Files processed: '. $files_processed . PHP_EOL .'Files uploaded: '. $files_uploaded . PHP_EOL .'Files deleted: '. $files_deleted . PHP_EOL .'Folders processed: '. $folders_processed . PHP_EOL .'Folders added: '. $folders_added . PHP_EOL .'Folders deleted: '. $folders_deleted . PHP_EOL . PHP_EOL . PHP_EOL .'Unknown data:'. PHP_EOL . implode(PHP_EOL, $unknown));
 		}
 
 		$endtime = time();
