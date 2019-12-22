@@ -819,6 +819,7 @@ class filesystem {
 				[255, 216, 255, 224, '*', '*',  74,  70,  73,  70,   0,   1],  //JFIF - hex: FF D8 FF E0 nn nn 4A 46 49 46 00 01
 				[255, 216, 255, 225, '*', '*', '*', '*', '*', '*', '*', '*'],  //Exif - hex: FF D8 FF E1
 				[255, 216, 255, 226, '*', '*', '*', '*', '*', '*', '*', '*'],  //Canon EOS JPEG - hex: FF D8 FF E2
+				[255, 216, 255, 238, '*', '*', '*', '*', '*', '*', '*', '*'],  //hex: FF D8 FF EE
 				[255, 216, 255, 237, '*', '*', '*', '*', '*', '*', '*', '*'],  //Mixed Raster Content (MRC) - hex: FF D8 FF ED (source: http://fileformats.archiveteam.org/wiki/Mixed_Raster_Content)
 			);
 
