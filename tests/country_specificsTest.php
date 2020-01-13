@@ -62,4 +62,35 @@ class country_specificsTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals(8, country_specifics::minimum_phone_num_digits(null, '45'));
 		$this->assertEquals(5, country_specifics::minimum_phone_num_digits(null, 229));
 	}
+
+	public function testValidatePhoneNumber() {
+		$this->assertEquals(8, country_specifics::validate_phone_num('1234567', 'DK'));
+		$this->assertEquals(true, country_specifics::validate_phone_num('12345678', 'DK'));
+		$this->assertEquals(true, country_specifics::validate_phone_num('123456789', 'DK'));
+		$this->assertEquals(10, country_specifics::validate_phone_num('123456789', 'US'));
+		$this->assertEquals(true, country_specifics::validate_phone_num('1234567890', 'US'));
+		$this->assertEquals(true, country_specifics::validate_phone_num('12345678901', 'US'));
+	}
+
+	public function testFormatPhoneNumber() {
+		$this->assertEquals('1234 5678 9', country_specifics::format_phone_num('123456789', 'DK'));
+		$this->assertEquals('1234 5678 9', country_specifics::format_phone_num('1234 56789', 'DK'));
+		$this->assertEquals('1234 5678', country_specifics::format_phone_num('1234-5678', 'DK'));
+		$this->assertEquals('1234 5678', country_specifics::format_phone_num('12 34 56 78', 'DK'));
+		$this->assertEquals('1234 5678 ext. 9', country_specifics::format_phone_num('12 34 56 78 ext. 9', 'DK'));
+
+		$this->assertEquals('12 34 56 78 9', country_specifics::format_phone_num('123456789', 'DK', null, ['DK-format' => '4groups']));
+		$this->assertEquals('12 34 56 78 9', country_specifics::format_phone_num('1234 56789', 'DK', null, ['DK-format' => '4groups']));
+		$this->assertEquals('12 34 56 78', country_specifics::format_phone_num('1234-5678', 'DK', null, ['DK-format' => '4groups']));
+		$this->assertEquals('12 34 56 78', country_specifics::format_phone_num('12 34 56 78', 'DK', null, ['DK-format' => '4groups']));
+		$this->assertEquals('12 34 56 78 ext. 9', country_specifics::format_phone_num('12 34 56 78 ext. 9', 'DK', null, ['DK-format' => '4groups']));
+
+		$this->assertEquals('123-456-7890', country_specifics::format_phone_num('1234567890', 'US'));
+		$this->assertEquals('123-456-7890', country_specifics::format_phone_num('123 456 7890', 'US'));
+		$this->assertEquals('123-456-7890', country_specifics::format_phone_num('123-456-7890', 'US'));
+		$this->assertEquals('123-456-7890', country_specifics::format_phone_num('123.456.7890', 'US'));
+		$this->assertEquals('123.456.7890', country_specifics::format_phone_num('123.456.7890', 'US', null, ['US-format' => 'dotted']));
+		$this->assertEquals('123 456 7890', country_specifics::format_phone_num('123.456.7890', 'US', null, ['US-format' => 'spaced']));
+		$this->assertEquals('123-456-7890 ext. 51', country_specifics::format_phone_num('123-456-7890 ext. 51', 'US'));
+	}
 }

@@ -245,6 +245,7 @@ class country_specifics {
 	 */
 	public static function minimum_phone_num_digits($country, $country_code = null) {
 		if (is_string($country_code)) $country_code = (int) $country_code;
+
 		if (in_array($country, ['US', 'CA']) || in_array($country_code, [1], true)) {
 			return 10;
 		} elseif (in_array($country, ['DK', 'NO', 'SE']) || in_array($country_code, [45, 47, 46], true)) {
@@ -252,6 +253,68 @@ class country_specifics {
 		} else {
 			// rest of the world (Solomon Islands have 5 digit phone numbers)
 			return 5;
+		}
+	}
+
+	/**
+	 * Validate a country's phone number
+	 *
+	 * @param string $phone_num : Phone number (excluding country dialing code!)
+	 * @param string $country : ISO country code (set to null if using $country_code instead)
+	 * @param string $country_code : Country dialing code (set $country to null)
+	 * @return boolean|integer : Boolean `true` if okay, integer with number of required digits if validation fails
+	 */
+	public static function validate_phone_num($phone_num, $country, $country_code = null) {
+		$minimum_digits = static::minimum_phone_num_digits($country, $country_code);
+		if (strlen(preg_replace("/[^\\d]/", '', $phone_num)) < $minimum_digits) {
+			return $minimum_digits;
+		} else {
+			return true;
+		}
+	}
+
+	/**
+	 * Format a phone number according to the country
+	 *
+	 * @param string $phone_num : Phone number (excluding country dialing code!)
+	 * @param string $country : ISO country code (set to null if using $country_code instead)
+	 * @param string $country_code : Country dialing code (set $country to null)
+	 * @param array $options : Available options:
+	 *   - `DK-format` : set to `4groups` to use "## ## ## ##" instead of the default "#### ####"
+	 *   - `US-format` : set to `dotted` to use "###.###.####" or `spaced` to use "### ### ####" instead of the default "###-###-####"
+	 * @return string
+	 */
+	public static function format_phone_num($phone_num, $country, $country_code = null, $options = array()) {
+		if (is_string($country_code)) $country_code = (int) $country_code;
+
+		if (in_array($country, ['US', 'CA']) || in_array($country_code, [1], true)) {
+			if (preg_match("/^(.*\\d.*\\d.*\\d.*\\d.*\\d.*\\d.*\\d.*\\d.*\\d.*\\d)(.*)$/U", (string) $phone_num, $match)) {
+				if ($options['US-format'] === 'dotted') {
+					$sep = '.';
+				} elseif ($options['US-format'] === 'spaced') {
+					$sep = ' ';
+				} else {
+					$sep = '-';
+				}
+
+				$clean = preg_replace("/[^\\d]/", '', $match[1]);
+				return trim(substr($clean, 0, 3) . $sep . substr($clean, 3, 3) . $sep . substr($clean, 6) .' '. trim($match[2]));
+			} else {
+				return $phone_num;
+			}
+		} elseif (in_array($country, ['DK', 'NO', 'SE']) || in_array($country_code, [45, 47, 46], true)) {
+			if (preg_match("/^(.*\\d.*\\d.*\\d.*\\d.*\\d.*\\d.*\\d.*\\d)(.*)$/U", (string) $phone_num, $match)) {
+				$clean = preg_replace("/[^\\d]/", '', $match[1]);
+				if ($options['DK-format'] === '4groups') {
+					return trim(substr($clean, 0, 2) .' '. substr($clean, 2, 2) .' '. substr($clean, 4, 2) .' '. substr($clean, 6) .' '. trim($match[2]));
+				} else {
+					return trim(substr($clean, 0, 4) .' '. substr($clean, 4) .' '. trim($match[2]));
+				}
+			} else {
+				return $phone_num;
+			}
+		} else {
+			return $phone_num;
 		}
 	}
 }
