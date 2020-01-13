@@ -239,6 +239,8 @@ class country_specifics {
 	/**
 	 * Return the minimum number of digits in phone number for a given country or country dialing code
 	 *
+	 * See https://en.wikipedia.org/wiki/National_conventions_for_writing_telephone_numbers
+	 *
 	 * @param {string} $country - ISO country code (set to null if using $country_code instead)
 	 * @param {string} $country_code - Country dialing code (set $country to null)
 	 * @return {number}
@@ -246,9 +248,9 @@ class country_specifics {
 	public static function minimum_phone_num_digits($country, $country_code = null) {
 		if (is_string($country_code)) $country_code = (int) $country_code;
 
-		if (in_array($country, ['US', 'CA']) || in_array($country_code, [1], true)) {
+		if (in_array($country, ['US', 'CA', 'IN', 'CN']) || in_array($country_code, [1, /*ID*/ 91, /*CN*/ 86], true)) {
 			return 10;
-		} elseif (in_array($country, ['DK', 'NO', 'SE']) || in_array($country_code, [45, 47, 46], true)) {
+		} elseif (in_array($country, ['DK', 'NO', 'SE', 'HK']) || in_array($country_code, [45, 47, 46, /*HK*/ 852], true)) {
 			return 8;
 		} else {
 			// rest of the world (Solomon Islands have 5 digit phone numbers)
@@ -258,6 +260,8 @@ class country_specifics {
 
 	/**
 	 * Validate a country's phone number
+	 *
+	 * See https://en.wikipedia.org/wiki/National_conventions_for_writing_telephone_numbers
 	 *
 	 * @param string $phone_num : Phone number (excluding country dialing code!)
 	 * @param string $country : ISO country code (set to null if using $country_code instead)
@@ -275,6 +279,8 @@ class country_specifics {
 
 	/**
 	 * Format a phone number according to the country
+	 *
+	 * See https://en.wikipedia.org/wiki/National_conventions_for_writing_telephone_numbers
 	 *
 	 * @param string $phone_num : Phone number (excluding country dialing code!)
 	 * @param string $country : ISO country code (set to null if using $country_code instead)
