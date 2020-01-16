@@ -465,6 +465,7 @@ class system_administration {
 		if (mysqli_connect_errno()) {
 			core::system_error('Connect failed: '. mysqli_connect_error());
 		}
+		mysqli_set_charset($link, 'utf8');
 
 		// Disable foreign key check
 		// NOTE: this can potentially break foreign key integrity between tables that are imported and those that are not, but it is okay because only developers will be using this feature
@@ -472,9 +473,6 @@ class system_administration {
 
 		echo '<div>Downloaded (compressed): '. number_format(strlen($dump)) .' bytes</div>';
 
-		if (false) {
-			file_put_contents(\Yii::getAlias('@runtime/prod_database_dump.txt'), $dump);
-		}
 		if ($dump && strpos($dump, '<html') !== false) {
 			echo '<div class="alert alert-danger">Response from production server unexpectedly contained HTML:<br><br><i>'. nl2br(trim(strip_tags($dump))) .'</i></div>';
 			return ob_get_clean();
@@ -487,6 +485,9 @@ class system_administration {
 			return ob_get_clean();
 		}
 		echo '<div>Uncompressed: '. number_format(strlen($dump)) .' bytes</div>';
+		if (false) {
+			file_put_contents(\Yii::getAlias('@runtime/prod_database_dump.txt'), $dump);
+		}
 
 		// Split the dump into parts (one table per part), otherwise it is bigger than max_allowed_packet and MySQL will fail (source: https://stackoverflow.com/a/26021324/2404541)
 		$dump_parts = preg_split("@(?=(DROP TABLE IF EXISTS|INSERT INTO `|REPLACE INTO `))@", $dump);
