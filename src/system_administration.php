@@ -285,7 +285,7 @@ class system_administration {
 					// ignore errors about not being able to change group permissions on destination files
 				} elseif (preg_match("/^(sent |total size|rsync error: some files.attrs were not transferred|sending incremental file list)/", $buffer)) {
 					// ignore the summary lines
-				} elseif (preg_match("/^Permanently added .* to the list of known hosts/", $buffer)) {
+				} elseif (preg_match("/Permanently added .* to the list of known hosts/", $buffer)) {
 					// ignore notification about host being added to list of known hosts
 				} elseif (preg_match("/^\\*deleting.*\\/$/", $buffer)) {  //folders end with a slash
 					$folders_deleted++;
