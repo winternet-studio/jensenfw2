@@ -14,37 +14,40 @@ class geocoding {
 		return $cfg;
 	}
 
+	/**
+	 * Get latitude/longitude for an address using Google geolocation API
+	 *
+	 * (2016-05-25: max 2500 per day, 10 requests per second, but it requies getting an API key)
+	 *
+	 * - includes caching in database
+	 * - API info: https://developers.google.com/maps/documentation/geocoding/#GeocodingRequests
+	 *   - alternatives: http://stackoverflow.com/questions/11399069/alternative-to-google-maps-geolocation-api
+	 *
+	 * @param string|array $location : String with an address, or an array with the following keys:
+	 *   - `address`
+	 *   - `city`
+	 *   - `state`
+	 *   - `zip`
+	 *   - `country` : name is probably preferred, but 2-letter ISO-3166 codes can also be used
+	 * @param array $parms : Associative array with any of the following keys:
+	 *   - `google_api_key` : Google API key (provide to allow more free requets per day) (do not restrict it to IP addresses in case you want to use this function's proxy_url feature)
+	 *   - `skip_database_caching` : set to true to skip caching results in database (not recommended)
+	 *   - `db_name` : name of database that should be used for caching. Default is the one currently selected by the database connection.
+	 *   - `table_name` : name of database table that should be used for caching. Default is `temp_cached_address_latlon`
+	 *   - `skip_table_autocreate` (boolean|0|1) : set to true to skip auto-creating caching table
+	 *   - `server_id` : ID of the database connection defined in core config. Default is the primary connection.
+	 *   - `proxy_url` : URL with a proxy that will do the actual calls to the Google API. The query string part of the normal URL will be appended to the URL
+	 *     - example: `http://myserver.com/googleproxy.php?query=`
+	 *     - content of googleproxy.php: `echo file_get_contents('http://maps.googleapis.com/maps/api/geocode/json?'. $_GET['query']);`
+	 *
+	 * @return mixed : Possible output:
+	 * - if found: associative array with keys ´latitude´, ´longitude´
+	 * - if not found: false
+	 * - if error: `ERROR:[status message from API]`  (string)
+	 *   - eg. if query limit reached it will be: `ERROR:OVER_QUERY_LIMIT`
+	 * - the raw API response (decoded JSON string) is available through `$GLOBALS['_jfw_google_address_geocoder_raw_response']` whenever the request required a call to the Google API (not using cache)
+	 */
 	public static function google_address_geocoder($location, $parms = array() ) {
-		/*
-		DESCRIPTION:
-		- get latitude/longitude for an address using Google geolocation API (2016-05-25: max 2500 per day, 10 requests per second, but it requies getting an API key)
-		- includes caching in database
-		- API info: https://developers.google.com/maps/documentation/geocoding/#GeocodingRequests
-			- alternatives: http://stackoverflow.com/questions/11399069/alternative-to-google-maps-geolocation-api
-		INPUT:
-		- $location : string with an address, or an array with the following keys:
-			- 'address'
-			- 'city'
-			- 'state'
-			- 'zip'
-			- 'country' : name is probably preferred, but 2-letter ISO-3166 codes can also be used
-		- $parms : associative array with any of the following keys:
-			- 'google_api_key' : Google API key (provide to allow more free requets per day) (do not restrict it to IP addresses in case you want to use this function's proxy_url feature)
-			- 'skip_database_caching' : set to true to skip caching results in database (not recommended)
-			- 'db_name' : name of database that should be used for caching. Default is the one currently selected by the database connection.
-			- 'table_name' : name of database table that should be used for caching. Default is 'temp_cached_address_latlon'
-			- 'skip_table_autocreate' (boolean|0|1) : set to true to skip auto-creating caching table
-			- 'server_id' : ID of the database connection defined in core config. Default is the primary connection.
-			- 'proxy_url' : URL with a proxy that will do the actual calls to the Google API. The query string part of the normal URL will be appended to the URL
-				- example: 'http://myserver.com/googleproxy.php?query='
-				- content of googleproxy.php: echo file_get_contents('http://maps.googleapis.com/maps/api/geocode/json?'. $_GET['query']);
-		OUTPUT:
-		- if found: associative array with keys 'latitude', 'longitude'
-		- if not found: false
-		- if error: 'ERROR:[status message from API]'  (string)
-			- eg. if query limit reached it will be: 'ERROR:OVER_QUERY_LIMIT'
-		- the raw API response (decoded JSON string) is available through $GLOBALS['_jfw_google_address_geocoder_raw_response'] whenever the request required a call to the Google API (not using cache)
-		*/
 		if (!$parms['skip_database_caching']) {
 			core::require_database($parms['server_id']);
 		}
@@ -200,24 +203,23 @@ class geocoding {
 		}
 	}
 
+	/**
+	 * Lookup country from IP address via MaxMind GeoIP2 Precision web service
+	 *
+	 * IMPORTANT! Remember to exclude robot from accessing the page calling this, otherwise your credits might be depleted faster than desired (instructions: http://en.wikipedia.org/wiki/Robots_exclusion_standard)
+	 *
+	 * @param string $ip
+	 * @param string $userID
+	 * @param string $licensekey
+	 * @param array $options : Associative with any combination of the following keys:
+	 *   - `skip_database` (boolean|0|1) : set to true to skip caching in database
+	 *   - `max_cache_age` : max number of days to use a cached result
+	 *   - `clean_cache` (boolean|0|1) : set to true to remove outdated cache entries
+	 *   - `db_table` (string) : name of table for database caching
+	 *   - `skip_table_autocreate` (boolean|0|1) : set to true to skip auto-creating caching table
+	 * @return array : Associative array
+	 */
 	public static function ip2country_maxmind_service($ip, $userID, $licensekey, $options = array() ) {
-		/*
-		DESCRIPTION:
-		- lookup country from IP address via MaxMind GeoIP2 Precision web service
-		- IMPORTANT! Remember to exclude robot from accessing the page calling this, otherwise your credits might be depleted faster than desired (instructions: http://en.wikipedia.org/wiki/Robots_exclusion_standard )
-		INPUT:
-		- $ip
-		- $userID
-		- $licensekey
-		- $options : associative with any combination of the following keys:
-			- 'skip_database' (boolean|0|1) : set to true to skip caching in database
-			- 'max_cache_age' : max number of days to use a cached result
-			- 'clean_cache' (boolean|0|1) : set to true to remove outdated cache entries
-			- 'db_table' (string) : name of table for database caching
-			- 'skip_table_autocreate' (boolean|0|1) : set to true to skip auto-creating caching table
-		OUTPUT:
-		- associative array
-		*/
 		$skip_database = ($options['skip_database'] ? true : false);
 
 		$continent_code = $country_iso = $err_msg = $used_cache = $data = false;
@@ -320,18 +322,16 @@ class geocoding {
 		}
 	}
 
+	/**
+	 * Lookup country from IP address via MaxMind GeoLite2 free downloadable country database
+	 *
+	 * @param string $ip
+	 * @param string $country_database_file : Path to the MaxMind GeoLite2 country database file
+	 * @param array $options : Associative array with any combination of the following keys:
+	 *   - `composer_autoload_path` : override the default path to the Composer autoload.php file
+	 * @return array : Associative array
+	 */
 	public static function ip2country_maxmind_free($ip, $country_database_file, $options = array() ) {
-		/*
-		DESCRIPTION:
-		- lookup country from IP address via MaxMind GeoLite2 free downloadable country database
-		INPUT:
-		- $ip
-		- $country_database_file : path to the MaxMind GeoLite2 country database file
-		- $options : associative with any combination of the following keys:
-			- 'composer_autoload_path' : override the default path to the Composer autoload.php file
-		OUTPUT:
-		- associative array
-		*/
 		$continent_code = $continent_name = $country_iso = $country_name = $err_msg = null;
 
 		if (inet_pton($ip) === false) {
@@ -370,18 +370,16 @@ class geocoding {
 		}
 	}
 
+	/**
+	 * Lookup city, region, country, etc from IP address via MaxMind GeoLite2 free downloadable city database
+	 *
+	 * @param string $ip
+	 * @param string $city_database_file : Path to the MaxMind GeoLite2 city database file
+	 * @param array $options : Associative array with any combination of the following keys:
+	 *   - `composer_autoload_path` : override the default path to the Composer autoload.php file
+	 * @return array : Associative array
+	 */
 	public static function ip2city_maxmind_free($ip, $city_database_file, $options = array() ) {
-		/*
-		DESCRIPTION:
-		- lookup city, region, country, etc from IP address via MaxMind GeoLite2 free downloadable city database
-		INPUT:
-		- $ip
-		- $city_database_file : path to the MaxMind GeoLite2 city database file
-		- $options : associative with any combination of the following keys:
-			- 'composer_autoload_path' : override the default path to the Composer autoload.php file
-		OUTPUT:
-		- associative array
-		*/
 		$continent_code = $continent_name = $country_iso = $country_name = $state_or_region_code = $state_or_region_name = $city = $city_geoname_id = $postalcode = $timezone = $latitude = $longitude = $err_msg = null;
 
 		if (inet_pton($ip) === false) {
