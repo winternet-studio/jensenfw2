@@ -82,7 +82,10 @@ class odoo {
 	public function authenticate() {
 		if (!$this->is_authenticated) {
 			$this->require_common_client();
+
 			$this->authenticated_uid = $this->common_client->authenticate($this->server_database, $this->server_username, $this->server_password, array());
+			$this->handle_exception($this->authenticated_uid, 'Failed to authenticate.');
+
 			if ($this->authenticated_uid) {
 				$this->is_authenticated = true;
 			} else {
