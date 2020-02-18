@@ -1154,7 +1154,7 @@ class core {
 	 * @param array $array : Associative array with keys being query string variable name and value of course being the corresponding value
 	 *	- leave empty to generate the same URL as current one (but without the one-time variables)
 	 *	- to delete an existing parameter set the value to null
-	 *	- to make the variable a one-time variable only, set the value to an array where first item is the actual value and the second item is `once` (string). Then that variable will not be kept on next page when calling jfw_pageurl()
+	 *	- to make the variable a one-time variable only, set the value to an array where first item is the actual value and the second item is `once` (string). Then that variable will not be kept on next page when calling this method.
 	 *	- a dot (.) is not allowed in the variable name of one-time variables because it is used as a separator (you could use dash (-) instead)
 	 * @param array $options : Options available:
 	 *	- `querystring_only` : only generate the query string (excluding path and `?`)
