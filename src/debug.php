@@ -33,6 +33,11 @@ class debug {
 		}
 		*/
 
+		if (PHP_SAPI == 'cli') {
+			print_r($variable);
+			return;
+		}
+
 		if (is_array($variable)) {
 			$out = static::array_print($variable);
 		} elseif (is_object($variable)) {
