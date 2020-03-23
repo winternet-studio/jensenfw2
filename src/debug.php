@@ -148,10 +148,10 @@ class debug {
 				$setAccessible = false;
 				if (!static::$hide_all_prop_prefixes) {
 					if ($property->isPrivate()) {
-						$prefix = '<strong>private</strong>';
+						$prefix = '<strong>!</strong>';
 						$setAccessible = true;
 					} elseif ($property->isProtected()) {
-						$prefix = '<strong>protected</strong>';
+						$prefix = '<strong>*</strong>';
 						$setAccessible = true;
 					} elseif ($property->isPublic()) {
 						if (static::$prefix_public_props) {
@@ -166,7 +166,7 @@ class debug {
 				}
 				$c_value = $property->getValue($myobject);
 
-				$objectHTML .= '<tr><td>'. $c_key .'<br><span style="color:#0061E0" class="propprefix"><em>'. $prefix .'</em></span></td><td>';
+				$objectHTML .= '<tr><td><span style="color:#0061E0" class="propprefix">'. $prefix .'</span>'. $c_key .'</td><td>';
 				if (is_object($c_value) && get_class($c_value) == 'SimpleXMLElement') {
 					if (empty($c_value) || strlen((string) $c_value) > 0) {  //convert those strange objects that are actually scalar values
 						$c_value = (string) $c_value;
