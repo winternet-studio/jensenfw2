@@ -6,6 +6,8 @@ namespace winternet\jensenfw2;
 
 class debug {
 
+	public static $visualize_chars = false;  //set true or 1 to visualize basic characters, set 2 (NOT YET IMPLEMENTED) to visualize all non-normal characters
+
 	public static $hide_all_prop_prefixes = false;
 
 	public static $prefix_public_props = false;
@@ -45,7 +47,11 @@ class debug {
 		} else {
 			ob_start();
 			echo '<pre>';
-			var_dump($variable);
+			if (static::$visualize_chars) {
+				var_dump(static::visualize_characters($variable));
+			} else {
+				var_dump($variable);
+			}
 			echo '</pre>';
 			$out = ob_get_clean();
 		}
@@ -196,9 +202,29 @@ class debug {
 		} elseif ($var === false) {
 			return '<span style="font-size:70%;color:#C54F00">false</span>';
 		} elseif (is_string($var)) {
-			return nl2br(htmlentities($var));
+			if (static::$visualize_chars) {
+				return nl2br(htmlentities(static::visualize_characters($var)));
+			} else {
+				return nl2br(htmlentities($var));
+			}
 		} else {
-			return '<span style="color:#C54F00">'. nl2br(htmlentities( (string) $var)) .'</span>';
+			if (static::$visualize_chars) {
+				return '<span style="color:#C54F00">'. nl2br(htmlentities( static::visualize_characters((string) $var))) .'</span>';
+			} else {
+				return '<span style="color:#C54F00">'. nl2br(htmlentities( (string) $var)) .'</span>';
+			}
+		}
+	}
+
+	/**
+	 * Visualize normally invisible characters
+	 */
+	public static function visualize_characters($string) {
+		if ((int) static::$visualize_chars === 2) {
+			// TODO: visualize all non-normal characters
+			throw new \Exception('visualize_chars=2 is not yet implemented');
+		} else {
+			return str_replace(array(' ', "\r", "\n", "\t"), array('·', '\r', '\n', '\t'), $string);
 		}
 	}
 }
