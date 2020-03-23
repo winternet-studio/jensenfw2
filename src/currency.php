@@ -5,6 +5,9 @@
 namespace winternet\jensenfw2;
 
 class currency {
+
+	public static $conversion_method = 'get_ecb_live_exchange_rate';
+
 	/**
 	 * Get most currenct exchange rates from currencylayer.com
 	 *
@@ -89,5 +92,27 @@ class currency {
 			}
 		}
 		return $current_value;
+	}
+
+	/**
+	 * Convert an amount from one currency to another
+	 *
+	 * @param array $options : Available options:
+	 *   - `fallback_rate` : set to a fallback rate if the current rate cannot be obtained
+	 *   - `method` : set to `get_ecb_live_exchange_rate` - currently the only method and also the default!
+	 *     - can also set static property [$conversion_method] to set it once for all calls to this method
+	 * @return float|null
+	 */
+	public static function convert($amount, $from_currency, $to_currency, $options = array()) {
+		if ($options['method'] === 'get_ecb_live_exchange_rate' || static::$conversion_method === 'get_ecb_live_exchange_rate') {
+			$exchrate = static::get_ecb_live_exchange_rate($from_currency, $to_currency, $options['fallback_rate']);
+			if (empty($exchrate)) {
+				return null;
+			} else {
+				return round($amount / $exchrate, 2);
+			}
+		} else {
+			core::system_error('No other currency conversion methods currently implemented.');
+		}
 	}
 }
