@@ -239,8 +239,9 @@ class walk_website {
 				- this can be used if the function cannot automatically determine the URL itself
 		- $form_ref : form to retrieve in one of these formats:
 			- integer : the sequential number of the form starting from 1
-			- 'name:loginform' : value of the 'name' attribute in the <form> element (in the example it is: loginform)
-			- 'id:loginform' : value of the 'id' attribute in the <form> element (in the example it is: loginform)
+			- array with key `name` and the value being the name attribute of the <form> element
+			- array with key `id` and the value being the id attribute of the <form> element
+			- '*' : ignore form scope, just get any inputs found on the page
 		- $arr_set_fields : associative array with name/value pairs of fields to be POSTed
 			- set value to '_REMOVE_FIELD' if the field should be removed and not POSTed
 		- $arr_set_headers : array of extra headers to send with each request. To send different headers with the two requests set the array into this address instead:
@@ -352,8 +353,8 @@ class walk_website {
 		- $html : string or simple_html_dom object (eg. returned by str_get_html() )
 		- $form_ref : form to retrieve in one of these formats:
 			- integer : the sequential number of the form starting from 1
-			- 'name:loginform' : value of the 'name' attribute in the <form> element (in the example it is: loginform)
-			- 'id:loginform' : value of the 'id' attribute in the <form> element (in the example it is: loginform)
+			- array with key `name` and the value being the name attribute of the <form> element
+			- array with key `id` and the value being the id attribute of the <form> element
 			- '*' : ignore form scope, just get any inputs found on the page
 		OUTPUT:
 		- associative array with 'action', (string) 'method' (string) and 'formfields' (array)
@@ -363,13 +364,13 @@ class walk_website {
 		}
 
 		// Retrieve the form fields
-		if ($form_ref != '*') {
-			if (is_numeric($form_ref)) {
+		if ($form_ref !== '*') {
+			if (is_array($form_ref) && isset($form_ref['name'])) {
+				$form = $html->find('form[name="'. $form_ref['name'] .'"]', 0);
+			} elseif (is_array($form_ref) && isset($form_ref['id'])) {
+				$form = $html->find('form[id="'. $form_ref['id'] .'"]', 0);
+			} elseif (is_numeric($form_ref)) {
 				$form = $html->find('form', $form_ref-1);
-			} elseif (substr($form_ref, 0, 5) == 'name:') {
-				$form = $html->find('form[name="'. substr($form_ref, 5) .'"]', 0);
-			} elseif (substr($form_ref, 0, 3) == 'id:') {
-				$form = $html->find('form[id="'. substr($form_ref, 3) .'"]', 0);
 			} else {
 				core::system_error('Invalid form reference for walking the website.', array('Form ref' => $form_ref) );
 			}
@@ -385,43 +386,65 @@ class walk_website {
 
 		$formfields = array();
 
-		if ($form_ref == '*') {
+		if ($form_ref === '*') {
 			$search_dom =& $html;
 		} else {
 			$search_dom =& $form;
 		}
 
 		foreach ($search_dom->find('input') as $cinput) {
-			$formfields[$cinput->name] = html_entity_decode($cinput->value);   //TODO: what happens with radiobuttons and checkboxes??
-		}
-		foreach ($search_dom->find('select') as $cinput) {
-			foreach ($cinput->find('option') as $coption) {
-				if (isset($coption->attr['selected'])) {
-					if (isset($coption->attr['multiple'])) {
-						$formfields[$cinput->name][] = html_entity_decode( (string) $coption->value);
-					} else {
-						$formfields[$cinput->name] = html_entity_decode( (string) $coption->value);
-						break;  //no reason to check any further
+			if ($cinput->name) {
+				if ($cinput->type == 'radio') {
+					if ($cinput->checked) {
+						$formfields[$cinput->name] = html_entity_decode($cinput->value);
 					}
+				} elseif ($cinput->type == 'checkbox') {
+					if ($cinput->checked) {
+						$formfields[$cinput->name] = html_entity_decode($cinput->value);
+					}
+				} else {
+						$formfields[$cinput->name] = html_entity_decode($cinput->value);
 				}
 			}
-			if (!is_string($formfields[$cinput->name])) {
-				// set to first possible value (since it would automatically have been selected in the browser - correct?)
-				$formfields[$cinput->name] = html_entity_decode( (string) $cinput->find('option', 0)->value);
+		}
+		foreach ($search_dom->find('select') as $cinput) {
+			if ($cinput->name) {
+				foreach ($cinput->find('option') as $coption) {
+					if ($coption->selected) {
+						if ($cinput->multiple) {
+							$formfields[$cinput->name][] = html_entity_decode( (string) $coption->value);
+						} else {
+							$formfields[$cinput->name] = html_entity_decode( (string) $coption->value);
+							break;  //no reason to check any further
+						}
+					}
+				}
+				if (!$cinput->multiple && !is_string($formfields[$cinput->name])) {
+					// set to first possible value (since it would automatically have been selected in the browser - correct?)
+					$formfields[$cinput->name] = html_entity_decode( (string) $cinput->find('option', 0)->value);
+				}
 			}
 		}
 		foreach ($search_dom->find('textarea') as $cinput) {
-			$formfields[$cinput->name] = html_entity_decode($cinput->innertext);
+			if ($cinput->name) {
+				$formfields[$cinput->name] = html_entity_decode($cinput->innertext);
+			}
 		}
 
 		$html->clear();  //clean-up memory
 		$html = null;
 
-		return array(
-			'action' => $action,
-			'method' => $method,
-			'formfields' => $formfields,
-		);
+		if ($form_ref === '*') {
+			return array(
+				'formfields' => $formfields,
+			);
+		} else {
+			return array(
+				'action' => $action,
+				'method' => $method,
+				'formfields' => $formfields,
+			);
+		}
 	}
 
 	public function get_links(&$html) {

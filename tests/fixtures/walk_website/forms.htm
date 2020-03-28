@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fixture with HTML forms</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+<script type="text/javascript" src="___file.js"></script>
+<link type="text/css" href="___/globalreset.css" rel="stylesheet" />
+<link type="text/css" href="___file.css" rel="stylesheet" />
+
+<style type="text/css">
+@media only screen and (max-width: 740px) {
+	.something {
+		border: 1px solid lime;
+	}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+	<form name="form1" id="formid1" action="/action_page1.php" method="post">
+		<div class="form-group">
+			<label for="email1">Email address:</label>
+			<input type="text" name="email1" class="form-control" id="email1" value="john@doe.com">
+		</div>
+		<div class="form-group">
+			<label for="pwd1">Password:</label>
+			<input type="text" name="password1" class="form-control" id="pwd1" value="1234">
+		</div>
+		<div class="form-group">
+			<label for="country1">Country:</label>
+			<select name="country1" class="form-control">
+				<option value="no">Norway</option>
+				<option value="dk" selected>Denmark</option>
+				<option value="us">United States</option>
+				<option value="au">Australia</option>
+			</select>
+		</div>
+		<div class="form-group">
+			<label for="categories1">Categories:</label>
+			<select name="categories1" class="form-control" multiple>
+				<option value="option1">Option 1</option>
+				<option value="option2" selected>Option 2</option>
+				<option value="option3" selected>Option 3</option>
+				<option value="option4">Option 4</option>
+			</select>
+		</div>
+		<div class="radio">
+			<label><input type="radio" name="radiobuttons_a" value="radiovalue1" checked> Radio button 1</label>
+			<label><input type="radio" name="radiobuttons_a" value="radiovalue2"> Radio button 2</label>
+			<label><input type="radio" name="radiobuttons_a" value="radiovalue3"> Radio button 3</label>
+		</div>
+		<div class="form-group">
+			<label for="comments1">Comments:</label>
+			<textarea class="form-control" name="comments1">Praise God for the power He gives us if we just honestly search for Him.</textarea>
+		</div>
+		<div class="checkbox">
+			<label><input type="checkbox" name="rememberme1" value="1"> Remember me</label>
+		</div>
+		<div class="checkbox">
+			<label><input type="checkbox" name="checkbox1" value="2" checked> Check me!</label>
+		</div>
+		<button type="submit" class="btn btn-default">Submit</button><!-- using <button> -->
+	</form>
+
+	<hr>
+
+	<form name="form2" id="formid2" action="/action_page2.php" method="post">
+		<div class="form-group">
+			<label for="email2">Email address:</label>
+			<input type="text" name="email2" class="form-control" id="email2" value="mary@doe.com">
+		</div>
+		<div class="form-group">
+			<label for="pwd2">Password:</label>
+			<input type="text" name="password2" class="form-control" id="pwd2" value="5678">
+		</div>
+		<div class="form-group">
+			<label for="country2">Country:</label>
+			<select name="country2" class="form-control">
+				<option value="no">Norway</option>
+				<option value="dk">Denmark</option>
+				<option value="us" selected>United States</option>
+				<option value="au">Australia</option>
+			</select>
+		</div>
+		<div class="form-group">
+			<label for="categories2">Categories:</label>
+			<select name="categories2" class="form-control" multiple>
+				<option value="option1">Option 1</option>
+				<option value="option2" selected>Option 2</option>
+				<option value="option3">Option 3</option>
+				<option value="option4" selected>Option 4</option>
+			</select>
+		</div>
+		<div class="radio">
+			<label><input type="radio" name="radiobuttons_a" value="radiovalue4"> Radio button 1</label>
+			<label><input type="radio" name="radiobuttons_a" value="radiovalue5" checked> Radio button 2</label>
+			<label><input type="radio" name="radiobuttons_a" value="radiovalue6"> Radio button 3</label>
+		</div>
+		<div class="form-group">
+			<label for="comments2">Comments:</label>
+			<textarea class="form-control" name="comments2">Praise God for the power He gives us if we just honestly search for Him!</textarea>
+		</div>
+		<div class="checkbox">
+			<label><input type="checkbox" name="rememberme2" value="1"> Remember me</label>
+		</div>
+		<div class="checkbox">
+			<label><input type="checkbox" name="checkbox2" value="3" checked> Check me!</label>
+		</div>
+		<input type="submit" class="btn btn-default" value="Submit"><!-- using <input> -->
+	</form>
+
+</div>
+
+</body>
+</html>
