@@ -46,7 +46,7 @@ class walk_website {
 		$this->ch = curl_init();
 		curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($this->ch, CURLOPT_HEADER, true);
-		curl_setopt($this->ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0');
+		curl_setopt($this->ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36');
 		curl_setopt($this->ch, CURLOPT_AUTOREFERER, true);
 		curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, false);  //sometimes needed for pages with SSL to work, otherwise you might just get an empty string
 		if ($options['use_ssl_version3']) {
@@ -86,7 +86,7 @@ class walk_website {
 		INPUT:
 		- $url
 		- $arr_post_variables : array of key/value pairs to be POSTed (can also be the URL-encoded string)
-		- $raw_post (true|false|'application/json') : do a raw POST? $arr_post_variables then MUST be a string
+		- $raw_post (true|false|'application/json','[some-other-content-type]') : do a raw POST? $arr_post_variables then MUST be a string
 		- $extraheaders : array of extra headers to set in the request (string: "headername: headervalue")
 			- empty array will still be set
 		OUTPUT:
@@ -132,15 +132,21 @@ class walk_website {
 			if ($raw_post && is_string($arr_post_variables)) {
 				if ($raw_post == 'application/json') {
 					$headers = array('Content-Type: application/json; charset=UTF-8');
+				} elseif (is_string($raw_post) && strlen($raw_post) > 5) {
+					$headers = array('Content-Type: '. $raw_post);
 				} else {
 					$headers = array('Content-Type: text/plain');
 				}
 				if (!empty($this->defaultheaders)) {
 					$headers = array_merge($this->defaultheaders, $headers);
 				}
-				if (is_array($extraheaders)) {
-					$headers = array_merge($headers, $extraheaders);
-				}
+			} else {
+				$headers = array();
+			}
+			if (is_array($extraheaders)) {
+				$headers = array_merge($headers, $extraheaders);
+			}
+			if (!empty($headers)) {
 				curl_setopt($this->ch, CURLOPT_HTTPHEADER, $headers); 
 			}
 			if ($this->is_debug && $this->is_debug !== 'file') {
@@ -202,10 +208,10 @@ class walk_website {
 		- retrieve a page of a URL, optionally POSTing variables to it at the same time
 		INPUT:
 		- $options : associative array with any of the following keys:
+			- 'method' : !NOT YET IMPLEMENTED!  GET, POST, PUT, PATCH etc.
 			- 'post_variables' : array of key/value pairs to be POSTed (can also be the URL-encoded string)
 			- 'raw_post' (true|false) : do a raw POST? 'post_variables' then MUST be a string. Default false
-			- 'extraheaders' : array of extra headers to set in the request (each is a string: "headername: headervalue")
-				- empty array will still be set
+			- 'extraheaders' : array of extra headers to set in the request. Key is header name and value is it's value
 			- 'ignore_response' (true|false) : skip waiting for the response and just ignore it? Default false
 			- 'throw_exception_on_error' (true|false) : throw PHP exception when an errors occcurs instead of using core::system_error()? Default false
 		OUTPUT:
@@ -218,7 +224,13 @@ class walk_website {
 		if ($options['throw_exception_on_error']) {
 			$this->option_throw_exception = true;
 		}
-		$return = $this->fetch_page_oldformat($url, $options['post_variables'], $options['raw_post'], $options['extraheaders']);
+		if (is_array($options['extraheaders']) && !empty($options['extraheaders'])) {
+			$extraheaders = [];
+			foreach ($options['extraheaders'] as $headername => $headervalue) {
+				$extraheaders[] = $headername .': '. $headervalue;
+			}
+		}
+		$return = $this->fetch_page_oldformat($url, $options['post_variables'], $options['raw_post'], $extraheaders);
 		if ($options['throw_exception_on_error']) {
 			$this->option_throw_exception = false;
 		}
@@ -281,7 +293,7 @@ class walk_website {
 		// If URL given, retrieve the contents
 		if (substr($html_or_url, 0, 4) == 'http') {
 			# $html = \winternet\jensenfw2\simple_html_dom::file_get_html($html_or_url);
-			$str_html = $this->fetch_page_oldformat($html_or_url, array(), false, $first_headers);
+			$str_html = $this->fetch_page($html_or_url, array('extraheaders' => $first_headers));
 			$html = \winternet\jensenfw2\simple_html_dom::str_get_html($str_html);
 			$is_url = true;
 		} else {
@@ -339,9 +351,9 @@ class walk_website {
 			$this->debug('FORM Fields Filled Out', print_r($submitfields, true));
 		}
 		if ($method == 'post') {
-			return $this->fetch_page_oldformat($action, $submitfields, false, $second_headers);
+			return $this->fetch_page($action, array('post_variables' => $submitfields, 'extraheaders' => $second_headers));
 		} else {
-			return $this->fetch_page_oldformat($action . (strpos($action, '?') === false ? '?' : '&') . http_build_str($submitfields), array(), false, $second_headers);
+			return $this->fetch_page($action . (strpos($action, '?') === false ? '?' : '&') . http_build_str($submitfields), array('extraheaders' => $second_headers));
 		}
 	}
 

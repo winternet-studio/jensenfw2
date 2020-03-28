@@ -4,6 +4,19 @@ use DMS\PHPUnitExtensions\ArraySubset\Assert;
 use winternet\jensenfw2\walk_website;
 
 final class walk_websiteTest extends TestCase {
+	public function testFetchingPages() {
+		$walk = new walk_website();
+		$response = $walk->fetch_page('https://allanville.com/?echotest=1', [
+			'post_variables' => ['field1' => 'A', 'field2' => 'B'],
+			'extraheaders' => ['X-My-Header' => 'JensenFW2'],
+		]);
+		$responseDecoded = json_decode($response);
+		$this->assertNotEmpty($responseDecoded);
+		$this->assertEquals($responseDecoded->post->field1, 'A');
+		$this->assertEquals($responseDecoded->post->field2, 'B');
+		$this->assertEquals($responseDecoded->headers->{'X-My-Header'}, 'JensenFW2');
+	}
+
 	public function testForms() {
 		$walk = new walk_website();
 		$html_forms = file_get_contents(__DIR__ .'/fixtures/walk_website/forms.htm');
