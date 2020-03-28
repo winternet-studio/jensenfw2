@@ -1,19 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-This was an attribute in <phpunit> tag but since I don't have the file phpunit complained: bootstrap="vendor/autoload.php".
-I see no other project having a vendor folder, usually an autoload.php neither - so how is this suppose to work?
--->
-<phpunit backupGlobals="false"
+<phpunit bootstrap="vendor/autoload.php"
+         backupGlobals="false"
          backupStaticAttributes="false"
          colors="true"
          convertErrorsToExceptions="true"
          convertNoticesToExceptions="true"
          convertWarningsToExceptions="true"
          processIsolation="false"
-         stopOnFailure="false"
-         syntaxCheck="false">
+         stopOnFailure="false">
     <testsuites>
-        <testsuite name="Nacho Test Suite">
+        <testsuite name="JensenFW2 Test Suite">
             <directory suffix=".php">./tests/</directory>
         </testsuite>
     </testsuites>

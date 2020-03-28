@@ -1,10 +1,8 @@
 <?php
-// This next line is not suppose to be here but that was the only way I knew how to run the tests by running the command "phpunit" in the parent directory! (while phpunit is globally installed)
-require_once('src/country_specifics.php');
-
+use PHPUnit\Framework\TestCase;
 use winternet\jensenfw2\country_specifics;
 
-class country_specificsTest extends PHPUnit_Framework_TestCase {
+final class country_specificsTest extends TestCase {
 	public function testValidateZip() {
 		$this->assertTrue(country_specifics::validate_zip('DK', '4690'));
 

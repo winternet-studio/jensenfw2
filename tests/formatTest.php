@@ -1,10 +1,8 @@
 <?php
-// This next line is not suppose to be here but that was the only way I knew how to run the tests by running the command "phpunit" in the parent directory! (while phpunit is globally installed)
-require_once('src/format.php');
-
+use PHPUnit\Framework\TestCase;
 use winternet\jensenfw2\format;
  
-class formatTest extends PHPUnit_Framework_TestCase {
+final class formatTest extends TestCase {
 	public function testExtractTags() {
 		$result = format::extractTags('The {document} is {number} pages long');
 		$expect = '["The ",["document"]," is ",["number"]," pages long"]';
