@@ -290,7 +290,7 @@ class country_specifics {
 	 *   - `US-format` : set to `dotted` to use "###.###.####" or `spaced` to use "### ### ####" instead of the default "###-###-####"
 	 * @return string
 	 */
-	public static function format_phone_num($phone_num, $country, $country_code = null, $options = array()) {
+	public static function format_phone_num($phone_num, $country, $country_code = null, $options = []) {
 		if (is_string($country_code)) $country_code = (int) $country_code;
 
 		if (in_array($country, ['US', 'CA']) || in_array($country_code, [1], true)) {

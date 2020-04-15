@@ -87,8 +87,8 @@ class format {
 	 *   - `separator` : set another separator than `<br>`
 	 *   - `chunks_guarantor` : override the default 20% added to the chunk length to ensure we only end up with the given number of chunks. If words are long we could end up with an extra chunk if this is set too low.
 	 */
-	public static function split_text_into_chunks($text, $number_of_chunks = 2, $options = array() ) {
-		$options = array_merge(array('separator' => '<br>', 'chunks_guarantor' => 20), $options);
+	public static function split_text_into_chunks($text, $number_of_chunks = 2, $options = []) {
+		$options = array_merge(['separator' => '<br>', 'chunks_guarantor' => 20], $options);
 
 		$text_length = mb_strlen($text);
 		$chunk_length = $text_length / $number_of_chunks;
@@ -116,7 +116,7 @@ class format {
 	 *   - `fix_ordinals_numbers` : ensure ordinal numbers like 1st, 2nd, 3rd, 4th keep proper case
 	 * @return string
 	 */
-	public static function strtotitle($text, $options = array() ) {
+	public static function strtotitle($text, $options = []) {
 		if ($options['is_address']) {
 			$options['fix_ordinals_numbers'] = true;
 		}
@@ -222,7 +222,7 @@ class format {
 	 * @param array $strtotitle_options : Options for strtotitle()
 	 * @return string
 	 */
-	public static function fix_wrong_title_case($text, $upper_percentage_low = 20, $upper_percentage_high = 50, $strtotitle_options = array() ) {
+	public static function fix_wrong_title_case($text, $upper_percentage_low = 20, $upper_percentage_high = 50, $strtotitle_options = []) {
 		$upper_percentage = self::uc_percentage($text);
 		if ($upper_percentage >= $upper_percentage_high || $upper_percentage <= $upper_percentage_low) {
 			$text = self::strtotitle($text, (array) $strtotitle_options);
@@ -288,11 +288,11 @@ class format {
 	 * @param string $to   : Kilometers (`km`), meters (`m`), miles (`miles`)
 	 */
 	public static function convert_distance($distance, $from, $to) {
-		$table = array(
+		$table = [
 			'km' => 1,
 			'm' => 1000,
 			'miles' => 0.6214,
-		);
+		];
 		if ($from != 'km') {
 			$dist_km = $distance / $table[$from];
 		} else {
@@ -313,9 +313,9 @@ class format {
 	 * @return string
 	 */
 	public static function replace_accents($text) {
-		$a = array('À', 'Á', 'Â', 'Ã', 'Ä', 'Å', 'Æ',  'Ç', 'È', 'É', 'Ê', 'Ë', 'Ì', 'Í', 'Î', 'Ï', 'Ð', 'Ñ', 'Ò', 'Ó', 'Ô', 'Õ', 'Ö', 'Ø', 'Ù', 'Ú', 'Û', 'Ü', 'Ý', 'ß', 'à', 'á', 'â', 'ã', 'ä', 'å', 'æ',  'ç', 'è', 'é', 'ê', 'ë', 'ì', 'í', 'î', 'ï', 'ñ', 'ò', 'ó', 'ô', 'õ', 'ö', 'ø', 'ù', 'ú', 'û', 'ü', 'ý', 'ÿ', 'Ð', '',  '',  '', '', '', '', '', '');
-		$b = array('A', 'A', 'A', 'A', 'A', 'A', 'AE', 'C', 'E', 'E', 'E', 'E', 'I', 'I', 'I', 'I', 'D', 'N', 'O', 'O', 'O', 'O', 'O', 'O', 'U', 'U', 'U', 'U', 'Y', 's', 'a', 'a', 'a', 'a', 'a', 'a', 'ae', 'c', 'e', 'e', 'e', 'e', 'i', 'i', 'i', 'i', 'n', 'o', 'o', 'o', 'o', 'o', 'o', 'u', 'u', 'u', 'u', 'y', 'y', 'D', 'OE', 'oe', 'S', 's', 'Y', 'Z', 'z', 'f');
-		return str_replace($a, $b, $text); 
+		$a = ['À', 'Á', 'Â', 'Ã', 'Ä', 'Å', 'Æ',  'Ç', 'È', 'É', 'Ê', 'Ë', 'Ì', 'Í', 'Î', 'Ï', 'Ð', 'Ñ', 'Ò', 'Ó', 'Ô', 'Õ', 'Ö', 'Ø', 'Ù', 'Ú', 'Û', 'Ü', 'Ý', 'ß', 'à', 'á', 'â', 'ã', 'ä', 'å', 'æ',  'ç', 'è', 'é', 'ê', 'ë', 'ì', 'í', 'î', 'ï', 'ñ', 'ò', 'ó', 'ô', 'õ', 'ö', 'ø', 'ù', 'ú', 'û', 'ü', 'ý', 'ÿ', 'Ð', '',  '',  '', '', '', '', '', ''];
+		$b = ['A', 'A', 'A', 'A', 'A', 'A', 'AE', 'C', 'E', 'E', 'E', 'E', 'I', 'I', 'I', 'I', 'D', 'N', 'O', 'O', 'O', 'O', 'O', 'O', 'U', 'U', 'U', 'U', 'Y', 's', 'a', 'a', 'a', 'a', 'a', 'a', 'ae', 'c', 'e', 'e', 'e', 'e', 'i', 'i', 'i', 'i', 'n', 'o', 'o', 'o', 'o', 'o', 'o', 'u', 'u', 'u', 'u', 'y', 'y', 'D', 'OE', 'oe', 'S', 's', 'Y', 'Z', 'z', 'f'];
+		return str_replace($a, $b, $text);
 	}
 
 	/**
@@ -330,12 +330,12 @@ class format {
 	 *   - `maintain_case` : set true to not convert entire string to lower case
 	 * @return string
 	 */
-	public static function cleanup_title_url_safe($title, $options = array()) {
-		$output = preg_replace(array('/[^a-zA-Z0-9 -]/'. core::$preg_u, '/[ -]+/'. core::$preg_u, '/^-|-$/'. core::$preg_u), array('', '-', ''), self::replace_accents($title));
+	public static function cleanup_title_url_safe($title, $options = []) {
+		$output = preg_replace(['/[^a-zA-Z0-9 -]/'. core::$preg_u, '/[ -]+/'. core::$preg_u, '/^-|-$/'. core::$preg_u], ['', '-', ''], self::replace_accents($title));
 		if (!$options['maintain_case']) {
 			$output = strtolower($output);
 		}
-		return $output; 
+		return $output;
 	}
 
     /**

@@ -15,7 +15,7 @@ class js {
 	 * @return string
 	 */
 	static public function esc($string) {
-		return strtr((string) $string, array("\r" => '\r', "\n" => '\n', "\t" => '\t', "'" => "\\'", '"' => '\"', '\\' => '\\\\'));
+		return strtr((string) $string, ["\r" => '\r', "\n" => '\n', "\t" => '\t', "'" => "\\'", '"' => '\"', '\\' => '\\\\']);
 	}
 
 	/**
@@ -34,16 +34,16 @@ class js {
 	 *     - if only a local variable is used it will not be possible to change values, will effectively be read-only
 	 * @return string : HTML - a <script> block - or Javascript only if `is_js_context`=`true`
 	 */
-	static public function pass_to_js($array, $options = array() ) {
+	static public function pass_to_js($array, $options = []) {
 		// Provide backward compatibility with when the option was called `storage_var_prefix`
 		if (isset($options['storage_var_prefix'])) {
 			$options['storage_var'] = $options['storage_var_prefix'];
 		}
 
-		$default_options = array(
+		$default_options = [
 			'js_function_name' => 'getphp',
 			'is_js_context' => false,
-		);
+		];
 		$options = array_merge($default_options, (array) $options);
 		if (!isset($options['storage_var'])) {
 			$options['storage_var'] = 'window.jfwJsV'. str_replace('.', '', (string) microtime(true));
@@ -52,7 +52,7 @@ class js {
 		if (!is_array($array)) {
 			core::system_error('Invalid array to pass on to Javascript.');
 		}
-		$a = array();
+		$a = [];
 		foreach ($array as $ref => $value) {
 			if ($value === '_txt') {  //ensure boolean true doesn't match
 				$a[$ref] = core::txt($ref, '#');

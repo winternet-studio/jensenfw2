@@ -36,13 +36,13 @@ class walk_website {
 	public $last_headers;  //property to hold the headers from the latest response
 	public $cookies_set = '';
 	public $debug_path = false;  //property to hold a custom path to where you want to save the debug files (with or without trailing slash)
-	public $defaultheaders = array();
+	public $defaultheaders = [];
 	public $is_debug = 0;  //set to true or 1 to enable debugging, both echoing and saving to file. Set to 'echo' to only output info to screen, or to 'file' to only save to file.
 
 	public $option_ignore_response = false;
 	public $option_throw_exception = false;
 
-	public function __construct($options = array()) {
+	public function __construct($options = []) {
 		$this->ch = curl_init();
 		curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($this->ch, CURLOPT_HEADER, true);
@@ -59,7 +59,7 @@ class walk_website {
 		if (!empty($options['authorization_basic'])) {
 			$authhead = 'Authorization: Basic '. base64_encode($options['authorization_basic']['username'] .':'. $options['authorization_basic']['password']);
 			$this->defaultheaders[] = $authhead;
-			curl_setopt($this->ch, CURLOPT_HTTPHEADER, array($authhead));
+			curl_setopt($this->ch, CURLOPT_HTTPHEADER, [$authhead]);
 		}
 		if ($options['enable_cookies']) {
 			// Set full path
@@ -69,7 +69,7 @@ class walk_website {
 				$this->cookie_file_path = dirname(dirname(__FILE__)) .'/cookiejar.txt';
 			}
 			// Check that cookie file exists and is writable
-			$fp = fopen($this->cookie_file_path, 'a') or core::system_error('Unable to open cookie jar for walking a website.', array('Path' => $this->cookie_file_path));
+			$fp = fopen($this->cookie_file_path, 'a') or core::system_error('Unable to open cookie jar for walking a website.', ['Path' => $this->cookie_file_path]);
 			fclose($fp);
 			curl_setopt($this->ch, CURLOPT_COOKIEFILE, $this->cookie_file_path);
 			curl_setopt($this->ch, CURLOPT_COOKIEJAR, $this->cookie_file_path);
@@ -79,7 +79,7 @@ class walk_website {
 		curl_close($this->ch);
 	}
 
-	protected function fetch_page_oldformat($url, $arr_post_variables = array(), $raw_post = false, $extraheaders = false) {
+	protected function fetch_page_oldformat($url, $arr_post_variables = [], $raw_post = false, $extraheaders = false) {
 		/*
 		DESCRIPTION:
 		- retrieve a page of a URL, optionally POSTing variables to it at the same time
@@ -104,7 +104,7 @@ class walk_website {
 			if (is_array($extraheaders)) {
 				$extraheaders[] = 'Connection: Close';
 			} else {
-				$extraheaders = array('Connection: Close');
+				$extraheaders = ['Connection: Close'];
 			}
 			curl_setopt($this->ch, CURLOPT_TIMEOUT_MS, 1);
 			curl_setopt($this->ch, CURLOPT_HEADER, false);
@@ -112,7 +112,7 @@ class walk_website {
 		if (empty($arr_post_variables)) {
 			curl_setopt($this->ch, CURLOPT_POST, 0);
 			if (is_array($extraheaders)) {
-				curl_setopt($this->ch, CURLOPT_HTTPHEADER, $extraheaders); 
+				curl_setopt($this->ch, CURLOPT_HTTPHEADER, $extraheaders);
 			}
 			if ($this->is_debug && $this->is_debug !== 'file') {
 				$this->debug('>>>>>>>>>>>>>>>>>>>> URL fetched <<<<<<<<<<<<<<<<<<<<', 'GET '. $url);
@@ -122,7 +122,7 @@ class walk_website {
 			if (is_string($arr_post_variables)) {
 				$post_string = $arr_post_variables;
 			} else {
-				$post_string = array();
+				$post_string = [];
 				foreach ($arr_post_variables as $key => $value) {
 					$post_string[] = urlencode($key) .'='. urlencode($value);
 				}
@@ -131,23 +131,23 @@ class walk_website {
 			curl_setopt($this->ch, CURLOPT_POSTFIELDS, $post_string);
 			if ($raw_post && is_string($arr_post_variables)) {
 				if ($raw_post == 'application/json') {
-					$headers = array('Content-Type: application/json; charset=UTF-8');
+					$headers = ['Content-Type: application/json; charset=UTF-8'];
 				} elseif (is_string($raw_post) && strlen($raw_post) > 5) {
-					$headers = array('Content-Type: '. $raw_post);
+					$headers = ['Content-Type: '. $raw_post];
 				} else {
-					$headers = array('Content-Type: text/plain');
+					$headers = ['Content-Type: text/plain'];
 				}
 				if (!empty($this->defaultheaders)) {
 					$headers = array_merge($this->defaultheaders, $headers);
 				}
 			} else {
-				$headers = array();
+				$headers = [];
 			}
 			if (is_array($extraheaders)) {
 				$headers = array_merge($headers, $extraheaders);
 			}
 			if (!empty($headers)) {
-				curl_setopt($this->ch, CURLOPT_HTTPHEADER, $headers); 
+				curl_setopt($this->ch, CURLOPT_HTTPHEADER, $headers);
 			}
 			if ($this->is_debug && $this->is_debug !== 'file') {
 				$this->debug('>>>>>>>>>>>>>>>>>>>> URL fetched <<<<<<<<<<<<<<<<<<<<', 'POST '. $url ."\r\nPOST string: ". $post_string);
@@ -167,12 +167,12 @@ class walk_website {
 			if ($this->option_throw_exception) {
 				throw new \Exception('Request for fetching URL failed.');
 			} else {
-				core::system_error('Request for fetching URL failed.', array('Req.info' => print_r($this->transfer_info, true), 'cURL error' => $this->curl_error, 'cURL error no.' => $this->curl_errno, 'Response body' => $html) );
+				core::system_error('Request for fetching URL failed.', ['Req.info' => print_r($this->transfer_info, true), 'cURL error' => $this->curl_error, 'cURL error no.' => $this->curl_errno, 'Response body' => $html]);
 			}
 		}
 
 		if ($this->is_debug && $this->is_debug !== 'echo') {
-			$log_filename = 'walk_website_dump_'. date('His') .'_'. str_pad(++$GLOBALS['__lskjaoietjslkg'], 3, '0', STR_PAD_LEFT) .'_'. substr(str_replace(array('?', '=', '/', '\\', ':', ';', '|', '&', '+', '%', '*', '#'), '-', basename($url)), 0, 45) .'.html';
+			$log_filename = 'walk_website_dump_'. date('His') .'_'. str_pad(++$GLOBALS['__lskjaoietjslkg'], 3, '0', STR_PAD_LEFT) .'_'. substr(str_replace(['?', '=', '/', '\\', ':', ';', '|', '&', '+', '%', '*', '#'], '-', basename($url)), 0, 45) .'.html';
 			if ($this->debug_path) {
 				file_put_contents($this->debug_path .'/'. $log_filename, $url ."\r\n\r\n". $html);
 			} elseif (function_exists('jfw__core_cfg')) {
@@ -202,7 +202,7 @@ class walk_website {
 		}
 	}
 
-	public function fetch_page($url, $options = array() ) {
+	public function fetch_page($url, $options = []) {
 		/*
 		DESCRIPTION:
 		- retrieve a page of a URL, optionally POSTing variables to it at the same time
@@ -241,7 +241,7 @@ class walk_website {
 		}
 	}
 
-	public function fetch_page_form_fields_and_submit($html_or_url, $form_ref = 1, $arr_set_fields = array(), $arr_set_headers = false, $options = array() ) {
+	public function fetch_page_form_fields_and_submit($html_or_url, $form_ref = 1, $arr_set_fields = [], $arr_set_headers = false, $options = []) {
 		/*
 		DESCRIPTION:
 		- retrieve a page from the web, determine the form fields, set custom values, and then submit the form to the action URL
@@ -293,7 +293,7 @@ class walk_website {
 		// If URL given, retrieve the contents
 		if (substr($html_or_url, 0, 4) == 'http') {
 			# $html = \winternet\jensenfw2\simple_html_dom::file_get_html($html_or_url);
-			$str_html = $this->fetch_page($html_or_url, array('extraheaders' => $first_headers));
+			$str_html = $this->fetch_page($html_or_url, ['extraheaders' => $first_headers]);
 			$html = \winternet\jensenfw2\simple_html_dom::str_get_html($str_html);
 			$is_url = true;
 		} else {
@@ -340,7 +340,7 @@ class walk_website {
 			$slashpos = strrpos($html_or_url, '/');
 			$action = substr($html_or_url, 0, $slashpos+1) . $action;
 			if (substr($action, 0, 4) != 'http') {
-				core::system_error('Missing complete submission/action URL.', array('Action' => $action) );
+				core::system_error('Missing complete submission/action URL.', ['Action' => $action]);
 			}
 		}
 		if ($this->is_debug && $this->is_debug !== 'file') {
@@ -351,9 +351,9 @@ class walk_website {
 			$this->debug('FORM Fields Filled Out', print_r($submitfields, true));
 		}
 		if ($method == 'post') {
-			return $this->fetch_page($action, array('post_variables' => $submitfields, 'extraheaders' => $second_headers));
+			return $this->fetch_page($action, ['post_variables' => $submitfields, 'extraheaders' => $second_headers]);
 		} else {
-			return $this->fetch_page($action . (strpos($action, '?') === false ? '?' : '&') . http_build_str($submitfields), array('extraheaders' => $second_headers));
+			return $this->fetch_page($action . (strpos($action, '?') === false ? '?' : '&') . http_build_str($submitfields), ['extraheaders' => $second_headers]);
 		}
 	}
 
@@ -384,10 +384,10 @@ class walk_website {
 			} elseif (is_numeric($form_ref)) {
 				$form = $html->find('form', $form_ref-1);
 			} else {
-				core::system_error('Invalid form reference for walking the website.', array('Form ref' => $form_ref) );
+				core::system_error('Invalid form reference for walking the website.', ['Form ref' => $form_ref]);
 			}
 			if ($form == null) {
-				core::system_error('The form could not be found.', array('Form ref' => $form_ref) );
+				core::system_error('The form could not be found.', ['Form ref' => $form_ref]);
 			}
 
 			$action = $form->action;
@@ -396,7 +396,7 @@ class walk_website {
 			$method = $action = null;
 		}
 
-		$formfields = array();
+		$formfields = [];
 
 		if ($form_ref === '*') {
 			$search_dom =& $html;
@@ -447,15 +447,15 @@ class walk_website {
 		$html = null;
 
 		if ($form_ref === '*') {
-			return array(
+			return [
 				'formfields' => $formfields,
-			);
+			];
 		} else {
-			return array(
+			return [
 				'action' => $action,
 				'method' => $method,
 				'formfields' => $formfields,
-			);
+			];
 		}
 	}
 
@@ -526,7 +526,7 @@ OLD METHOD where we looked for the existing cookies/headers
 		curl_setopt($this->ch, CURLOPT_ENCODING, '');  //causes Curl to automatically unzip the gzip data
 	}
 
-	public function parse_curl_command($cmd, $options = array()) {
+	public function parse_curl_command($cmd, $options = []) {
 		/*
 		DESCRIPTION:
 		- parse a curl command (as it is copied from Firefox Firebug)
@@ -536,7 +536,7 @@ OLD METHOD where we looked for the existing cookies/headers
 		OUTPUT:
 		- associative array
 		*/
-		$output = array();
+		$output = [];
 
 		// Check for doing POST
 		if (strpos($cmd, ' -X POST') !== false) {
@@ -566,21 +566,21 @@ OLD METHOD where we looked for the existing cookies/headers
 			}
 
 			$output['headers'] = explode(' -H ', $therest);  //TODO: the last one might not only be a header but some other curl options as well. In that case we might want to look for "' -" before we split the string
-			$output['headers_simple'] = array();
+			$output['headers_simple'] = [];
 			array_walk($output['headers'], function(&$item) use (&$output) {
 				$item = trim($item, "'");
 				if (preg_match("|^(.*?):(.*)$|", $item, $match)) {
 					$orig_item = $item;
-					$item = array();
-					$item['_raw'] = array($match[1], trim($match[2]));
+					$item = [];
+					$item['_raw'] = [$match[1], trim($match[2])];
 					if ($match[1] == 'Cookie') {
 						$cookies = explode(';', trim($match[2]));  //TODO: can ; occur in a value???
-						$cookie_array = array();
+						$cookie_array = [];
 						foreach ($cookies as $cookie) {
 							list($cookname, $cookval) = explode('=', $cookie, 2);
-							$cookie_array[] = array(trim($cookname), trim($cookval));
+							$cookie_array[] = [trim($cookname), trim($cookval)];
 						}
-						$item['_parsed'] = array($match[1], $cookie_array);
+						$item['_parsed'] = [$match[1], $cookie_array];
 
 						if ($options['incl_cookie']) {
 							$output['headers_simple'][] = $orig_item;
@@ -603,7 +603,7 @@ OLD METHOD where we looked for the existing cookies/headers
 	}
 
 	public function parse_firebug_post_copy($data) {
-		$output = array();
+		$output = [];
 		$data = trim($data);
 		$lines = explode("\n", $data);
 		foreach ($lines as $line) {

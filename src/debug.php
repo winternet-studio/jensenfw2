@@ -224,7 +224,7 @@ class debug {
 			// TODO: visualize all non-normal characters
 			throw new \Exception('visualize_chars=2 is not yet implemented');
 		} else {
-			return str_replace(array(' ', "\r", "\n", "\t"), array('·', '\r', '\n', '\t'), $string);
+			return str_replace([' ', "\r", "\n", "\t"], ['·', '\r', '\n', '\t'], $string);
 		}
 	}
 }

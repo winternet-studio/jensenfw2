@@ -30,7 +30,7 @@ class aws {
 				return $return;
 			}
 		} else {
-			$md5s = array();
+			$md5s = [];
 			$handle = fopen($filename, 'rb');
 			if ($handle === false) {
 				return false;

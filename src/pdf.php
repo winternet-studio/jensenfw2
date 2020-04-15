@@ -17,8 +17,8 @@ class pdf {
 	 * @param array $options : See below (in the code)
 	 * @return void
 	 */
-	static public function convert_pdf_to_image($pdf_path, $image_path, $options = array() ) {
-		$defaults = array(
+	static public function convert_pdf_to_image($pdf_path, $image_path, $options = []) {
+		$defaults = [
 			'engine' => 'xpdf',  //'xpdf' or 'ghostscript'
 			'output_format' => 'jpg',  //'jpg' or 'png' (xpdf actually only supports png but we use ImageMagick as a fill-in solution)
 			'resolution' => 150,
@@ -30,7 +30,7 @@ class pdf {
 			'use_box' => null,  //crop image to a specific box ('ArtBox', 'TrimBox', 'CropBox')
 			'TextAlphaBits' => 4,  //set these two to 1 to disable anti-aliasing (Ghostscript only)
 			'GraphicsAlphaBits' => 4,  // (Ghostscript only)
-		);
+		];
 		$options = array_merge($defaults, (array) $options);
 
 		if ($options['engine'] === 'xpdf') {
@@ -40,7 +40,7 @@ class pdf {
 			}
 			$cmd .= ' -r '. $options['resolution'];
 			$cmd .= ' '. escapeshellarg($pdf_path) .' '. escapeshellarg($image_path) .' 2>&1';
-			$coutput = array();
+			$coutput = [];
 			exec($cmd, $coutput, $returncode);  //exit codes: https://www.xpdfreader.com/pdftopng-man.html
 
 			if (!empty($coutput)) {
@@ -75,7 +75,7 @@ class pdf {
 			$image_path_safe = escapeshellarg($image_path_safe);
 			$image_path_safe = str_replace('-PERCENTAGE-d', '%d', $image_path_safe);
 			$cmd = $options['ghostscript_path'] .' -q -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT '. $additional_options .' -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 -sDEVICE='. $sdevice .' -dTextAlphaBits='. $options['TextAlphaBits'] .' -dGraphicsAlphaBits='. $options['GraphicsAlphaBits'] .' -r'. $options['resolution'] . ($options['output_format'] == 'jpg' ? ' -dJPEGQ='. $options['jpg_quality'] : '') .' -sOutputFile='. $image_path_safe .' '. escapeshellarg($pdf_path) .' 2>&1';
-			$coutput = array();
+			$coutput = [];
 			exec($cmd, $coutput, $returncode);
 
 			if (!empty($coutput)) {
@@ -94,7 +94,7 @@ class pdf {
 					$options['xpdf_info_path'] = str_replace('pdftopng', 'pdfinfo', $options['xpdf_path']);
 				}
 				$cmd = $options['xpdf_info_path'] .' -box '. escapeshellarg($pdf_path) .' 2>&1';
-				$coutput = array();
+				$coutput = [];
 				exec($cmd, $coutput, $returncode);
 
 				if (empty($coutput)) {
@@ -121,16 +121,16 @@ class pdf {
 				if (!preg_match("/([\\d\\.]+)\\s+([\\d\\.]+)\\s+([\\d\\.]+)\\s+([\\d\\.]+)/", $artbox_info, $artbox_match)) {// NOTE: the format is "llx lly urx ury" according to https://forum.xpdfreader.com/viewtopic.php?f=3&t=41207
 					throw new \Exception('xpdf pdfinfo command for getting PDF boxes failed to parse ArtBox details.');
 				}
-				$pagesize_info = array(
+				$pagesize_info = [
 					'width' => round($pagesize_match[1], 2),
 					'height' => round($pagesize_match[2], 2),
-				);
-				$artbox_info = array(
+				];
+				$artbox_info = [
 					'll_x' => round($artbox_match[1], 2),
 					'll_y' => round($artbox_match[2], 2),
 					'ur_x' => round($artbox_match[3], 2),
 					'ur_y' => round($artbox_match[4], 2),
-				);
+				];
 
 				// Check if ArtBox is different than page size and if so calculate the x and y offset and width and height cropping parameters on the image that will match the ArtBox
 				if ($artbox_info['ll_x'] != 0 || $artbox_info['ll_y'] != 0 || $artbox_info['ur_x'] != $pagesize_info['width'] || $artbox_info['ur_y'] != $pagesize_info['height']) {
@@ -163,7 +163,7 @@ class pdf {
 					$filename_dest = $filename_src;
 				}
 
-				$convert_options = array();
+				$convert_options = [];
 				// Crop the image to the ArtBox
 				if ($crop_to_artbox) {
 					$convert_options[] = '-gravity SouthWest -crop '. $px_width .'x'. $px_height .'+'. $px_ll_x .'+'. $px_ll_y;
@@ -176,7 +176,7 @@ class pdf {
 
 				if (!empty($convert_options)) {
 					$cmd = 'convert '. escapeshellarg($filename_src) .' '. implode(' ', $convert_options) .' '. escapeshellarg($filename_dest) .' 2>&1';
-					$coutput = array();
+					$coutput = [];
 					exec($cmd, $coutput, $returncode);
 
 					if (!empty($coutput)) {

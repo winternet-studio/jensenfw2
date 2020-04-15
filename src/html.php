@@ -15,7 +15,7 @@ class html {
 		$dom->loadHTML($html);
 
 		$element_to_obj = function($element) use (&$element_to_obj) {
-			$obj = array( 'tag' => $element->tagName );
+			$obj = [ 'tag' => $element->tagName ];
 			foreach ($element->attributes as $attribute) {
 				$obj[$attribute->name] = $attribute->value;
 			}
@@ -46,7 +46,7 @@ class html {
 	 *               [code] => 68
 	 *               [column] => 6893
 	 *               [message] => htmlParseEntityRef: no name
-	 *               [file] => 
+	 *               [file] =>
 	 *               [line] => 1
 	 *           )
 	 *       - see also http://php.net/libxml_get_errors
@@ -58,7 +58,7 @@ class html {
 		$options = (array) $options;
 
 		$element_to_obj = function($element) use (&$element_to_obj) {
-			$obj = array( 'tag' => $element->tagName );
+			$obj = [ 'tag' => $element->tagName ];
 			foreach ($element->attributes as $attribute) {
 				$obj[$attribute->name] = $attribute->value;
 			}
@@ -82,13 +82,13 @@ class html {
 			$res = $dom->loadHTML('<?xml encoding="UTF-8">'. $html);
 			// IGNORE ERRORS: see http://stackoverflow.com/a/12328343/2404541 - espacially the comment I upvoted
 			if (is_callable($options['error_callback'])) {
-				$errors = array();
-				foreach (libxml_get_errors() as $error) {  //NOTE: $res doesn't necessarily have to evaluate to false 
+				$errors = [];
+				foreach (libxml_get_errors() as $error) {  //NOTE: $res doesn't necessarily have to evaluate to false
 					$errors[] = $error;
 				}
 				libxml_clear_errors();
 
-				call_user_func($options['error_callback'], array('load_result' => $res, 'errors' => $errors));
+				call_user_func($options['error_callback'], ['load_result' => $res, 'errors' => $errors]);
 			}
 			$obj = $element_to_obj($dom->documentElement);
 			$return = $obj[0]['children'][0][0]['children'][0];
@@ -96,9 +96,9 @@ class html {
 			return $return;
 		};
 
-		$the_output = array();
-		$the_optlist = array();
-		$tag_counter = array();
+		$the_output = [];
+		$the_optlist = [];
+		$tag_counter = [];
 		$output_index = -1;
 
 		$process_array = function($array, &$the_output, &$the_optlist, $level = 0) use (&$process_array, &$output_index, &$options, &$tag_counter) {
@@ -108,7 +108,7 @@ class html {
 					$id = '{'. $a .'}';
 
 					// Look for attributes of this tag
-					$attributes = array();
+					$attributes = [];
 					foreach ($array as $otherkey => $b) {
 						if (is_string($otherkey) && $otherkey !== 'tag') {
 							$attributes[$otherkey] =  $b;
@@ -140,11 +140,11 @@ class html {
 					http://www.htmlhelp.com/reference/html40/block.html
 					https://stackoverflow.com/questions/21840505/td-element-is-a-inline-element-or-block-level-element#21840575
 					*/
-					if (in_array($a, array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'pre', 'blockquote', 'li', 'p', 'nav', 'section', 'table'))) {
+					if (in_array($a, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'pre', 'blockquote', 'li', 'p', 'nav', 'section', 'table'])) {
 						$the_optlist[$id]['tagtype'] = 'block';
-					} elseif (in_array($a, array('ol', 'ul'))) {  //these do cause a new block though but so does <li> - but they don't cause two blocks in their own right, they together cause a block. They are rather "block-with-block-children". Maybe we need a separate array entry for marking that?
+					} elseif (in_array($a, ['ol', 'ul'])) {  //these do cause a new block though but so does <li> - but they don't cause two blocks in their own right, they together cause a block. They are rather "block-with-block-children". Maybe we need a separate array entry for marking that?
 						$the_optlist[$id]['tagtype'] = 'block';
-					} elseif (in_array($a, array('td', 'th', 'thead', 'tbody', 'tfoot'))) {  // I'm not quite sure how to classify these (maybe block-children-of-block?!) so set them to something unspecific until we one day figure out they need a classification
+					} elseif (in_array($a, ['td', 'th', 'thead', 'tbody', 'tfoot'])) {  // I'm not quite sure how to classify these (maybe block-children-of-block?!) so set them to something unspecific until we one day figure out they need a classification
 						$the_optlist[$id]['tagtype'] = '_unknown_';
 					} else {
 						$the_optlist[$id]['tagtype'] = 'inline';
@@ -163,7 +163,7 @@ class html {
 				} elseif (is_numeric($key) && is_string($a)) {
 					$output_index++;
 
-					$the_output[$output_index] = array('text' => $a, 'optlist' => $the_optlist, 'block_started' => false /*default*/);
+					$the_output[$output_index] = ['text' => $a, 'optlist' => $the_optlist, 'block_started' => false /*default*/];
 
 					// Reset just_started for the next use of the contents in $the_optlist (since $the_optlist is reused for next fragment)
 					$the_optlist = array_map(function($item) use (&$the_output, &$output_index) {
@@ -208,7 +208,7 @@ class html {
 	 * @link http://stackoverflow.com/questions/4432334/parse-inline-css-values-with-regex
 	 */
 	public static function parse_style_css($css) {
-		$output = array();
+		$output = [];
 		preg_match_all("/([\w-]+)\s*:\s*([^;]+)\s*;?/", $css, $matches, PREG_SET_ORDER);
 		foreach ($matches as $match) {
 			$output[$match[1]] = $match[2];
@@ -247,12 +247,12 @@ class html {
 			}
 		} else {
 			// single value
-			$output = array(
+			$output = [
 				'top' => $css_value,
 				'left' => $css_value,
 				'bottom' => $css_value,
 				'right' => $css_value,
-			);
+			];
 		}
 		return $output;
 	}

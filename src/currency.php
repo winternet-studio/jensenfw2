@@ -69,7 +69,7 @@ class currency {
 					$exchrate = $from_rate / $to_rate;
 				} else {
 					// One or both currencies were not found, register the problem so that we can be made aware of non-working systems
-					core::system_error('One or both currencies were not found in get_ecb_live_exchange_rate().'.$from_currency.$to_currency, array('From currency' => $from_currency, 'To currency' => $to_currency, 'XML' => $xmlStr), array('xsilent' => true, 'xterminate' => false, 'xsevere' => 'WARNING'));
+					core::system_error('One or both currencies were not found in get_ecb_live_exchange_rate().'.$from_currency.$to_currency, ['From currency' => $from_currency, 'To currency' => $to_currency, 'XML' => $xmlStr], ['xsilent' => true, 'xterminate' => false, 'xsevere' => 'WARNING']);
 					return null;
 				}
 			} catch (\Exception $e) {
@@ -88,7 +88,7 @@ class currency {
 			} else {
 				$current_value = $fallback_rate;
 				// Register the problem so that we can be made aware of non-working systems
-				core::system_error('Failed to obtain exchange rate in get_ecb_live_exchange_rate().', array('XML' => $xmlStr), array('xsilent' => true, 'xterminate' => false, 'xsevere' => 'WARNING'));
+				core::system_error('Failed to obtain exchange rate in get_ecb_live_exchange_rate().', ['XML' => $xmlStr], ['xsilent' => true, 'xterminate' => false, 'xsevere' => 'WARNING']);
 			}
 		}
 		return $current_value;
@@ -103,7 +103,7 @@ class currency {
 	 *     - can also set static property [$conversion_method] to set it once for all calls to this method
 	 * @return float|null
 	 */
-	public static function convert($amount, $from_currency, $to_currency, $options = array()) {
+	public static function convert($amount, $from_currency, $to_currency, $options = []) {
 		if ($options['method'] === 'get_ecb_live_exchange_rate' || static::$conversion_method === 'get_ecb_live_exchange_rate') {
 			$exchrate = static::get_ecb_live_exchange_rate($from_currency, $to_currency, $options['fallback_rate']);
 			if (empty($exchrate)) {

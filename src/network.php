@@ -6,7 +6,7 @@ namespace winternet\jensenfw2;
 
 class network {
 	public static function class_defaults() {
-		$cfg = array();
+		$cfg = [];
 
 		$corecfg = core::get_class_defaults('core');
 		$cfg['limit_ip_access_db_name'] = $corecfg['databases'][0]['db_name'];
@@ -53,7 +53,7 @@ class network {
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $post_string);  //NOTE from PHP manual: Passing an array to CURLOPT_POSTFIELDS will encode the data as multipart/form-data, while passing a URL-encoded string will encode the data as application/x-www-form-urlencoded.
 			//Further notes: on the other end use file_get_contents('php://input') to retrieve the POSTed data ($HTTP_RAW_POST_DATA many times does not work due to some php.ini settings) (php://input does not work with enctype="multipart/form-data"! Source: http://www.codediesel.com/php/reading-raw-post-data-in-php/)
 		if ($options['raw_post']) {
-			curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: text/plain'));
+			curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: text/plain']);
 		}
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 
@@ -231,7 +231,7 @@ class network {
 			// Stop any further script execution
 			exit;
 		} else {
-			core::system_error('File does not exist, cannot serve you the file.', array('File' => $file) );
+			core::system_error('File does not exist, cannot serve you the file.', ['File' => $file]);
 		}
 	}
 
@@ -246,7 +246,7 @@ class network {
 	 */
 	public static function serverside_redirect($url, $http_response_code = null) {
 		if (!preg_match("|^[a-z0-9\\-\\._~:\\/\\?#\\[\\]@\\!\\$&'\\(\\)\\*\\+,;=%]+$|i", $url)) {
-			core::system_error('Invalid address to redirect to.', array('URL' => $url));
+			core::system_error('Invalid address to redirect to.', ['URL' => $url]);
 		}
 		if (ob_get_length()) {
 			ob_end_clean();
@@ -345,8 +345,8 @@ class network {
 	 * @return void : It only manipulates the current content of the output buffer
 	 */
 	public static function html_body_add_attribute($name, $value, $conflictmode = 'append_semicolon') {
-		if (!in_array($conflictmode, array('overwrite', 'append', 'append_semicolon'))) {
-			core::system_error('Configuration error. Invalid conflict mode for appending attribute to body tag.', array('Conflict mode' => $conflictmode) );
+		if (!in_array($conflictmode, ['overwrite', 'append', 'append_semicolon'])) {
+			core::system_error('Configuration error. Invalid conflict mode for appending attribute to body tag.', ['Conflict mode' => $conflictmode]);
 		}
 
 		$buf = ob_get_contents();
@@ -371,11 +371,11 @@ class network {
 		#$buf .= htmlentities($curr_tag);
 
 		// Get any existing attributes (by parsing the string like an XML document!)
-		$arr_attributes = array();
+		$arr_attributes = [];
 		try {
 			$xml = @new SimpleXMLElement($curr_tag .'</body>');
 		} catch (Exception $e) {
-			core::system_error('Body tag could not be parsed correctly for adding attribute.', array('Body tag' => $curr_tag, 'Parse error' => $e->getMessage() ) );
+			core::system_error('Body tag could not be parsed correctly for adding attribute.', ['Body tag' => $curr_tag, 'Parse error' => $e->getMessage() ]);
 		}
 		foreach ($xml->attributes() as $c_key => $c_value) {
 			$c_key = strtolower($c_key);
@@ -502,7 +502,7 @@ class network {
 			core::system_error('Invalid time period for IP address limitation.');
 		}
 		$timeperiod_unit = strtoupper($timeperiod_unit);
-		if (!in_array($timeperiod_unit, array('SECOND', 'MINUTE', 'HOUR', 'DAY', 'WEEK', 'MONTH', 'QUARTER', 'YEAR'))) {
+		if (!in_array($timeperiod_unit, ['SECOND', 'MINUTE', 'HOUR', 'DAY', 'WEEK', 'MONTH', 'QUARTER', 'YEAR'])) {
 			core::system_error('Invalid unit for IP address limitation.');
 		}
 		if (!is_numeric($allowed_hits)) {
@@ -545,7 +545,7 @@ class network {
 			if ($options['return_status']) {
 				return 'prohibit';
 			} else {
-				core::system_error($err_msg, array('Resource' => $resource_id, 'Variation key' => $options['variation_key'], 'Time period' => $timeperiod .' '. $timeperiod_unit, 'Allowed hits' => $allowed_hits, 'Actual hits' => $actual_hits) );
+				core::system_error($err_msg, ['Resource' => $resource_id, 'Variation key' => $options['variation_key'], 'Time period' => $timeperiod .' '. $timeperiod_unit, 'Allowed hits' => $allowed_hits, 'Actual hits' => $actual_hits]);
 			}
 		}
 

@@ -6,7 +6,7 @@ namespace winternet\jensenfw2;
 
 class mail {
 	public static function class_defaults() {
-		$cfg = array();
+		$cfg = [];
 
 		$cfg['bounce_addr'] = false;
 		$cfg['enforce_sender_as_replyto'] = false;  //Instead of setting the provided sender address as the actual sender, use this the address instead and set the provided sender address as Reply-To. This is good email practice because of spam blocking/protection systems.
@@ -55,7 +55,7 @@ class mail {
 		return $cfg;
 	}
 
-	public static function send_email($fromemail, $fromname, $to, $fsubj, $femailbody, $htmlbody = false, $options = array() ) {
+	public static function send_email($fromemail, $fromname, $to, $fsubj, $femailbody, $htmlbody = false, $options = []) {
 		/*
 		DESCRIPTION:
 		- send emails, including file attachments
@@ -105,22 +105,22 @@ class mail {
 			- 'enable_debugging' : set to true to echo debugging info
 		*/
 		// Check arguments
-		if (empty($options)) $options = array();
+		if (empty($options)) $options = [];
 		if (!is_array($options)) {
-			core::system_error('Invalid options for sending email.', array('Options' => $options) );
+			core::system_error('Invalid options for sending email.', ['Options' => $options]);
 		}
 		// Determine options/flags
 		if (!is_array($options['attach_files']) && !empty($options['attach_files'])) {
-			core::system_error('Invalid parameter with files to attach when sending email.', array('Attach files' => $options['attach_files']) );
+			core::system_error('Invalid parameter with files to attach when sending email.', ['Attach files' => $options['attach_files']]);
 		}
 		if (!is_array($options['attach_files'])) {
-			$options['attach_files'] = array();
+			$options['attach_files'] = [];
 		}
 		if (!is_array($options['extra_headers']) && !empty($options['extra_headers'])) {
-			core::system_error('Invalid parameter with extra headers for sending email.', array('Extra headers' => $options['extra_headers']) );
+			core::system_error('Invalid parameter with extra headers for sending email.', ['Extra headers' => $options['extra_headers']]);
 		}
 		if (!is_array($options['extra_headers'])) {
-			$options['extra_headers'] = array();
+			$options['extra_headers'] = [];
 		}
 		// Prohibit exploits attempting header injection
 		if (strpos($fromemail, "\n") !== false) {
@@ -152,7 +152,7 @@ class mail {
 			}
 			if ($to['multiple']) {
 				// Multiple To-addresses have been specified
-				$arr_recipients = $arr_recipients_log = array();
+				$arr_recipients = $arr_recipients_log = [];
 				foreach ($to['multiple'] as $curr_recip) {
 					if ($curr_recip['email'] && $curr_recip['name']) {
 						if (strpos($curr_recip['email'], "\n") !== false || strpos($curr_recip['name'], "\n") !== false) {  // Prohibit exploits attempting header injection
@@ -163,14 +163,14 @@ class mail {
 						} else {
 							$arr_recipients[] = '"'. str_replace('"', '', $curr_recip['name']) .'" <'. $curr_recip['email'] .'>';
 						}
-						$arr_recipients_log[] = array($curr_recip['email'] => $curr_recip['name']);
+						$arr_recipients_log[] = [$curr_recip['email'] => $curr_recip['name']];
 					} elseif ($curr_recip['email']) {
 						if (strpos($curr_recip['email'], "\n") !== false) {  // Prohibit exploits attempting header injection
 							core::system_error('An invalid recipient email address was found when trying to send email.');
 						}
 						$arr_recipients[] = $curr_recip['email'];
 					} else {
-						core::system_error('Email address for a recipient was not specified when trying to send email.', array('Recips' => print_r($to, true)) );
+						core::system_error('Email address for a recipient was not specified when trying to send email.', ['Recips' => print_r($to, true) ]);
 					}
 					if ($cfg['use_mailer'] != 'swiftmailer') {
 						$recipient = implode(', ', $arr_recipients);
@@ -180,8 +180,8 @@ class mail {
 				if (strpos($to[0], "\n") !== false || strpos($to[1], "\n") !== false) {  // Prohibit exploits attempting header injection
 					core::system_error('Invalid recipient for sending email.');
 				}
-				$arr_recipients = array($to[1] => $to[0]);
-				$arr_recipients_log = array($arr_recipients);  //to unify the format
+				$arr_recipients = [$to[1] => $to[0]];
+				$arr_recipients_log = [$arr_recipients];  //to unify the format
 				if ($cfg['use_mailer'] != 'swiftmailer') {
 					$recipient = '"'. str_replace('"', '', $to[0]) .'" <'. $to[1] .'>';
 				}
@@ -193,7 +193,7 @@ class mail {
 			if (strpos($to, "\n") !== false) {  // Prohibit exploits attempting header injection
 				core::system_error('Invalid recipient address for sending email.');
 			}
-			$arr_recipients = array($to);
+			$arr_recipients = [$to];
 			if (!$cfg['use_mailer'] == 'swiftmailer') {
 				$recipient = $to;
 			}
@@ -247,7 +247,7 @@ class mail {
 				// Create message
 				$message = \Swift_Message::newInstance();
 				$message->setSubject($fsubj);
-				$message->setFrom(array($fromemail => $fromname));
+				$message->setFrom([$fromemail => $fromname]);
 				$message->setTo($arr_recipients);
 				if ($bounce_email_addr && $options['bounce_to_sender'] !== 'SKIP' && $cfg['bounce_addr'] !== 'SKIP') {
 					$message->setReturnPath($bounce_email_addr);
@@ -266,7 +266,7 @@ class mail {
 						//assuming array
 						$message->setCc($options['cc']);
 						//string is used later:
-						$str_cc = array();
+						$str_cc = [];
 						foreach ($options['cc'] as $c_key => $c_value) {
 							if (is_numeric($c_key)) {
 								$str_cc[] = $c_value;
@@ -288,7 +288,7 @@ class mail {
 						//assuming array
 						$message->setBcc($options['bcc']);
 						//string is used later:
-						$str_bcc = array();
+						$str_bcc = [];
 						foreach ($options['bcc'] as $c_key => $c_value) {
 							if (is_numeric($c_key)) {
 								$str_bcc[] = $c_value;
@@ -301,12 +301,12 @@ class mail {
 				}
 
 				// Attach files
-				$eff_attached_files = array();
+				$eff_attached_files = [];
 				if (count($options['attach_files']) > 0) {
 					foreach ($options['attach_files'] as $attmfile) {
 						if (is_array($attmfile) && array_key_exists('filename', $attmfile) && array_key_exists('content', $attmfile)) {
 							if (!$attmfile['filename']) {
-								core::system_error('Missing file name for inline attached file.', array('File' => print_r($attmfile, true) ) );
+								core::system_error('Missing file name for inline attached file.', ['File' => print_r($attmfile, true) ]);
 							}
 							$message->attach(\Swift_Attachment::newInstance($attmfile['content'], $attmfile['filename']));
 							$eff_attached_files[] = $attmfile['filename'];
@@ -336,7 +336,7 @@ class mail {
 					// SAME CODE AS BELOW
 					if (!$femailbody) {
 						$femailbody = $htmlbody;
-						$femailbody = str_replace(array("\t", "\r"), array('', ''), $femailbody);
+						$femailbody = str_replace(["\t", "\r"], ['', ''], $femailbody);
 						$femailbody = preg_replace('|<head.*/head>|is'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), '', $femailbody);
 						$femailbody = html_entity_decode($femailbody);
 						$femailbody = str_replace(chr(160), ' ', $femailbody);  //convert nbsp to normal
@@ -350,7 +350,7 @@ class mail {
 						$femailbody = str_ireplace('</div>', "\n\n", $femailbody);
 						$femailbody = preg_replace('|<a.*href=["\'](.*)["\'].*>(.*)</a>|U'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), '$2 [[[$1]]]', $femailbody);  //extract links
 						$femailbody = strip_tags($femailbody);
-						$femailbody = str_replace(array('[[[', ']]]'), array('<', '>'), $femailbody);  //for links
+						$femailbody = str_replace(['[[[', ']]]'], ['<', '>'], $femailbody);  //for links
 						$femailbody = preg_replace("/^[ |\t]+|[ |\t]+$/m".(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), "", $femailbody);  //trim whitespace (and |) at the start and the end of each line
 						while (strpos($femailbody, "\n\n\n") !== false) {
 							$femailbody = str_replace("\n\n\n", "\n\n", $femailbody);  //remove unnecessary line-breaks
@@ -422,9 +422,9 @@ class mail {
 						file_put_contents($cfg['swift_fail_log'], $log, FILE_APPEND);
 					}
 					if ($cfg['call_url_on_error']) {
-						network::get_url_post($cfg['call_url_on_error'], array('mailsubj' => 'Email error at '. $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'], 'mailbody' => $log) );
+						network::get_url_post($cfg['call_url_on_error'], ['mailsubj' => 'Email error at '. $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'], 'mailbody' => $log]);
 					}
-					core::system_error('Sorry, an error occured while trying to send the email.', array('Exception msg' => $mailexception, 'Failed recips' => print_r($failed_recips, true)), array('xnotify' => false) );  //avoid endless loop
+					core::system_error('Sorry, an error occured while trying to send the email.', ['Exception msg' => $mailexception, 'Failed recips' => print_r($failed_recips, true)], ['xnotify' => false]);  //avoid endless loop
 				}
 
 				unset($mailer);
@@ -449,7 +449,7 @@ class mail {
 						// SAME CODE AS ABOVE
 						if (!$femailbody) {
 							$femailbody = $htmlbody;
-							$femailbody = str_replace(array("\t", "\r"), array('', ''), $femailbody);
+							$femailbody = str_replace(["\t", "\r"], ['', ''], $femailbody);
 							$femailbody = preg_replace('|<head.*/head>|is'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), '', $femailbody);
 							$femailbody = html_entity_decode($femailbody);
 							$femailbody = str_replace(chr(160), ' ', $femailbody);  //convert nbsp to normal
@@ -463,7 +463,7 @@ class mail {
 							$femailbody = str_ireplace('</div>', "\n\n", $femailbody);
 							$femailbody = preg_replace('|<a.*href=["\'](.*)["\'].*>(.*)</a>|U'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), '$2 [[[$1]]]', $femailbody);  //extract links
 							$femailbody = strip_tags($femailbody);
-							$femailbody = str_replace(array('[[[', ']]]'), array('<', '>'), $femailbody);  //for links
+							$femailbody = str_replace(['[[[', ']]]'], ['<', '>'], $femailbody);  //for links
 							$femailbody = preg_replace("/^[ |\t]+|[ |\t]+$/m".(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), "", $femailbody);  //trim whitespace (and |) at the start and the end of each line
 							while (strpos($femailbody, "\n\n\n") !== false) {
 								$femailbody = str_replace("\n\n\n", "\n\n", $femailbody);  //remove unnecessary line-breaks
@@ -492,7 +492,7 @@ class mail {
 						$headers .= 'Cc: '. $options['cc'] ."\r\n";
 						$str_cc =& $options['cc'];
 					} else {
-						$str_cc = array();
+						$str_cc = [];
 						foreach ($options['cc'] as $ckey => $cvalue) {
 							if (is_numeric($ckey)) {
 								$str_cc[] = $cvalue;
@@ -511,7 +511,7 @@ class mail {
 						$headers .= 'Bcc: '. $options['bcc'] ."\r\n";
 						$str_bcc =& $options['bcc'];
 					} else {
-						$str_bcc = array();
+						$str_bcc = [];
 						foreach ($options['bcc'] as $ckey => $cvalue) {
 							if (is_numeric($ckey)) {
 								$str_bcc[] = $cvalue;
@@ -540,14 +540,14 @@ class mail {
 					$headers .= 'Content-Type: multipart/mixed; boundary="'. $outerbound ."\"\r\n"; // Mime type
 					#DOES LINE BREAK MAKE BETTER COMPATIBILITY? If so we should change to this style in all Content-Type and Content-Dispostion lines (using \r\n\t): $headers .= "Content-Type: multipart/mixed;\r\n\tboundary=\"". $outerbound ."\"\r\n"; // Mime type
 					// First attach files (if any errors occur we can write that in the message)
-					$eff_attached_files = array();
+					$eff_attached_files = [];
 					if (count($options['attach_files']) > 0) {
 						$body_files = '';
 						$file_not_found = false;
 						foreach ($options['attach_files'] as $attmfile) {
 							if (is_array($attmfile) && isset($attmfile['filename']) && isset($attmfile['content'])) {
 								if (!$attmfile['filename']) {
-									core::system_error('Missing file name for inline attached file.', array('File' => print_r($attmfile, true) ) );
+									core::system_error('Missing file name for inline attached file.', ['File' => print_r($attmfile, true) ]);
 								}
 								$filecontent = $attmfile['content'];
 								$filename = $attmfile['filename'];
@@ -845,10 +845,10 @@ class mail {
 			]);
 		}
 
-		$result = array(
+		$result = [
 			'success_recip_count' => $success_recip_count,  //only when Swift Mailer is used
 			'emaillog_rawID' => $emaillog_rawID,
-		);
+		];
 		return $result;
 	}
 
@@ -880,7 +880,7 @@ class mail {
 			$filename_only = basename($templatefile);
 			$filearray = file($templatefile);
 			if ($filearray) {
-				core::system_error("Configuration error. Could not open mail template.", array('File' => $templatefile), array('xterminate' => false, 'xnotify' => 'developer'));
+				core::system_error("Configuration error. Could not open mail template.", ['File' => $templatefile], ['xterminate' => false, 'xnotify' => 'developer']);
 			}
 		} else {
 			//templatefile is the content itself
@@ -893,7 +893,7 @@ class mail {
 			}
 		}
 
-		$default_mailtags = core::run_hooks('jfw.default_mail_tags', array(), $mailtags, $templatefile);
+		$default_mailtags = core::run_hooks('jfw.default_mail_tags', [], $mailtags, $templatefile);
 		$mailtags = array_merge($default_mailtags, $mailtags);
 
 		// Divide into subject and body
@@ -923,11 +923,11 @@ class mail {
 					$body .= ucfirst(str_replace('_', ' ', $key)) .': '. $value;
 				}
 			}
-			core::system_error('Content of email template file could not be located. This could be a derived error (check the number below).', array('File (name only)' => $filename_only), array('xterminate' => false, 'xnotify' => 'developer'));
+			core::system_error('Content of email template file could not be located. This could be a derived error (check the number below).', ['File (name only)' => $filename_only], ['xterminate' => false, 'xnotify' => 'developer']);
 		}
 
 		// Return an array holdning body and subject in two different elements
-		return array($subject, $body);
+		return [$subject, $body];
 	}
 
 	public static function parse_list_of_emails($string, $fail_on_invalid = false) {
@@ -943,7 +943,7 @@ class mail {
 		- if invalid : false (only if $fail_on_invalid=true)
 		- empty string always causes an empty array returned
 		*/
-		$arr_addresses = array();
+		$arr_addresses = [];
 		$string = trim(str_replace(';', ',', $string));
 		if (!$string) return $arr_addresses;
 		$array = imap_rfc822_parse_adrlist($string, '');
@@ -957,10 +957,10 @@ class mail {
 						continue;
 					}
 				} else {
-					$arr_addresses[] = array(
+					$arr_addresses[] = [
 						'name' => $a->personal,
 						'email' => $a->mailbox .'@'. $a->host
-					);
+					];
 				}
 			}
 		} elseif (!$fail_on_invalid) {
@@ -969,10 +969,10 @@ class mail {
 			$result = preg_match_all($regex_email, $string, $matches);
 			if (!empty($result)) {
 				foreach ($matches[0] as $m) {
-					$arr_addresses[] = array(
+					$arr_addresses[] = [
 						'name' => '',
 						'email' => $m
-					);
+					];
 				}
 			}
 		}
@@ -1002,7 +1002,7 @@ class mail {
 		*/
 		switch ($options['mode']) {
 		case 'plaintext':
-			return str_replace(array('@', '.'), array(' at ', ' dot '), $email);
+			return str_replace(['@', '.'], [' at ', ' dot '], $email);
 			break;
 		default:
 			list($part1, $part2) = explode('@', $email);
@@ -1114,14 +1114,14 @@ class mail {
 		$sql .= "eml_subj = :subj, ";
 		$sql .= "eml_raw = :raw, ";
 		$sql .= "eml_send_status = :status ";
-		$sql_vars = array(
+		$sql_vars = [
 			'from' => mb_substr($data['from'], 0, 255),
 			'to' => mb_substr($data['to'], 0, 255),
 			'subj' => mb_substr($data['subject'], 0, 255),
 			'raw' => preg_replace('/(?<!\\r)\\n/'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), "\r\n", mb_substr($data['body'], 0, 65535)),  //enforce \r\n
 			'status' => (array_key_exists('send_status', $data) ? mb_substr($data['send_status'], 0, 255) : null),
 			'id' => (array_key_exists('intervowen_id', $data) ? mb_substr($data['intervowen_id'], 0, 255) : null),
-		);
+		];
 
 		if (@constant('YII_BEGIN_TIME')) {
 			// Using Yii framework
@@ -1132,7 +1132,7 @@ class mail {
 			core::require_database($cfg['db_server_id']);
 			$sql = str_replace(':', '?', $sql);
 			$sql = core::prepare_sql($sql, $sql_vars);
-			$emaillog_rawID = core::database_result(array('server_id' => $cfg['db_server_id'], $sql), false, 'Database query for logging email to database failed.');
+			$emaillog_rawID = core::database_result(['server_id' => $cfg['db_server_id'], $sql], false, 'Database query for logging email to database failed.');
 		}
 
 		if ($cfg['purge_database_log_after'] && !$_SESSION['_purged_db_maillog_now']) {
@@ -1143,7 +1143,7 @@ class mail {
 					\Yii::$app->session->set('_purged_db_maillog_now', true);
 				}
 			} else {
-				core::database_result(array('server_id' => $cfg['db_server_id'], $purgeSQL), false, 'Database query for purging raw database mail log failed.');
+				core::database_result(['server_id' => $cfg['db_server_id'], $purgeSQL], false, 'Database query for purging raw database mail log failed.');
 				$_SESSION['_purged_db_maillog_now'] = true;
 			}
 		}
@@ -1179,13 +1179,13 @@ class mail {
 			core::system_error('Cannot find From when resending email.');
 		}
 		$to = json_decode($e['eml_to'], true);
-		$recipients = array('multiple' => array());
+		$recipients = ['multiple' => []];
 		foreach ($to as $t) {
 			if (is_string($t)) {
-				$recipients['multiple'][] = array('email' => $t);
+				$recipients['multiple'][] = ['email' => $t];
 			} else {
 				$em = key($t);
-				$recipients['multiple'][] = array('email' => $em, 'name' => $t[$em]);
+				$recipients['multiple'][] = ['email' => $em, 'name' => $t[$em]];
 			}
 		}
 		if (preg_match("|CC  : (.+)|", $e['eml_raw'], $cc)) {
@@ -1232,7 +1232,7 @@ class mail {
 			}
 		}
 
-		$options = array();
+		$options = [];
 		if ($cc) {
 			$options['cc'] = $cc;
 		}
@@ -1243,7 +1243,7 @@ class mail {
 			$options['reply_to'] = $replyto[1];
 		}
 		if ($attachment) {
-			$options['attach_files'] = array($attachment);
+			$options['attach_files'] = [$attachment];
 		}
 
 		$result = self::send_email($fromaddr, $fromname, $recipients, $e['eml_subj'], $bodyplain, $bodyhtml, $options);
@@ -1267,9 +1267,9 @@ class mail {
 		} else {
 			core::system_error('Body not found in raw email.');
 		}
-		return array(
+		return [
 			'plain' => $bodyplain,
 			'html' => $bodyhtml,
-		);
+		];
 	}
 }

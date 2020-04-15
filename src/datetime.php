@@ -21,7 +21,7 @@ class datetime {
 	 */
 	public static function format_datetime_local($format, $date_unix) {
 		$output = $format;
-		$working = array('a', 'A', 'B', 'c', 'C', 'd', 'D', 'g', 'h', 'H', 'I', 'j', 'm', 'n', 'p', 'r', 'R', 'S', 't', 'T', 'u', 'U', 'V', 'W', 'w', 'x', 'X', 'y', 'Y', 'Z');
+		$working = ['a', 'A', 'B', 'c', 'C', 'd', 'D', 'g', 'h', 'H', 'I', 'j', 'm', 'n', 'p', 'r', 'R', 'S', 't', 'T', 'u', 'U', 'V', 'W', 'w', 'x', 'X', 'y', 'Y', 'Z'];
 		// Do all the working values
 		foreach ($working as $c) {
 			$output = str_replace('%'.$c, strftime('%'.$c, $date_unix), $output);
@@ -84,7 +84,7 @@ class datetime {
 		- or if conversion fails and $returnonfail is set, it's value is returned
 		*/
 		if ($datetime) {
-			$output = array();
+			$output = [];
 			$datetime = trim($datetime);
 			if ($returnonfail) {
 				$skipfail = true;
@@ -105,7 +105,7 @@ class datetime {
 					if ($skipfail) {
 						return $returnonfail;
 					} else {
-						core::system_error('Invalid date/time to convert to MySQL format.', array('Value' => $datetime) );
+						core::system_error('Invalid date/time to convert to MySQL format.', ['Value' => $datetime]);
 					}
 				} else {
 					$date = $parts[0]; $time = $parts[1];
@@ -128,7 +128,7 @@ class datetime {
 					if ($skipfail) {
 						return $returnonfail;
 					} else {
-						core::system_error('Could not determine if value was a date or a time.', array('Value' => $datetime) );
+						core::system_error('Could not determine if value was a date or a time.', ['Value' => $datetime]);
 					}
 				}
 				switch ($iswhat) {
@@ -156,7 +156,7 @@ class datetime {
 					if ($skipfail) {
 						return $returnonfail;
 					} else {
-						core::system_error('Invalid date format for converting to MySQL format.', array('Dateformat' => $dateformat) );
+						core::system_error('Invalid date format for converting to MySQL format.', ['Dateformat' => $dateformat]);
 					}
 				}
 			}
@@ -185,7 +185,7 @@ class datetime {
 					if ($skipfail) {
 						return $returnonfail;
 					} else {
-						core::system_error('Invalid time format for converting to MySQL format.', array('Timeformat' => $timeformat) );
+						core::system_error('Invalid time format for converting to MySQL format.', ['Timeformat' => $timeformat]);
 					}
 				}
 			}
@@ -241,7 +241,7 @@ class datetime {
 			$newtime = mktime(date("G",$time), date("i",$time), date("s",$time), date("m",$time), date("d",$time), date("Y",$time) + $adjust_by);
 			break;
 		default:
-			core::system_error('Configuration error. Interval not defined.', array('Function' => 'time_add()', 'Interval' => $interval));
+			core::system_error('Configuration error. Interval not defined.', ['Function' => 'time_add()', 'Interval' => $interval]);
 		}
 		return $newtime;
 	}
@@ -414,13 +414,13 @@ class datetime {
 		}
 		if (substr($fulltext, strlen($fulltext)-2, 2) == ', ') $fulltext = substr($fulltext, 0, strlen($fulltext)-2);  //remove trailing comma and space if exists
 		$fulltext = trim($fulltext);
-		return array(
+		return [
 			'days' => $days,
 			'hours' => $hours,
 			'mins' => $mins,
 			'secs' => $secs,
 			'fulltext' => $fulltext
-		);
+		];
 	}
 
 	public static function time_period_single_unit($time, $unit_names = 'short', $decimals = 0, $include_weeks = false) {
@@ -475,7 +475,7 @@ class datetime {
 			$spacing = ' ';
 			break;
 		default:
-			core::system_error('Configuration error. Unit format not defined.', array('Unit name' => $unit_names) );
+			core::system_error('Configuration error. Unit format not defined.', ['Unit name' => $unit_names]);
 		}
 		//calculate the time in the different units
 		$times['seconds']  = $time;
@@ -533,7 +533,7 @@ class datetime {
 		if (!is_numeric($no_of_units)) {
 			core::system_error('Invalid number of units for writing a time period.');
 		}
-		$output = array();
+		$output = [];
 		$allunits = time_period_all_units($time, false);
 		$textparts = explode(',', $allunits['fulltext']);
 		$textparts_count = count($textparts);
@@ -608,7 +608,7 @@ class datetime {
 			$frommonth = $fromdate->format('F');
 			$tomonth = $todate->format('F');
 		} elseif ($options['always_abbrev_months']) {
-			$shortmonths = array(3, 4, 5, 6, 7);
+			$shortmonths = [3, 4, 5, 6, 7];
 			if (in_array($fromdate->format('n'), $shortmonths)) {
 				$frommonth = $fromdate->format('F');
 			} else {
@@ -742,7 +742,7 @@ class datetime {
 	}
 
 	public static function scripttimer_start() {
-		self::$scripttimer_start = microtime(true); 
+		self::$scripttimer_start = microtime(true);
 		return self::$scripttimer_start;
 	}
 	public static function scripttimer_meantime($writetext = false) {
@@ -755,7 +755,7 @@ class datetime {
 			}
 			return;
 		}
-		$scripttimer_meantime = microtime(true); 
+		$scripttimer_meantime = microtime(true);
 		$duration = number_format($scripttimer_meantime - self::$scripttimer_start, 3);
 		if ($writetext) {
 			$backtrace = debug_backtrace();
@@ -779,7 +779,7 @@ class datetime {
 			}
 			return null;
 		}
-		$scripttimer_end = microtime(true); 
+		$scripttimer_end = microtime(true);
 		$duration = number_format($scripttimer_end - self::$scripttimer_start, 3);
 		if ($writetext) {
 			$backtrace = debug_backtrace();

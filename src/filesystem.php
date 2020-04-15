@@ -142,7 +142,7 @@ class filesystem {
 			// Check existence of destination folder
 			$new_filepath_info = pathinfo($new_filepath);
 			if (!is_dir($new_filepath_info['dirname'])) {
-				$err_msg_var = array('code' => 'dest_folder_nonexist', 'desc' => 'Destination folder to move file to does not exist.');
+				$err_msg_var = ['code' => 'dest_folder_nonexist', 'desc' => 'Destination folder to move file to does not exist.'];
 				return false;
 			}
 			if (file_exists($new_filepath)) {
@@ -154,28 +154,28 @@ class filesystem {
 						if (unlink($old_filepath)) {
 							return true;
 						} else {
-							$err_msg_var = array('code' => 'unlink_returned_false', 'desc' => 'File was copied to new name but old file could not be deleted for unknown reason.');
+							$err_msg_var = ['code' => 'unlink_returned_false', 'desc' => 'File was copied to new name but old file could not be deleted for unknown reason.'];
 							return false;
 						}
 					} else {
-						$err_msg_var = array('code' => 'copy_returned_false', 'desc' => 'File could not be renamed/moved (using copy) for unknown reason.');
+						$err_msg_var = ['code' => 'copy_returned_false', 'desc' => 'File could not be renamed/moved (using copy) for unknown reason.'];
 						return false;
 					}
 				} else {
 					//Overwrite is NOT allowed
-					$err_msg_var = array('code' => 'dest_file_exist', 'desc' => 'File could not be renamed/moved because destination file already exists.');
+					$err_msg_var = ['code' => 'dest_file_exist', 'desc' => 'File could not be renamed/moved because destination file already exists.'];
 					return false;
 				}
 			} else {
 				if (rename($old_filepath, $new_filepath)) {
 					return true;
 				} else {
-					$err_msg_var = array('code' => 'rename_returned_false', 'desc' => 'File could not be renamed/moved for unknown reason.');
+					$err_msg_var = ['code' => 'rename_returned_false', 'desc' => 'File could not be renamed/moved for unknown reason.'];
 					return false;
 				}
 			}
 		} else {
-			$err_msg_var = array('code' => 'src_file_nonexist', 'desc' => 'File to rename/move does not exist.');
+			$err_msg_var = ['code' => 'src_file_nonexist', 'desc' => 'File to rename/move does not exist.'];
 			return false;
 		}
 	}
@@ -226,11 +226,11 @@ class filesystem {
 					if (self::rename_move_file($location, $dest_filepath, $move_errmsg)) {
 						return true;
 					} else {
-						$err_msg_var = array('code' => 'move_to_trash_failed', 'desc' => 'File could not be deleted to trashcan.', 'parent_error' => $move_errmsg);
+						$err_msg_var = ['code' => 'move_to_trash_failed', 'desc' => 'File could not be deleted to trashcan.', 'parent_error' => $move_errmsg];
 						return false;
 					}
 				} else {
-					$err_msg_var = array('code' => 'trash_nonexist', 'desc' => 'Trashcan folder does not exist.');
+					$err_msg_var = ['code' => 'trash_nonexist', 'desc' => 'Trashcan folder does not exist.'];
 					return false;
 				}
 			} else {
@@ -238,12 +238,12 @@ class filesystem {
 				if (unlink($location)) {
 					return true;
 				} else {
-					$err_msg_var = array('code' => 'unlink_returned_false', 'desc' => 'File could not be deleted.');
+					$err_msg_var = ['code' => 'unlink_returned_false', 'desc' => 'File could not be deleted.'];
 					return false;
 				}
 			}
 		} else {
-			$err_msg_var = array('code' => 'src_file_nonexist', 'desc' => 'File to delete does not exist.');
+			$err_msg_var = ['code' => 'src_file_nonexist', 'desc' => 'File to delete does not exist.'];
 			return false;
 		}
 	}
@@ -266,8 +266,8 @@ class filesystem {
 	 *   - `error_on_unreadble` : set true to raise error if encountering a file/folder that is unreadable (specify integer 2 to show the file name in the error message)
 	 * @return void : But `$GLOBALS['jfw_iterated_paths']` will be an array of paths we have gone through
 	 */
-	public static function iterate_folder_tree($path, $callback_function, $options = array(), $_internal = false) {
-		if (!$_internal) $GLOBALS['jfw_iterated_paths'] = array();
+	public static function iterate_folder_tree($path, $callback_function, $options = [], $_internal = false) {
+		if (!$_internal) $GLOBALS['jfw_iterated_paths'] = [];
 		foreach (scandir($path) as $file) {
 			$pathfile = rtrim($path, '/') .'/'. $file;
 			if (!is_readable($pathfile)) {
@@ -298,7 +298,7 @@ class filesystem {
 	 * @param array $arr_skip_matches : Array of regular expressions which when matching a given full path should exclude that path
 	 * @return boolean : True if success, false if failure
 	 */
-	public static function copy_folder_tree($src, $dest, $arr_skip_matches = array() ) {
+	public static function copy_folder_tree($src, $dest, $arr_skip_matches = []) {
 		if (!is_dir($src)) {
 			return false;
 		}
@@ -391,12 +391,12 @@ class filesystem {
 	 * @param string $err_msg_var : If present any error message (associative array with `code` and `desc`) will be written to this variable
 	 * @return boolean : True if success, false if failure
 	 */
-	public static function empty_folder($emptypath, $arr_skip_matches = array(), &$err_msg_var = null) {
+	public static function empty_folder($emptypath, $arr_skip_matches = [], &$err_msg_var = null) {
 		if (mb_strlen($emptypath) < 7 || substr($emptypath, -1) != '/') {
 			die('Error in argument for emptying folder: '. $emptypath);
 		}
 		if (!is_dir($emptypath)) {
-			$err_msg_var = array('code' => 'folder_nonexist', 'desc' => 'Folder to empty does not exist.', 'path' => $emptypath);
+			$err_msg_var = ['code' => 'folder_nonexist', 'desc' => 'Folder to empty does not exist.', 'path' => $emptypath];
 			return false;
 		}
 		$files = glob($emptypath .'{,.}*', GLOB_BRACE);  //constant needed in order to remove 'hidden' files like .htaccess
@@ -408,17 +408,17 @@ class filesystem {
 					}
 				}
 			}
-			if (in_array(basename($file), array('.', '..'))) {
+			if (in_array(basename($file), ['.', '..'])) {
 				continue;
 			} elseif (is_file($file)) {
 				if (!unlink($file)) {
-					$err_msg_var = array('code' => 'unlink_returned_false', 'desc' => 'Could not delete file.', 'path' => $file);
+					$err_msg_var = ['code' => 'unlink_returned_false', 'desc' => 'Could not delete file.', 'path' => $file];
 					return false;
 				}
 			} elseif (is_dir($file)) {
-				$r = self::delete_folder_tree($file, array(), $del_errmsg);
+				$r = self::delete_folder_tree($file, [], $del_errmsg);
 				if (!$r) {
-					$err_msg_var = array('code' => 'delete_folder_tree_failed', 'desc' => 'Could not delete child folder tree.', 'parent_error' => $del_errmsg, 'path' => $file);
+					$err_msg_var = ['code' => 'delete_folder_tree_failed', 'desc' => 'Could not delete child folder tree.', 'parent_error' => $del_errmsg, 'path' => $file];
 					return false;
 				}
 			}
@@ -437,7 +437,7 @@ class filesystem {
 	 */
 	public static function delete_folder_tree($folder, &$err_msg_var = null) {
 		if (!is_dir($folder)) {
-			$err_msg_var = array('code' => 'folder_nonexist', 'desc' => 'Folder to delete does not exist.', 'path' => $folder);
+			$err_msg_var = ['code' => 'folder_nonexist', 'desc' => 'Folder to delete does not exist.', 'path' => $folder];
 			return false;
 		}
 		$objects = scandir($folder);
@@ -447,12 +447,12 @@ class filesystem {
 				if (filetype($folderobject) == 'dir') {
 					$r = self::delete_folder_tree($folderobject, $del_errmsg);
 					if (!$r) {
-						$err_msg_var = array('code' => 'folder_nonexist', 'desc' => 'Could not delete child folder tree.', 'parent_error' => $del_errmsg, 'path' => $folderobject);
+						$err_msg_var = ['code' => 'folder_nonexist', 'desc' => 'Could not delete child folder tree.', 'parent_error' => $del_errmsg, 'path' => $folderobject];
 						return false;
 					}
 				} else {
 					if (!unlink($folderobject)) {
-						$err_msg_var = array('code' => 'unlink_returned_false', 'desc' => 'Could not delete a file.', 'path' => $folderobject);
+						$err_msg_var = ['code' => 'unlink_returned_false', 'desc' => 'Could not delete a file.', 'path' => $folderobject];
 						return false;
 					}
 				}
@@ -460,7 +460,7 @@ class filesystem {
 		}
 		reset($objects);
 		if (!rmdir($folder)) {
-			$err_msg_var = array('code' => 'rmdir_returned_false', 'desc' => 'Could not delete the top folder.', 'path' => $folder);
+			$err_msg_var = ['code' => 'rmdir_returned_false', 'desc' => 'Could not delete the top folder.', 'path' => $folder];
 			return false;
 		}
 		return true;
@@ -476,7 +476,7 @@ class filesystem {
 	 *   - `skip_space_conversion` (boolean) : set to true if spaces should NOT be converted
 	 * @return string
 	 */
-	public static function make_valid_filename($input, $options = array() ) {
+	public static function make_valid_filename($input, $options = []) {
 		// Replace spaces
 		if (!$options['skip_space_conversion']) {
 			if ($options['replace_space_with']) {
@@ -487,8 +487,8 @@ class filesystem {
 		}
 
 		// Remove invalid and odd characters
-		$invalid_chars = array('\\', '/', ':', '*', '?', '"', '<', '>', '|',
-			'&', '%', '¤', '#', '!', '§', '½', ';', '=', '`', '´', '^', '+');  //first row is truly invalid, the rest just some we don't want
+		$invalid_chars = ['\\', '/', ':', '*', '?', '"', '<', '>', '|',
+			'&', '%', '¤', '#', '!', '§', '½', ';', '=', '`', '´', '^', '+'];  //first row is truly invalid, the rest just some we don't want
 		$input = str_replace($invalid_chars, '', $input);
 
 		return $input;
@@ -509,7 +509,7 @@ class filesystem {
 	 *   - `assume_filename_only` (boolean) : set to true assuming that $input is only a file name and not a full path
 	 * @return string
 	 */
-	public static function make_valid_filename_strict($input, $options = array() ) {
+	public static function make_valid_filename_strict($input, $options = []) {
 		$options['allow_characters'] = (string) $options['allow_characters'];
 
 		// Get basename
@@ -532,8 +532,8 @@ class filesystem {
 		}
 
 		// Replace special characters
-		$search  = array('æ' , 'Æ' , 'ø' , 'Ø' , 'å' , 'Å' , 'à', 'á', 'â', 'ã', 'ä', 'è', 'é', 'ê', 'ë', 'ì', 'í', 'î', 'ï', 'ò', 'ó', 'ô', 'õ', 'ö', 'ù', 'ú', 'û', 'ü', 'ý', 'À', 'Á', 'Â', 'Ã', 'Ä', 'È', 'É', 'Ê', 'Ë', 'Ì', 'Í', 'Î', 'Ï', 'Ò', 'Ó', 'Ô', 'Õ', 'Ö', 'Ù', 'Ú', 'Û', 'Ü', 'Ý', 'ß' , '');
-		$replace = array('ae', 'AE', 'oe', 'OE', 'aa', 'AA', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'i', 'i', 'i', 'i', 'o', 'o', 'o', 'o', 'o', 'u', 'u', 'u', 'u', 'y', 'A', 'A', 'A', 'A', 'A', 'E', 'E', 'E', 'E', 'I', 'I', 'I', 'I', 'O', 'O', 'O', 'O', 'O', 'U', 'U', 'U', 'U', 'Y', 'ss', "'");
+		$search  = ['æ' , 'Æ' , 'ø' , 'Ø' , 'å' , 'Å' , 'à', 'á', 'â', 'ã', 'ä', 'è', 'é', 'ê', 'ë', 'ì', 'í', 'î', 'ï', 'ò', 'ó', 'ô', 'õ', 'ö', 'ù', 'ú', 'û', 'ü', 'ý', 'À', 'Á', 'Â', 'Ã', 'Ä', 'È', 'É', 'Ê', 'Ë', 'Ì', 'Í', 'Î', 'Ï', 'Ò', 'Ó', 'Ô', 'Õ', 'Ö', 'Ù', 'Ú', 'Û', 'Ü', 'Ý', 'ß' , ''];
+		$replace = ['ae', 'AE', 'oe', 'OE', 'aa', 'AA', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'i', 'i', 'i', 'i', 'o', 'o', 'o', 'o', 'o', 'u', 'u', 'u', 'u', 'y', 'A', 'A', 'A', 'A', 'A', 'E', 'E', 'E', 'E', 'I', 'I', 'I', 'I', 'O', 'O', 'O', 'O', 'O', 'U', 'U', 'U', 'U', 'Y', 'ss', "'"];
 		if (!$options['skip_special_char_conversion']) {
 			$basename = str_replace($search, $replace, $basename);
 			$extension = str_replace($search, $replace, $extension);
@@ -544,8 +544,8 @@ class filesystem {
 		}
 
 		// Remove invalid and odd characters
-		$invalid_chars = array('\\', '/', ':', '*', '?', '"', '<', '>', '|',
-			'.', ',', '&', '%', '¤', '#', '!', '§', '½', ';', '(', ')', '=', '`', '´', '^', '+');  //first row is truly invalid, the rest just some we don't want
+		$invalid_chars = ['\\', '/', ':', '*', '?', '"', '<', '>', '|',
+			'.', ',', '&', '%', '¤', '#', '!', '§', '½', ';', '(', ')', '=', '`', '´', '^', '+'];  //first row is truly invalid, the rest just some we don't want
 
 		if ($options['allow_characters']) {
 			for ($i = 0; $i < mb_strlen($options['allow_characters']); $i++) {
@@ -593,7 +593,7 @@ class filesystem {
 	 * 	- `skip_special_char_conversion` (boolean) : set to true to allow special characters according to make_valid_filename_strict() in the path
 	 * @return boolean
 	 */
-	public static function is_valid_filepath($filepath, $options = array() ) {
+	public static function is_valid_filepath($filepath, $options = []) {
 		$defaults = [
 			'valid_folder_separators' => "\\/",
 			'allow_characters' => '',
@@ -814,43 +814,43 @@ class filesystem {
 
 		if ((!$options['is_mime'] && in_array($ext_or_mime, ['jpg', 'jpeg'], true)) || ($options['is_mime'] && in_array($ext_or_mime, ['image/jpeg', 'image/pjpeg'], true))) {
 
-			$headers = array(
+			$headers = [
 				[255, 216, 255, 219, '*', '*', '*', '*', '*', '*', '*', '*'],  //JPEG raw - hex: FF D8 FF DB
 				[255, 216, 255, 224, '*', '*',  74,  70,  73,  70,   0,   1],  //JFIF - hex: FF D8 FF E0 nn nn 4A 46 49 46 00 01
 				[255, 216, 255, 225, '*', '*', '*', '*', '*', '*', '*', '*'],  //Exif - hex: FF D8 FF E1
 				[255, 216, 255, 226, '*', '*', '*', '*', '*', '*', '*', '*'],  //Canon EOS JPEG - hex: FF D8 FF E2
 				[255, 216, 255, 238, '*', '*', '*', '*', '*', '*', '*', '*'],  //hex: FF D8 FF EE
 				[255, 216, 255, 237, '*', '*', '*', '*', '*', '*', '*', '*'],  //Mixed Raster Content (MRC) - hex: FF D8 FF ED (source: http://fileformats.archiveteam.org/wiki/Mixed_Raster_Content)
-			);
+			];
 
 		} elseif ((!$options['is_mime'] && $ext_or_mime === 'png') || ($options['is_mime'] && $ext_or_mime === 'image/png')) {
 
-			$headers = array([137, 80, 78, 71, 13, 10, 26, 10]);  //hex: 89 50 4E 47 0D 0A 1A 0A
+			$headers = [[137, 80, 78, 71, 13, 10, 26, 10]];  //hex: 89 50 4E 47 0D 0A 1A 0A
 
 		} elseif ((!$options['is_mime'] && in_array($ext_or_mime, ['tif', 'tiff'], true)) || ($options['is_mime'] && in_array($ext_or_mime, ['image/tiff', 'image/x-tiff'], true))) {
 
-			$headers = array(
+			$headers = [
 				[73, 73, 42, 0],  //little endian       - hex: 49 49 2A 00
 				[77, 77, 0, 42],  //big endian          - hex: 4D 4D 00 2A
 				[77, 77, 0, 43],  //BigTIFF files >4 GB - hex: 4D 4D 00 2B
 				[73, 32, 73, '*'], //                   - hex: 49 20 49
-			);
+			];
 
 		} elseif ((!$options['is_mime'] && $ext_or_mime === 'pdf') || ($options['is_mime'] && in_array($ext_or_mime, ['application/pdf'], true))) {
 
-			$headers = array([37, 80, 68, 70]);  //hex: 25 50 44 46
+			$headers = [[37, 80, 68, 70]];  //hex: 25 50 44 46
 
 		} elseif ((!$options['is_mime'] && $ext_or_mime === 'otf') || ($options['is_mime'] && in_array($ext_or_mime, ['application/x-font-opentype', 'application/vnd.ms-opentype'], true))) {
 
-			$headers = array([79, 84, 84, 79, 0]);  //hex: 4F 54 54 4F 00
+			$headers = [[79, 84, 84, 79, 0]];  //hex: 4F 54 54 4F 00
 
 		} elseif ((!$options['is_mime'] && $ext_or_mime === 'ttf') || ($options['is_mime'] && in_array($ext_or_mime, ['application/x-font-ttf', 'application/x-font-truetype'], true))) {
 
-			$headers = array([0, 1, 0, 0]);  //hex: 00 01 00 00 00
+			$headers = [[0, 1, 0, 0]];  //hex: 00 01 00 00 00
 
 		} elseif ((!$options['is_mime'] && $ext_or_mime === 'indd') || ($options['is_mime'] && in_array($ext_or_mime, ['application/x-indesign', 'application/octet-stream' /*on Swiftlayout server it gave this type for .indd files*/], true))) {
 
-			$headers = array([6, 6, 237, 245, 216, 29, 70, 229, 189, 49, 239, 231, 254, 116, 183, 29]);  //hex: 06 06 ED F5 D8 1D 46 e5 BD 31 EF E7 FE 74 B7 1D - followed by an 8-byte file type specifier: "DOCUMENT" (even when saved as template), "BOOKBOOK", or "LIBRARY4", which need the proper extensions .indd, .indb, .indl. (source: https://forums.adobe.com/thread/705908)
+			$headers = [[6, 6, 237, 245, 216, 29, 70, 229, 189, 49, 239, 231, 254, 116, 183, 29]];  //hex: 06 06 ED F5 D8 1D 46 e5 BD 31 EF E7 FE 74 B7 1D - followed by an 8-byte file type specifier: "DOCUMENT" (even when saved as template), "BOOKBOOK", or "LIBRARY4", which need the proper extensions .indd, .indb, .indl. (source: https://forums.adobe.com/thread/705908)
 
 		} elseif ((!$options['is_mime'] && in_array($ext_or_mime, ['txt', 'js', 'css'], true)) || ($options['is_mime'] && $ext_or_mime === 'text/plain')) {
 

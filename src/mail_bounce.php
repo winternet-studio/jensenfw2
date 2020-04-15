@@ -84,9 +84,9 @@ class mail_bounce {
 	 */
 	public static function get_bounce_info_misc_formats(&$raw_mail) {
 		// Prepare output variables
-		$output = array();
-		$output['bounced_addresses'] = array();
-		$output['status_messages'] = array();
+		$output = [];
+		$output['bounced_addresses'] = [];
+		$output['status_messages'] = [];
 
 		// Clean up new-lines (remove carriage return: \r )
 		$raw_mail = str_replace("\r", '', $raw_mail);

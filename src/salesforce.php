@@ -62,13 +62,13 @@ class salesforce {
 	public function authenticate($force_reauth = false, $callback = null) {
 		// Authentication methods: http://salesforce.stackexchange.com/questions/785/authenticate-3rd-party-application-with-oauth2
 		if (!$this->is_authenticated || $force_reauth) {
-			$params = array(
+			$params = [
 				'grant_type' => 'password',
 				'client_id' => $this->client_id,
 				'client_secret' => $this->client_secret,
 				'username' => $this->username,
 				'password' => $this->password . $this->security_token,
-			);
+			];
 
 			curl_setopt($this->curl, CURLOPT_URL, $this->login_uri .'/services/oauth2/token');
 			curl_setopt($this->curl, CURLOPT_POST, true);
@@ -104,7 +104,7 @@ class salesforce {
 
 		$url = $this->auth_response['instance_url'] .'/services/data/'. $this->api_version .'/query?q=' . urlencode($SOQL);
 		curl_setopt($this->curl, CURLOPT_URL, $url);
-		curl_setopt($this->curl, CURLOPT_HTTPHEADER, array('Authorization: OAuth '. $this->auth_response['access_token']));
+		curl_setopt($this->curl, CURLOPT_HTTPHEADER, ['Authorization: OAuth '. $this->auth_response['access_token']]);
 		curl_setopt($this->curl, CURLOPT_POST, false);
 		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, null);
 
@@ -125,12 +125,12 @@ class salesforce {
 	 * @param array $fields : Associative array with fieldname/value pairs
 	 * @return array
 	 */
-	public function create($object_name, $fields = array() ) {
+	public function create($object_name, $fields = []) {
 		$this->authenticate();
 
 		$url = $this->auth_response['instance_url'] .'/services/data/'. $this->api_version .'/sobjects/'. $object_name .'/';
 		curl_setopt($this->curl, CURLOPT_URL, $url);
-		curl_setopt($this->curl, CURLOPT_HTTPHEADER, array('Authorization: OAuth '. $this->auth_response['access_token'], 'Content-Type: application/json'));
+		curl_setopt($this->curl, CURLOPT_HTTPHEADER, ['Authorization: OAuth '. $this->auth_response['access_token'], 'Content-Type: application/json']);
 		curl_setopt($this->curl, CURLOPT_POST, true);
 		curl_setopt($this->curl, CURLOPT_POSTFIELDS, json_encode($fields));
 		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, null);
@@ -152,18 +152,18 @@ class salesforce {
 	 * @param array $array_of_fields : Array with associative subarrays with fieldname/value pairs
 	 * @return array : Array from batch() method
 	 */
-	public function create_multiple($object_name, $array_of_fields = array() ) {
-		$parms = array(
+	public function create_multiple($object_name, $array_of_fields = []) {
+		$parms = [
 			'haltOnError' => true,
-			'batchRequests' => array(),
-		);
+			'batchRequests' => [],
+		];
 
 		foreach ($array_of_fields as $fields) {
-			$parms['batchRequests'][] = array(
+			$parms['batchRequests'][] = [
 				'method' => 'POST',
 				'url' => $this->api_version .'/sobjects/'. $object_name,
 				'richInput' => $fields,
-			);
+			];
 		}
 
 		return $this->batch($parms);
@@ -177,12 +177,12 @@ class salesforce {
 	 * @param array $fields : Associative array with fieldname/value pairs
 	 * @return void : (Salesforce gives no response data on success)
 	 */
-	public function update($object_name, $id, $fields = array() ) {
+	public function update($object_name, $id, $fields = []) {
 		$this->authenticate();
 
 		$url = $this->auth_response['instance_url'] .'/services/data/'. $this->api_version .'/sobjects/'. $object_name .'/'. $id;
 		curl_setopt($this->curl, CURLOPT_URL, $url);
-		curl_setopt($this->curl, CURLOPT_HTTPHEADER, array('Authorization: OAuth '. $this->auth_response['access_token'], 'Content-Type: application/json'));
+		curl_setopt($this->curl, CURLOPT_HTTPHEADER, ['Authorization: OAuth '. $this->auth_response['access_token'], 'Content-Type: application/json']);
 		curl_setopt($this->curl, CURLOPT_POST, true);
 		curl_setopt($this->curl, CURLOPT_POSTFIELDS, json_encode($fields));
 		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'PATCH');
@@ -204,18 +204,18 @@ class salesforce {
 	 *  - `fields` : associative array with fieldname/value pairs
 	 * @return array : Array from batch() method
 	 */
-	public function update_multiple($object_name, $array_of_records = array() ) {
-		$parms = array(
+	public function update_multiple($object_name, $array_of_records = []) {
+		$parms = [
 			'haltOnError' => true,
-			'batchRequests' => array(),
-		);
+			'batchRequests' => [],
+		];
 
 		foreach ($array_of_records as $record) {
-			$parms['batchRequests'][] = array(
+			$parms['batchRequests'][] = [
 				'method' => 'PATCH',
 				'url' => $this->api_version .'/sobjects/'. $object_name .'/'. $record['id'],
 				'richInput' => $record['fields'],
-			);
+			];
 		}
 
 		return $this->batch($parms);
@@ -247,7 +247,7 @@ class salesforce {
 
 		$url = $this->auth_response['instance_url'] .'/services/data/'. $this->api_version .'/sobjects/'. $object_name .'/'. $id;
 		curl_setopt($this->curl, CURLOPT_URL, $url);
-		curl_setopt($this->curl, CURLOPT_HTTPHEADER, array('Authorization: OAuth '. $this->auth_response['access_token']));
+		curl_setopt($this->curl, CURLOPT_HTTPHEADER, ['Authorization: OAuth '. $this->auth_response['access_token']]);
 		curl_setopt($this->curl, CURLOPT_POST, false);
 		curl_setopt($this->curl, CURLOPT_POSTFIELDS, null);
 		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'DELETE');
@@ -279,17 +279,17 @@ class salesforce {
 	 * @param array $IDs : Array of record IDs to be deleted
 	 * @return array : Array from batch() method
 	 */
-	public function delete_multiple($object_name, $IDs = array() ) {
-		$parms = array(
+	public function delete_multiple($object_name, $IDs = []) {
+		$parms = [
 			'haltOnError' => true,
-			'batchRequests' => array(),
-		);
+			'batchRequests' => [],
+		];
 
 		foreach ($IDs as $ID) {
-			$parms['batchRequests'][] = array(
+			$parms['batchRequests'][] = [
 				'method' => 'DELETE',
 				'url' => $this->api_version .'/sobjects/'. $object_name .'/'. $ID,
-			);
+			];
 		}
 
 		return $this->batch($parms);
@@ -350,7 +350,7 @@ class salesforce {
 
 		$url = $this->auth_response['instance_url'] .'/services/data/'. $this->api_version .'/composite/batch';
 		curl_setopt($this->curl, CURLOPT_URL, $url);
-		curl_setopt($this->curl, CURLOPT_HTTPHEADER, array('Authorization: OAuth '. $this->auth_response['access_token'], 'Content-Type: application/json'));
+		curl_setopt($this->curl, CURLOPT_HTTPHEADER, ['Authorization: OAuth '. $this->auth_response['access_token'], 'Content-Type: application/json']);
 		curl_setopt($this->curl, CURLOPT_POST, true);
 		curl_setopt($this->curl, CURLOPT_POSTFIELDS, json_encode($batch_requests));
 		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, null);
@@ -373,7 +373,7 @@ class salesforce {
 
 		$url = $this->auth_response['instance_url'] .'/services/data/'. $this->api_version .'/sobjects/'. $object_name .'/describe';
 		curl_setopt($this->curl, CURLOPT_URL, $url);
-		curl_setopt($this->curl, CURLOPT_HTTPHEADER, array('Authorization: OAuth '. $this->auth_response['access_token']));
+		curl_setopt($this->curl, CURLOPT_HTTPHEADER, ['Authorization: OAuth '. $this->auth_response['access_token']]);
 		curl_setopt($this->curl, CURLOPT_POST, false);
 		curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, null);
 

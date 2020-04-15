@@ -6,7 +6,7 @@ namespace winternet\jensenfw2;
 
 class geocoding {
 	public static function class_defaults() {
-		$cfg = array();
+		$cfg = [];
 
 		$corecfg = core::get_class_defaults('core');
 		$cfg['db_server_id'] = '';  //database server ID as defined in core (empty for default)
@@ -47,7 +47,7 @@ class geocoding {
 	 *   - eg. if query limit reached it will be: `ERROR:OVER_QUERY_LIMIT`
 	 * - the raw API response (decoded JSON string) is available through `$GLOBALS['_jfw_google_address_geocoder_raw_response']` whenever the request required a call to the Google API (not using cache)
 	 */
-	public static function google_address_geocoder($location, $parms = array() ) {
+	public static function google_address_geocoder($location, $parms = []) {
 		if (!$parms['skip_database_caching']) {
 			core::require_database($parms['server_id']);
 		}
@@ -58,12 +58,12 @@ class geocoding {
 
 		// Handle parameters
 		$parms = (array) $parms;
-		$default_parms = array(
+		$default_parms = [
 			'google_api_key' => '',
 			'server_id' => '',
 			'db_name' => '',
 			'table_name' => 'temp_cached_address_latlon',
-		);
+		];
 		$parms = array_merge($default_parms, $parms);
 
 		$tableSQL = ($parms['db_name'] ? '`'. $parms['db_name'] .'`.' : '`'. $parms['table_name'] .'`');
@@ -84,7 +84,7 @@ class geocoding {
 				`geoaddr_last_accessed` DATE NULL COMMENT 'Last time lat/long for this address was pulled from this cache',
 				PRIMARY KEY (`cached_addr_latlonID`)
 			)";
-			$db_createtbl =& core::database_query(($parms['server_id'] !== '' ? array($parms['server_id'], $createtblSQL, array()) : $createtblSQL), 'Database query for checking lat/lon cache failed.');
+			$db_createtbl =& core::database_query(($parms['server_id'] !== '' ? [$parms['server_id'], $createtblSQL, []] : $createtblSQL), 'Database query for checking lat/lon cache failed.');
 			$_SESSION['_jfw_address_geocoding_cache_table_created'] = true;
 		}
 
@@ -95,18 +95,18 @@ class geocoding {
 			// Differentiate between US and European/world address formats
 			$tmp = mb_strtoupper((string) $location['country']);
 			$country_iso3166 = (strlen($tmp) == 2 ? $tmp : false);
-			if (in_array($tmp, array('US', 'USA', 'UNITED STATES', 'UNITED STATES OF AMERICA'))) {
+			if (in_array($tmp, ['US', 'USA', 'UNITED STATES', 'UNITED STATES OF AMERICA'])) {
 				$str_location = $location['address'] .', '. $location['city'] . ($location['state'] ? ', '. $location['state'] : '') .' '. $location['zip'] .', United States';
-			} elseif (in_array($tmp, array('NZ', 'NEW ZEALAND'))) {
+			} elseif (in_array($tmp, ['NZ', 'NEW ZEALAND'])) {
 				$str_location = $location['address'] .', '. $location['city'] . ($location['state'] ? ', '. $location['state'] : '') .' '. $location['zip'] .', New Zealand';
-			} elseif (in_array($tmp, array('CA', 'CANADA'))) {
+			} elseif (in_array($tmp, ['CA', 'CANADA'])) {
 				$str_location = $location['address'] .', '. $location['city'] . ($location['state'] ? ', '. $location['state'] : '') .' '. $location['zip'] .', Canada';
 			} else {
 				// Rest of the world
 				$str_location = $location['address'] .', '. $location['zip'] .' '. $location['city'] . ($location['state'] ? ', '. $location['state'] : '') .', '. $location['country'];
 			}
 			$q = 'https://maps.googleapis.com/maps/api/geocode/json?sensor=false&address='. rawurlencode($str_location);
-			$components = array();
+			$components = [];
 			if ($location['country']) {
 				$components[] = 'country:'. urlencode($location['country']);
 			}
@@ -123,21 +123,21 @@ class geocoding {
 		if (!$parms['skip_database_caching']) {
 			// Register result in database
 			$checkcacheSQL = "SELECT cached_addr_latlonID, geoaddr_latitude, geoaddr_longitude FROM ". $tableSQL ." WHERE geoaddr_address = '". core::sql_esc($location) ."'";
-			$db_checkcache =& core::database_query(($parms['server_id'] !== '' ? array($parms['server_id'], $checkcacheSQL, array()) : $checkcacheSQL), 'Database query for checking lat/lon cache failed.');
+			$db_checkcache =& core::database_query(($parms['server_id'] !== '' ? [$parms['server_id'], $checkcacheSQL, []] : $checkcacheSQL), 'Database query for checking lat/lon cache failed.');
 		}
 		if (!$parms['skip_database_caching'] && mysqli_num_rows($db_checkcache) > 0) {
 			$checkcache = mysqli_fetch_assoc($db_checkcache);
 
 			// Register that it was retrieved (so that we have an idea of it this address is no longer relevant and we can purge it from the cache)
 			$regSQL = "UPDATE ". $tableSQL ." SET geoaddr_last_accessed = NOW() WHERE cached_addr_latlonID = ". $checkcache['cached_addr_latlonID'];
-			core::database_query(($parms['server_id'] !== '' ? array($parms['server_id'], $regSQL, array()) : $regSQL), 'Database query for registering latitude and longitude retrieved failed.');
+			core::database_query(($parms['server_id'] !== '' ? [$parms['server_id'], $regSQL, []] : $regSQL), 'Database query for registering latitude and longitude retrieved failed.');
 
 			if ($checkcache['geoaddr_latitude'] !== -1 || $checkcache['geoaddr_latitude'] !== -1) {
-				return array(
+				return [
 					'latitude' => $checkcache['geoaddr_latitude'],
 					'longitude' => $checkcache['geoaddr_longitude'],
 					'source' => 'cache',
-				);
+				];
 			} else {
 				return false;
 			}
@@ -181,11 +181,11 @@ class geocoding {
 							$addtocacheSQL .= ", geoaddr_loc_type = '". core::sql_esc(mb_substr($json['results'][0]['geometry']['location_type'], 0, 20)) ."'";
 						}
 					}
-					$return = array(
+					$return = [
 						'latitude' => $json['results'][0]['geometry']['location']['lat'],
 						'longitude' => $json['results'][0]['geometry']['location']['lng'],
 						'source' => 'google_api',
-					);
+					];
 				} else {
 					if (!$parms['skip_database_caching']) {
 						// Also register those that could not be geocoded so that we don't waste time looking them up again
@@ -194,7 +194,7 @@ class geocoding {
 					$return = false;
 				}
 				if (!$parms['skip_database_caching']) {
-					$db_addtocache =& core::database_query(($parms['server_id'] !== '' ? array($parms['server_id'], $addtocacheSQL, array()) : $addtocacheSQL), 'Database update for caching lat/lon for an address failed.');
+					$db_addtocache =& core::database_query(($parms['server_id'] !== '' ? [$parms['server_id'], $addtocacheSQL, []] : $addtocacheSQL), 'Database update for caching lat/lon for an address failed.');
 				}
 				return $return;
 			} else {
@@ -219,7 +219,7 @@ class geocoding {
 	 *   - `skip_table_autocreate` (boolean|0|1) : set to true to skip auto-creating caching table
 	 * @return array : Associative array
 	 */
-	public static function ip2country_maxmind_service($ip, $userID, $licensekey, $options = array() ) {
+	public static function ip2country_maxmind_service($ip, $userID, $licensekey, $options = []) {
 		$skip_database = ($options['skip_database'] ? true : false);
 
 		$continent_code = $country_iso = $err_msg = $used_cache = $data = false;
@@ -274,7 +274,7 @@ class geocoding {
 		if (!$country_iso && !$err_msg) {
 			$ch = curl_init();
 			curl_setopt($ch, CURLOPT_URL, 'https://geoip.maxmind.com/geoip/v2.1/country/'. $ip);
-			curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization: Basic '. base64_encode($userID .':'. $licensekey)));
+			curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Basic '. base64_encode($userID .':'. $licensekey)]);
 			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);  //without this I get SSL3_GET_SERVER_CERTIFICATE:certificate verify failed (and setting neither CURLOPT_SSL_CIPHER_LIST => 'TLSv1' or CURLOPT_SSLVERSION worked)
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 			$response = curl_exec($ch);
@@ -307,18 +307,18 @@ class geocoding {
 		}
 
 		if ($err_msg) {
-			return array(
+			return [
 				'status' => 'error',
 				'msg' => $err_msg,
-			);
+			];
 		} else {
-			return array(
+			return [
 				'status' => 'ok',
 				'country_iso3166' => strtoupper($country_iso),
 				'continent_code' => $continent_code,
 				'used_cache' => $used_cache,
 				'rawdata' => $data,
-			);
+			];
 		}
 	}
 
@@ -331,7 +331,7 @@ class geocoding {
 	 *   - `composer_autoload_path` : override the default path to the Composer autoload.php file
 	 * @return array : Associative array
 	 */
-	public static function ip2country_maxmind_free($ip, $country_database_file, $options = array() ) {
+	public static function ip2country_maxmind_free($ip, $country_database_file, $options = []) {
 		$continent_code = $continent_name = $country_iso = $country_name = $err_msg = null;
 
 		if (inet_pton($ip) === false) {
@@ -354,19 +354,19 @@ class geocoding {
 		}
 
 		if ($err_msg) {
-			return array(
+			return [
 				'status' => 'error',
 				'msg' => $err_msg,
-			);
+			];
 		} else {
-			return array(
+			return [
 				'status' => 'ok',
 				'country_iso3166' => $country_iso,
 				'country_name' => $country_name,
 				'continent_code' => $continent_code,
 				'continent_name' => $continent_name,
 				'rawdata' => $record,
-			);
+			];
 		}
 	}
 
@@ -379,7 +379,7 @@ class geocoding {
 	 *   - `composer_autoload_path` : override the default path to the Composer autoload.php file
 	 * @return array : Associative array
 	 */
-	public static function ip2city_maxmind_free($ip, $city_database_file, $options = array() ) {
+	public static function ip2city_maxmind_free($ip, $city_database_file, $options = []) {
 		$continent_code = $continent_name = $country_iso = $country_name = $state_or_region_code = $state_or_region_name = $city = $city_geoname_id = $postalcode = $timezone = $latitude = $longitude = $err_msg = null;
 
 		if (inet_pton($ip) === false) {
@@ -410,12 +410,12 @@ class geocoding {
 		}
 
 		if ($err_msg) {
-			return array(
+			return [
 				'status' => 'error',
 				'msg' => $err_msg,
-			);
+			];
 		} else {
-			return array(
+			return [
 				'status' => 'ok',
 				'country_iso3166' => $country_iso,
 				'country_name' => $country_name,
@@ -430,7 +430,7 @@ class geocoding {
 				'latitude' => $latitude,
 				'longitude' => $longitude,
 				'rawdata' => $record,
-			);
+			];
 		}
 	}
 }

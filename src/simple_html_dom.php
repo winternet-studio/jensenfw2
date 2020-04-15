@@ -13,7 +13,7 @@ namespace winternet\jensenfw2;
  *
  * Paperg - Added case insensitive testing of the value of the selector.
  * Paperg - Added tag_start for the starting index of tags - NOTE: This works but not accurately.
- *  This tag_start gets counted AFTER \r\n have been crushed out, and after the remove_noice calls so it will not reflect the REAL position of the tag in the source, 
+ *  This tag_start gets counted AFTER \r\n have been crushed out, and after the remove_noice calls so it will not reflect the REAL position of the tag in the source,
  *  it will almost always be smaller by some amount.
  *  We use this to determine how far into the file the tag in question is.  This "percentage will never be accurate as the $dom->size is the "real" number of bytes the dom was created from.
  *  but for most purposes, it's a really good estimation.

@@ -29,7 +29,7 @@ class odoo {
 	 * @param array $options : Available options:
 	 *   - `skip_verify_certificates` : set true to disable certificate verification
 	 */
-	public function __construct($server_url, $server_database, $server_username, $server_password, $options = array()) {
+	public function __construct($server_url, $server_database, $server_username, $server_password, $options = []) {
 		$this->server_url = $server_url;
 		$this->server_database = $server_database;
 		$this->server_username = $server_username;
@@ -83,7 +83,7 @@ class odoo {
 		if (!$this->is_authenticated) {
 			$this->require_common_client();
 
-			$this->authenticated_uid = $this->common_client->authenticate($this->server_database, $this->server_username, $this->server_password, array());
+			$this->authenticated_uid = $this->common_client->authenticate($this->server_database, $this->server_username, $this->server_password, []);
 			$this->handle_exception($this->authenticated_uid, 'Failed to authenticate.');
 
 			if ($this->authenticated_uid) {
@@ -101,7 +101,7 @@ class odoo {
 			$userID = $this->authenticated_uid;
 		}
 
-		$write = $this->write('res.users', array(array($userID), array('company_id' => $companyID)));
+		$write = $this->write('res.users', [[$userID], ['company_id' => $companyID]]);
 		$this->handle_exception($write, 'Failed to change active company.');
 	}
 
@@ -202,12 +202,12 @@ class odoo {
 	 * @param array $params : Available parameters:
 	 *   `filters` : Example: `[ ['account_id', '=', 7034], ['date', '>=', '2019-01-01'], ['date', '<=', '2019-12-31'] ]`
 	 *   `fields` : Example: `['display_name', 'contact_address', 'credit']`
-	 *   `offset` : 
-	 *   `limit` : 
+	 *   `offset` :
+	 *   `limit` :
 	 *   `order` : Example: `date, move_id` or `account_id, date` or `account_id, date DESC`
 	 */
-	public function search_parameters($params = array()) {
-		return array($params['filters'], $params['fields'], $params['offset'], $params['limit'], $params['order']);
+	public function search_parameters($params = []) {
+		return [$params['filters'], $params['fields'], $params['offset'], $params['limit'], $params['order']];
 	}
 
 	/**
@@ -223,10 +223,10 @@ class odoo {
 	public function get_version($flag = null) {
 		if ($flag === 'base' || $flag === 'modules') {
 			if ($flag === 'base') {
-				$result = $this->search_read('ir.module.module', array(array(array('name', '=', 'base'))) );
+				$result = $this->search_read('ir.module.module', [[['name', '=', 'base']]]);
 				return $result[0]['installed_version'];
 			} elseif ($flag === 'modules') {
-				$result = $this->search_read('ir.module.module', array() );
+				$result = $this->search_read('ir.module.module', []);
 				return $result;
 			}
 		} else {
@@ -245,7 +245,7 @@ class odoo {
 	 * Only admin is usually allowed to do this.
 	 */
 	public function get_models() {
-		return $this->search_read('ir.model', array() );
+		return $this->search_read('ir.model', []);
 	}
 
 	/**
@@ -289,26 +289,26 @@ class odoo {
 	 * @param array $options : Available options:
 	 *   - `skip_validate` : set true to skip validating the journal entry, only create draft
 	 */
-	public function create_journal_entry($journal_details, $lines, $options = array()) {
+	public function create_journal_entry($journal_details, $lines, $options = []) {
 		// Create journal
-		$move_id = $this->create('account.move', array($journal_details));
+		$move_id = $this->create('account.move', [$journal_details]);
 		$this->handle_exception($move_id, 'Failed to create journal entry.');
 
 		// Create journal items
 		$lines_count = count($lines);
 		$counter = 0;
-		$line_ids = array();
+		$line_ids = [];
 		foreach ($lines as $line) {
 			$counter++;
 
 			$line['move_id'] = $move_id;
 
 			if ($counter < $lines_count) {
-				$context = array('context' => array('check_move_validity' => false));
+				$context = ['context' => ['check_move_validity' => false]];
 			} else {
-				$context = array('context' => array('check_move_validity' => true));
+				$context = ['context' => ['check_move_validity' => true]];
 			}
-			$item_id = $this->create('account.move.line', array($line), $context);
+			$item_id = $this->create('account.move.line', [$line], $context);
 			$this->handle_exception($item_id, 'Failed to create journal item.');
 
 			$line_ids[] = $item_id;
@@ -316,13 +316,13 @@ class odoo {
 
 		// Validate it
 		if (!$options['skip_validate']) {
-			$this->object_client->execute($this->server_database, $this->authenticated_uid, $this->server_password, 'account.move', 'post', array($move_id));
+			$this->object_client->execute($this->server_database, $this->authenticated_uid, $this->server_password, 'account.move', 'post', [$move_id]);
 		}
 
-		return array(
+		return [
 			'move_id' => $move_id,
 			'line_ids' => $line_ids,
-		);
+		];
 	}
 
 	/**
@@ -364,7 +364,7 @@ class odoo {
 	public function create_invoice_draft($invoice_fields, $invoice_lines) {
 		// TODO: option to specify currency_id with the 3-letter currency code instead (eg. 'USD')
 
-		$invoice_id = $this->create('account.invoice', array($invoice_fields));
+		$invoice_id = $this->create('account.invoice', [$invoice_fields]);
 		$this->handle_exception($invoice_id, 'Failed to create invoice.');
 
 		// Calculate taxes if applicable
@@ -376,9 +376,9 @@ class odoo {
 		}
 
 		// Add invoice lines
-		$successful_lines = $invoice_line_ids = array();
+		$successful_lines = $invoice_line_ids = [];
 		foreach ($invoice_lines as $key => $invoice_line) {
-			$result_invline = $this->create('account.invoice.line', array($invoice_line));
+			$result_invline = $this->create('account.invoice.line', [$invoice_line]);
 			$this->handle_exception($result_invline, 'Failed to create Odoo invoice line.');
 			// throw new \Exception(': '. $result_invline['faultString'] .' ['. @base64_encode(@openssl_encrypt(json_encode(array($successful_lines, $invoice_line_ids)), 'AES-128-CBC', 'error96')) .']');
 
@@ -386,10 +386,10 @@ class odoo {
 			$successful_lines[] = $key;
 		}
 
-		return array(
+		return [
 			'invoice_id' => $invoice_id,
 			'invoice_line_ids' => $invoice_line_ids,
-		);
+		];
 	}
 
 	/**
@@ -400,7 +400,7 @@ class odoo {
 	 *   - `retrieve_pdf` : set to true to also retrieve the PDF invoice (included in output as base64 in the key `pdf_invoice`)
 	 *   - `custom_pdf_report` : to use the non-standard PDF report specify the report Template Name (find it at Settings > Technical > Actions > Reports)
 	 */
-	public function get_invoice($filters = array(), $options = array(), $meta_options = array() ) {
+	public function get_invoice($filters = [], $options = [], $meta_options = []) {
 		$this->authenticate();
 
 		$options['limit'] = 1;
@@ -411,7 +411,7 @@ class odoo {
 			if ($meta_options['retrieve_pdf']) {
 				$this->require_report_client();
 
-				$pdfresult = $this->report_client->render_report($this->server_database, $this->authenticated_uid, $this->server_password, ($meta_options['custom_pdf_report'] ? $meta_options['custom_pdf_report'] : 'account.report_invoice'), array($invoices[0]['id']));
+				$pdfresult = $this->report_client->render_report($this->server_database, $this->authenticated_uid, $this->server_password, ($meta_options['custom_pdf_report'] ? $meta_options['custom_pdf_report'] : 'account.report_invoice'), [$invoices[0]['id']]);
 				$this->handle_exception($pdfresult, 'Failed to generate PDF invoice report.');
 
 				$invoices[0]['pdf_invoice'] = $pdfresult['result'];
@@ -432,11 +432,11 @@ class odoo {
 	 *
 	 * @param array $filters : For example `array(array('partner_id', '=', 42), array('date_invoice', '=', '2015-12-01'))`
 	 */
-	public function get_invoices($filters = array(), $options = array(), $meta_options = array() ) {
+	public function get_invoices($filters = [], $options = [], $meta_options = []) {
 		$this->authenticate();
 		$this->require_object_client();
 
-		$result = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.invoice', ($meta_options['search_only'] ? 'search' : 'search_read'), array($filters), $options);
+		$result = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.invoice', ($meta_options['search_only'] ? 'search' : 'search_read'), [$filters], $options);
 		$this->handle_exception($result, 'Failed to get invoices.');
 
 		return $result;
@@ -447,7 +447,7 @@ class odoo {
 	 *
 	 * WARNING: Once an invoice has been validated and assigned an invoice number it can never be permanently deleted again.
 	 * At best you can cancel it and revert back to draft or canceled status - but not permanently deleted it.
-	 * 
+	 *
 	 * @param integer $invoice_id : Odoo's internal invoice ID (not the invoice number! It doesn't have one yet!)
 	 */
 	public function validate_invoice($invoice_id) {
@@ -455,7 +455,7 @@ class odoo {
 			$this->error('Odoo invoice ID to be validated is not a number.');
 		}
 
-		$invoice = $this->read('account.invoice', array(array($invoice_id)));
+		$invoice = $this->read('account.invoice', [[$invoice_id]]);
 		if ($invoice[0]['state'] != 'draft') {
 			$this->error('Odoo invoice to be validated is not a draft (it is '. $invoice[0]['state'] .').');
 		}
@@ -468,7 +468,7 @@ class odoo {
 			// - https://www.odoo.com/nl_NL/forum/help-1/question/odoo10-sending-invoice-email-via-xmlrpc-118915#post_reply
 			// - https://bloopark.de/en_US/blog/the-bloopark-times-english-2/post/odoo-10-workflows-partial-removal-265#blog_content
 			// - https://supportuae.wordpress.com/tag/odoo-validate-invoice-from-code/
-			return $this->object_client->execute($this->server_database, $this->authenticated_uid, $this->server_password, 'account.invoice', 'action_invoice_open', array($invoice_id));
+			return $this->object_client->execute($this->server_database, $this->authenticated_uid, $this->server_password, 'account.invoice', 'action_invoice_open', [$invoice_id]);
 
 		} else {
 			// Odoo v9.0
@@ -494,9 +494,9 @@ class odoo {
 		// Change the journal entries
 		// TODO: find the journal entries
 		$move_ids = '????????';  //find these
-		$done_IDs = array();
+		$done_IDs = [];
 		foreach ($move_ids as $key => $move_id) {
-			$result = $this->write('account.move', array(array($move_id), array('name' => $new_invoice_number)));
+			$result = $this->write('account.move', [[$move_id], ['name' => $new_invoice_number]]);
 			$this->handle_exception($result, 'Failed to change invoice number.');
 			// throw new \Exception('Failed to change invoice number: '. $result['faultString'] .' ['. @base64_encode(@openssl_encrypt(json_encode(array($move_id, $done_IDs)), 'AES-128-CBC', 'error96')) .']');
 			$done_IDs[] = $move_id;
@@ -528,7 +528,7 @@ class odoo {
 	public function create_payment_draft($payment_fields) {
 		// Is this of any interest? https://www.odoo.com/fr_FR/forum/aide-1/question/how-to-apply-payment-to-invoice-via-xml-rpc-37795
 
-		$payment_id = $this->create('account.payment', array($payment_fields));
+		$payment_id = $this->create('account.payment', [$payment_fields]);
 		$this->handle_exception($payment_id, 'Failed to create payment draft.');
 
 		return $payment_id;
@@ -542,7 +542,7 @@ class odoo {
 			$this->error('Odoo payment ID to be validated is not a number.');
 		}
 
-		$payment = $this->read('account.payment', array(array($payment_id)));
+		$payment = $this->read('account.payment', [[$payment_id]]);
 		if ($payment[0]['state'] != 'draft') {
 			$this->error('Payment to be validated is not a draft (it is '. $payment[0]['state'] .').');
 		}
@@ -563,7 +563,7 @@ exit;
 		$this->authenticate();
 		$this->require_object_client();
 
-		$journals = $this->search_read('account.journal', array(array()));
+		$journals = $this->search_read('account.journal', [ [] ]);
 		$this->handle_exception($journals, 'Failed to get journals.');
 
 		return $journals;
@@ -576,7 +576,7 @@ exit;
 		$this->authenticate();
 		$this->require_object_client();
 
-		$journal = $this->search_read('account.journal', array(array(array('name', '=', $journal_name))));
+		$journal = $this->search_read('account.journal', [[['name', '=', $journal_name]]]);
 		$this->handle_exception($journal, 'Failed to get journal.');
 
 		if (empty($journal)) {
@@ -591,7 +591,7 @@ exit;
 	 * @param boolean $by_name : Whether to search by name instead of code. Default false.
 	 */
 	public function get_account($account_code, $by_name = false) {
-		$account = $this->search_read('account.account', array(array(array( ($by_name ? 'name' : 'code'), '=', (string) $account_code))));
+		$account = $this->search_read('account.account', [[[ ($by_name ? 'name' : 'code'), '=', (string) $account_code]]]);
 		$this->handle_exception($account, 'Failed to get account.');
 
 		if (empty($account)) {
@@ -616,7 +616,7 @@ exit;
 	 * @param boolean $by_name : Whether to search by name instead of partner ID. Default false.
 	 */
 	public function get_partner($id, $by_name = false) {
-		$partner = $this->search_read('res.partner', array(array(array( ($by_name ? 'name' : 'id'), '=', $id))));
+		$partner = $this->search_read('res.partner', [[[ ($by_name ? 'name' : 'id'), '=', $id]]]);
 		$this->handle_exception($partner, 'Failed to get partner.');
 
 		if (empty($partner)) {
@@ -630,17 +630,17 @@ exit;
 		$this->authenticate();
 		$this->require_object_client();
 
-		$output = array();
+		$output = [];
 
-		$currencies = $this->search_read('res.currency', array());
+		$currencies = $this->search_read('res.currency', []);
 		$this->handle_exception($currencies, 'Failed to get currencies.');
 
 		foreach ($currencies as $currency) {
-			$output[$currency['name']] = array(
+			$output[$currency['name']] = [
 				'rate' => $currency['rate'],
 				'as_of' => $currency['date'],
 				'currency_id' => $currency['id'],
-			);
+			];
 		}
 
 		return $output;
@@ -653,7 +653,7 @@ exit;
 		$this->authenticate();
 		$this->require_object_client();
 
-		$currency = $this->search_read('res.currency', array(array(array('name', '=', $currency))));
+		$currency = $this->search_read('res.currency', [[['name', '=', $currency]]]);
 		$this->handle_exception($currency, 'Failed to get currency.');
 
 		if (empty($currency)) {
@@ -702,38 +702,38 @@ exit;
 	 * ]
 	 * ```
 	 */
-	public function get_account_opening_balance($accounts, $type, $until_date, $options = array()) {
+	public function get_account_opening_balance($accounts, $type, $until_date, $options = []) {
 		if (!preg_match("/^(\\d{4})-(\\d{1,2})-(\\d{1,2})$/", $until_date, $match)) {
 			$this->error('Invalid date for getting opening balance.');
 		}
 
 		if (!is_array($accounts)) {
-			$accounts = array($accounts);
+			$accounts = [$accounts];
 		}
 
 		$year = $match[1];
 		$month = $match[2];
 		$day = $match[3];
 
-		$domain = array();
+		$domain = [];
 		if ($type === 'year') {
-			$domain[] = array('year', '=', $year);
+			$domain[] = ['year', '=', $year];
 		}
 		// $domain[] = array('year', '<', $year);
 		// $domain[] = array('month', '<', $month);
 		$domain[] = ['date', '<', $until_date];
-		$domain[] = array('account_id', 'in', $accounts);
-		$fields = array('account_id', 'date', 'balance', 'balance2');
-		$groupby = array('account_id');
+		$domain[] = ['account_id', 'in', $accounts];
+		$fields = ['account_id', 'date', 'balance', 'balance2'];
+		$groupby = ['account_id'];
 
-		$data = $this->read_group('account.budget.report', array($domain, $fields, $groupby));
+		$data = $this->read_group('account.budget.report', [$domain, $fields, $groupby]);
 		$this->handle_exception($data, 'Failed to get opening balance.');
 
 		if (!$options['rawResult']) {
 			if (count($accounts) === 1) {
 				return $data[0]['balance'];
 			} else {
-				$output = array();
+				$output = [];
 				foreach ($data as $acc) {
 					$output[ $acc['account_id'][0] ] = $acc['balance'];
 				}
@@ -749,7 +749,7 @@ exit;
 	 * @param string $from : From date in MySQL format: yyyy-mm-dd
 	 * @param string $to : To date in MySQL format: yyyy-mm-dd
 	 */
-	public function get_general_ledger($accounts = array(), $from = null, $to = null, $order = null) {
+	public function get_general_ledger($accounts = [], $from = null, $to = null, $order = null) {
 		if ($from && !preg_match("/^\\d+-\\d+-\\d+$/", $from)) {
 			$this->error('Invalid starting date when getting general ledger.', null, ['Date' => $from]);
 		}
@@ -763,23 +763,23 @@ exit;
 			foreach ($accounts as $curr_account) {
 				$accountIDs[] = $this->get_account($curr_account)['id'];
 			}
-			$filters[] = array('account_id', 'in', $accountIDs);
+			$filters[] = ['account_id', 'in', $accountIDs];
 		}
 		if ($from) {
-			$filters[] = array('date', '>=', $from);
+			$filters[] = ['date', '>=', $from];
 		}
 		if ($to) {
-			$filters[] = array('date', '<=', $to);
+			$filters[] = ['date', '<=', $to];
 		}
 		if ($order === 'date') {
 			$order = 'date, move_id';
 		} elseif ($order === 'account') {
 			$order = 'account_id, date';  //order descendingly: eg. 'date DESC'
 		}
-		$params = $this->search_parameters(array(
+		$params = $this->search_parameters([
 			'filters' => $filters,
 			'order' => $order,
-		));
+		]);
 
 		$data = $this->search_read('account.move.line', $params);
 		$this->handle_exception($data, 'Failed to get general ledger data.');
@@ -792,7 +792,7 @@ exit;
 	 * @param string $from : From date in MySQL format: yyyy-mm-dd
 	 * @param string $to : To date in MySQL format: yyyy-mm-dd
 	 */
-	public function get_general_ledger_html($data, $accounts = array(), $from = null, $to = null, $orderby = null, $options = array()) {
+	public function get_general_ledger_html($data, $accounts = [], $from = null, $to = null, $orderby = null, $options = []) {
 		ob_start();
 
 		// About getting account's initial balance: https://stackoverflow.com/questions/57231479/how-can-i-get-opening-and-closing-balance-using-function-for-partner-ledger-repo
@@ -911,7 +911,7 @@ if ($options['enable_date_warnings']) {
 // var_dump($line);     echo '</pre></td>';
 ?>
 </tr>
-<?php	
+<?php
 		}
 ?>
 </table>
@@ -925,11 +925,11 @@ if ($options['enable_date_warnings']) {
 			$year = date('Y');
 		}
 
-		$this->search_parameters(array(
-			'filters' => array(
-				array('date', '>=', $year .'-01-01'), array('date', '<=', $year .'-12-31')
-			),
-		));
+		$this->search_parameters([
+			'filters' => [
+				['date', '>=', $year .'-01-01'], ['date', '<=', $year .'-12-31']
+			],
+		]);
 
 		$data = $this->search_read('res.currency', $params);
 		$this->handle_exception($data, 'Failed to get profit and loss data.');
@@ -939,16 +939,16 @@ if ($options['enable_date_warnings']) {
 
 	public function update_exchange_rates() {
 		// Possible alternatives: https://github.com/yelizariev/addons-yelizariev/blob/8.0/currency_rate_update/currency_rate_update.py
-		$sources = array(
-			'ecb' => array(
+		$sources = [
+			'ecb' => [
 				'url' => 'http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml',
 				'base_currency' => 'EUR',
-			),
-		);
+			],
+		];
 
 		$eff_source = $sources['ecb'];
 
-		$updated_currencies = array();
+		$updated_currencies = [];
 
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $eff_source['url']);
@@ -964,7 +964,7 @@ if ($options['enable_date_warnings']) {
 			$data = json_decode(json_encode(simplexml_load_string($xml)), true);
 
 			if ($data) {
-				$curr_rates = $this->search_read('res.currency', array());
+				$curr_rates = $this->search_read('res.currency', []);
 				$this->handle_exception($curr_rates, 'Failed to get currencies.');
 				if ($curr_rates) {
 
@@ -973,7 +973,7 @@ if ($options['enable_date_warnings']) {
 						$this->error('Did not found date of the retrieved exchange rates.');
 					}
 
-					$new_rates = array($eff_source['base_currency'] => '1');
+					$new_rates = [$eff_source['base_currency'] => '1'];
 					foreach ($data['Cube']['Cube']['Cube'] as $rate) {
 						$new_rates[$rate['@attributes']['currency']] = $rate['@attributes']['rate'];
 					}
@@ -982,12 +982,12 @@ if ($options['enable_date_warnings']) {
 						if ($new_rates[$curr_rate['name']]) {  //if we have a new exchange rate for this currency...
 							if (!$curr_rate['date'] || strtotime($curr_rate['date']) < strtotime($rates_date) ) {
 								// Update rate when we have a newer one
-								$fields = array(
+								$fields = [
 									'currency_id' => $curr_rate['id'],
 									'name' => $rates_date .' 00:00:00',
 									'rate' => $new_rates[$curr_rate['name']],
-								);
-								$result = $this->create('res.currency.rate', array($fields));
+								];
+								$result = $this->create('res.currency.rate', [$fields]);
 								$this->handle_exception($result, 'Failed to update Odoo exchange rate for '. $curr_rate['name']);
 
 								$updated_currencies[$curr_rate['name']] = $new_rates[$curr_rate['name']];

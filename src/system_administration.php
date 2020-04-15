@@ -10,10 +10,10 @@ class system_administration {
 
 	private $_sent_error_notif = false;
 
-	public function __construct($config = array()) {
+	public function __construct($config = []) {
 		error_reporting(E_ALL ^ E_NOTICE);
 
-		$config_vars = array('system_name', 'email_sender_address');
+		$config_vars = ['system_name', 'email_sender_address'];
 
 		foreach ($config_vars as $var) {
 			if ($config[$var]) {
@@ -33,10 +33,10 @@ class system_administration {
 	 * Sample PHP script for receiving POSTed dump file using `post_to_url` option:
 	 * ```
 	 * $folder = 'c:/path/to/save/the/file/into';
-	 * 
+	 *
 	 * $valid = $err_msg = false;
 	 * // TODO: allow only a given IP address to send files
-	 * 
+	 *
 	 * if ($_FILES['f1']['name']) {
 	 * 	if ($_FILES['f1']['error']) {
 	 * 		$err_msg = 'File Upload Error Code: '. $_FILES['f1']['error'];
@@ -50,7 +50,7 @@ class system_administration {
 	 * 		}
 	 * 	}
 	 * }
-	 * 
+	 *
 	 * if (!$valid) {
 	 * 	http_response_code(404);
 	 * 	if ($err_msg) {
@@ -87,7 +87,7 @@ class system_administration {
 	 *   - `command_after` (opt.) : run a system command after creating the MySQL dump (after encryption has been done (if encryption is enabled)), eg. `rsync -larvzi --checksum --delete-during --omit-dir-times  /home/myuser/backups/ someuser@otherserver.com:/storage/mysql-backups/`
 	 *   - `post_to_url` (opt.) : URL to post the MySQL dump (after encryption has been done (if encryption is enabled)). See sample above for receiving PHP script.
 	 */
-	public function backup_mysql($options = array()) {
+	public function backup_mysql($options = []) {
 		$this->check_base_config();
 
 		if (!is_numeric($options['purge_after'])) {
@@ -131,7 +131,7 @@ class system_administration {
 			} else {
 				$command .= " > ". filesystem::concat_path($options['mysq_dump_path'], $filename);
 			}
-			$cmdoutput = array();
+			$cmdoutput = [];
 			exec($command, $cmdoutput, $returnstatus);
 
 			if ($returnstatus > 0 && !$this->_sent_error_notif) {
@@ -141,7 +141,7 @@ class system_administration {
 				// Gzip the file
 				$command = "gzip -f ". filesystem::concat_path($options['mysq_dump_path'], $filename);
 				$filename_gz = $filename .'.gz';
-				$cmdoutput = array();
+				$cmdoutput = [];
 				exec($command, $cmdoutput, $returnstatus);
 
 				echo '   Done!';
@@ -165,7 +165,7 @@ class system_administration {
 					$ch = curl_init();
 					curl_setopt($ch, CURLOPT_URL, $options['post_to_url']);
 					curl_setopt($ch, CURLOPT_POST, 1);
-					$fields = array();
+					$fields = [];
 					$fields['f1'] = new \CurlFile(filesystem::concat_path($options['mysq_dump_path'], $filename_gz), 'application/octet-stream');
 					$fields['f1_hash'] = hash_file('sha256', filesystem::concat_path($options['mysq_dump_path'], $filename_gz));
 					$fields['t'] = time();
@@ -243,7 +243,7 @@ class system_administration {
 	 *   - `exclude_folders` (opt.) : array of folders to be excluded. Wildcards (eg. *) can be used according to rsync documentation on the --exclude parameter. Root is anchored to $source_path so don't specify full physical path. Eg. `['/runtime', '/somepath/cached_*_prod/*']`
 	 *   - `skip_checksum` (opt.) : set true to only compare files using modification time and size - instead of checksum
 	 */
-	public function backup_files($options = array()) {
+	public function backup_files($options = []) {
 		$this->check_base_config();
 
 		$starttime = time();
@@ -388,7 +388,7 @@ class system_administration {
 
 	/**
 	 * Dwnload production database to this machine
-	 * 
+	 *
 	 * IMPORTANT! For Yii2 this requires also $this->enableCsrfValidation = false in beforeAction() and preferably only allowing POST for action `send-production-database`
 	 *
 	 * @param array $options : Array with the following keys:
@@ -439,7 +439,7 @@ class system_administration {
 			$this->use_yii_db($options);
 		}
 
-		$postfields = array('key' => $options['key']);
+		$postfields = ['key' => $options['key']];
 		if ($options['where_condition']) {
 			$postfields['where_condition'] = $options['where_condition'];
 		}
@@ -541,7 +541,7 @@ class system_administration {
 	 * Send production database to another machine
 	 *
 	 * Uses `mysqldump`.
-	 * 
+	 *
 	 * @param array $options : Array with the following keys:
 	 *   - `allow_send_callback` (req.) : callable function that returns a boolean as to whether or not this machine is allowed to send its database to another machine. No arguments passed.
 	 *   - `key` (req.) : a key that matches the key used on the sending side

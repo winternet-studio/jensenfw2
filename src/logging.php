@@ -6,7 +6,7 @@ namespace winternet\jensenfw2;
 
 class logging {
 	public static function class_defaults() {
-		$cfg = array();
+		$cfg = [];
 
 		$corecfg = core::get_class_defaults('core');
 		$cfg['log_actions_db_name'] = $corecfg['databases'][1]['db_name'];
@@ -58,7 +58,7 @@ class logging {
 	 *   - `visitID` : visitID to set in the log_visitID column
 	 * @return integer|boolean : The operationID of the log entry that was created, or false if a duplicate entry was detected
 	 */
-	public static function log_action($action, $subaction = false, $primary_parms = [], $secondary_parms = false, $options = array() ) {
+	public static function log_action($action, $subaction = false, $primary_parms = [], $secondary_parms = false, $options = []) {
 		// Don't register duplicate entries if requested
 		if (is_numeric($options['duplicate_window'])) {
 			if (@constant('YII_BEGIN_TIME') && PHP_SAPI != 'cli') {
@@ -80,7 +80,7 @@ class logging {
 
 		$cfg = core::get_class_defaults(__CLASS__);
 
-		$logSQL_vars = array();
+		$logSQL_vars = [];
 
 		$logSQL = "INSERT INTO `". $cfg['log_actions_db_name'] ."`.`". $cfg['log_actions_db_table'] ."` SET ";
 		$logSQL .= "log_timestamp = '". gmdate('Y-m-d H:i:s') ."', ";
@@ -130,7 +130,7 @@ class logging {
 			core::require_database($cfg['db_server_id']);
 			$logSQL = preg_replace("/ = :\\b/", ' = ?', $logSQL);
 			$logSQL = core::prepare_sql($logSQL, $logSQL_vars);
-			$new_operationID = core::database_result(array('server_id' => $cfg['db_server_id'], $logSQL), false, 'Database query failed for making a log entry.');
+			$new_operationID = core::database_result(['server_id' => $cfg['db_server_id'], $logSQL], false, 'Database query failed for making a log entry.');
 		}
 
 		return $new_operationID;

@@ -8,7 +8,7 @@ class system {
 	public static $command_line_return_status = null;
 
 	public static function class_defaults() {
-		$cfg = array();
+		$cfg = [];
 
 		$corecfg = core::get_class_defaults('core');
 		$cfg['db_server_id'] = '';  //database server ID as defined in core (empty for default)
@@ -89,7 +89,7 @@ class system {
 					$expiration = gmdate('Y-m-d H:i:s', time() + $match[1]*24*60*60);
 					break;
 				default:
-					core::system_error('Undefined unit for expiration date for setting a buffer value.', array('Unit' => $unit) );
+					core::system_error('Undefined unit for expiration date for setting a buffer value.', ['Unit' => $unit]);
 				}
 			} elseif ($expiration == 'NOW') {
 				$expiration = '2000-01-01 00:00:00';
@@ -211,7 +211,7 @@ THIS DOESN'T WORK YET. IT EXECUTES BUT NOT IN THE BACKGROUND. USING output_file 
 						$startcmd .= ' > '. escapeshellarg($options['output_file']);
 					}
 				}
-				pclose(popen($startcmd, 'r')); 
+				pclose(popen($startcmd, 'r'));
 */
 			} else {
 				// Source: https://stackoverflow.com/questions/45953/php-execute-a-background-process
@@ -269,7 +269,7 @@ THIS DOESN'T WORK YET. IT EXECUTES BUT NOT IN THE BACKGROUND. USING output_file 
 			$cmd .= '-f ';
 		}
 		$cmd .= escapeshellcmd($process_pattern);
-		$output = array(); $exitcode = null;
+		$output = []; $exitcode = null;
 		exec($cmd, $output, $exitcode);
 		$output = trim(implode("\n", $output));
 		if (is_numeric($output)) {
@@ -290,10 +290,10 @@ THIS DOESN'T WORK YET. IT EXECUTES BUT NOT IN THE BACKGROUND. USING output_file 
 	public static function check_php_syntax($file) {
 		$filename_pattern = '/\.php$/';
 		if (!preg_match($filename_pattern, $file)) {
-			core::system_error('File to check syntax on is not a PHP file.', array('File' => $file) );
+			core::system_error('File to check syntax on is not a PHP file.', ['File' => $file]);
 			return;
 		}
-		$lint_output = array();
+		$lint_output = [];
 		$GLOBALS['checksyntax_output'] = '';
 		exec('php -l '. escapeshellarg($file), $lint_output, $return);
 		if ($return == 0) {

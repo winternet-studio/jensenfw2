@@ -8,9 +8,9 @@ namespace winternet\jensenfw2;
  * ```
  * $longitude_x = 37.6;  // x-coordinate of the point to test
  * $latitude_y = -77.446;    // y-coordinate of the point to test
- * 
+ *
  * $polygon = array(array(37.628134,-77.458334), array(37.629867,-77.449021), array(37.62324,-77.445416), array(37.622424,-77.457819));
- * 
+ *
  * if (is_in_polygon($polygon, $longitude_x, $latitude_y)) {
  * 	echo 'Is inside polygon';
  * } else {
@@ -63,7 +63,7 @@ class geography {
 		//::
 		//::  official web site: http://www.zipcodeworld.com
 		//::
-		//::  hexa software development center © all rights reserved 2004
+		//::  hexa software development center Â© all rights reserved 2004
 
 		$theta = $lng1 - $lng2;
 		$dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) +  cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
@@ -139,21 +139,21 @@ class geography {
 	 */
 	public static function get_compass_rose_direction_8($bearing) {
 		if ($bearing <= 22.5 || $bearing > 337.5) {
-			return array('short' => 'N', 'long' => 'North');
+			return ['short' => 'N', 'long' => 'North'];
 		} elseif ($bearing <= 67.5) {
-			return array('short' => 'NE', 'long' => 'North East');
+			return ['short' => 'NE', 'long' => 'North East'];
 		} elseif ($bearing <= 112.5) {
-			return array('short' => 'E', 'long' => 'East');
+			return ['short' => 'E', 'long' => 'East'];
 		} elseif ($bearing <= 157.5) {
-			return array('short' => 'SE', 'long' => 'South East');
+			return ['short' => 'SE', 'long' => 'South East'];
 		} elseif ($bearing <= 202.5) {
-			return array('short' => 'S', 'long' => 'South');
+			return ['short' => 'S', 'long' => 'South'];
 		} elseif ($bearing <= 247.5) {
-			return array('short' => 'SW', 'long' => 'South West');
+			return ['short' => 'SW', 'long' => 'South West'];
 		} elseif ($bearing <= 292.5) {
-			return array('short' => 'W', 'long' => 'West');
+			return ['short' => 'W', 'long' => 'West'];
 		} else { // $bearing <= 337.5
-			return array('short' => 'NW', 'long' => 'North West');
+			return ['short' => 'NW', 'long' => 'North West'];
 		}
 	}
 
@@ -214,7 +214,7 @@ class geography {
 	/**
 	 * Convert a latitude or longitude from Degrees Minutes Seconds to Decimal Degrees
 	 *
-	 * Eg. N 55° 40' 49.872", E 12° 33' 44.028"  ===>  55.68052, 12.56223
+	 * Eg. N 55Â° 40' 49.872", E 12Â° 33' 44.028"  ===>  55.68052, 12.56223
 	 *
 	 * Source: https://www.dougv.com/2012/03/07/converting-latitude-and-longitude-coordinates-between-decimal-and-degrees-minutes-seconds/
 	 *
@@ -227,7 +227,7 @@ class geography {
 	 */
 	public static function convert_coordinate_dms_to_decimal($degrees, $minutes, $seconds, $direction) {
 		$d = strtoupper($direction);
-		$ok = array('N', 'S', 'E', 'W');
+		$ok = ['N', 'S', 'E', 'W'];
 
 		//degrees must be integer between 0 and 180
 		if (!is_numeric($degrees) || $degrees < 0 || $degrees > 180) {
@@ -253,7 +253,7 @@ class geography {
 	/**
 	 * Convert a latitude or longitude from Decimal Degrees to Degrees Minutes Seconds
 	 *
-	 * Eg. 55.68052, 12.56223  ===>  N 55° 40' 49.872", E 12° 33' 44.028"
+	 * Eg. 55.68052, 12.56223  ===>  N 55Â° 40' 49.872", E 12Â° 33' 44.028"
 	 *
 	 * Source: https://www.dougv.com/2012/03/07/converting-latitude-and-longitude-coordinates-between-decimal-and-degrees-minutes-seconds/
 	 *
@@ -262,7 +262,7 @@ class geography {
 	 * @return array : Array with keys `degrees`, `minutes`, `seconds`, `direction`
 	 */
 	public static function convert_coordinate_decimal_to_dms($decimal, $type) {
-		if (!is_numeric($decimal) || abs($decimal) > 180 || !in_array($type, array('lat', 'lng'))) {
+		if (!is_numeric($decimal) || abs($decimal) > 180 || !in_array($type, ['lat', 'lng'])) {
 			core::system_error('Invalid parameters for converting decimal degrees.', ['Decimal' => $decimal, 'Type' => $type]);
 		}
 
@@ -291,18 +291,18 @@ class geography {
 		//reset seconds
 		$seconds = round($seconds - ($minutes * 60), 5);
 
-		return array(
+		return [
 			'degrees' => $degrees,
 			'minutes' => $minutes,
 			'seconds' => $seconds,
 			'direction' => $direction,
-		);
+		];
 	}
 
 	/**
 	 * Convert a latitude or longitude from Decimal Degrees to Degrees Decimal Minutes
 	 *
-	 * Eg. 55.68052, 12.56223  ===>  N 55° 40.8312', E 12° 33.7338'
+	 * Eg. 55.68052, 12.56223  ===>  N 55Â° 40.8312', E 12Â° 33.7338'
 	 *
 	 * @param float $decimal : The decimal degrees, eg. `59.7682642` or `-122.4726193`
 	 * @param string $type : Whether the decimal degrees is for a latitude or longitude: `lat` or `lng`
@@ -329,8 +329,8 @@ class geography {
 	 * @return mixed : True or false (or 1 and 0)
 	 */
 	public static function is_in_polygon($polygon, $longitude_x, $latitude_y) {
-		$vertices_x = array();
-		$vertices_y = array();
+		$vertices_x = [];
+		$vertices_y = [];
 		foreach ($polygon as $p) {
 			$vertices_x[] = $p[0];
 			$vertices_y[] = $p[1];

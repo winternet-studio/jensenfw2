@@ -24,12 +24,12 @@ class imaging {
 		$h = $size[1];  //height
 		$aspect_ratio = $w / $h; //calculate aspect ratio
 		$is_vertical = ($aspect_ratio < 1 ? true : false);  //determine if the image is vertical
-		return array(
+		return [
 			'w' => $w,
 			'h' => $h,
 			'ratio' => $aspect_ratio,
 			'is_vertical' => $is_vertical,
-		);
+		];
 	}
 
 	/**
@@ -117,7 +117,7 @@ class imaging {
 			$src_y = round(($input_height - $src_height) / 2);  //subtract the the length portion from the origianl image length and divide equal space on both sides of portion
 			break;
 		}
-		return array('w' => $src_width, 'h' => $src_height, 'x' => $src_x, 'y' => $src_y, 'cuttingboundary' => $cutwhat);
+		return ['w' => $src_width, 'h' => $src_height, 'x' => $src_x, 'y' => $src_y, 'cuttingboundary' => $cutwhat];
 	}
 
 	/**
@@ -152,13 +152,13 @@ class imaging {
 			//round off
 			$new_width = round($new_width);
 			$new_height = round($new_height);
-			return array('w' => $new_width, 'h' => $new_height, 'is_resized' => true);
+			return ['w' => $new_width, 'h' => $new_height, 'is_resized' => true];
 		} else {
-			return array('w' => $curr_width, 'h' => $curr_height, 'is_resized' => false);
+			return ['w' => $curr_width, 'h' => $curr_height, 'is_resized' => false];
 		}
 	}
 
-	static public function resize_save($inputfilepath, $outputfilepath, $curr_width, $curr_height, $new_width, $new_height, $options = array() ) {
+	static public function resize_save($inputfilepath, $outputfilepath, $curr_width, $curr_height, $new_width, $new_height, $options = []) {
 		/*
 		DESCRIPTION:
 		- resize a image file and save it to another file
@@ -188,14 +188,14 @@ class imaging {
 			- 'err_msg' : array with error messages that arose which prohibited us from doing the operation
 			- 'result_msg' : array with informational messages that arose from completing the operation
 		*/
-		$err_msg = array();
-		$result_msg = array();
+		$err_msg = [];
+		$result_msg = [];
 		$has_transparency = false;
 
 		$src_ext = strtolower(pathinfo($inputfilepath, PATHINFO_EXTENSION));
 		if ($src_ext == 'jpeg') $src_ext = 'jpg';
 		if ($src_ext == 'tiff') $src_ext = 'tif';
-		if (!in_array($src_ext, array('jpg', 'png', 'tif'))) {
+		if (!in_array($src_ext, ['jpg', 'png', 'tif'])) {
 			$err_msg[] = 'Input file extension '. $src_ext .' is not supported.';
 		}
 		if ($src_ext == 'tif') {
@@ -278,20 +278,20 @@ class imaging {
 				if ($src_ext == 'tif') {
 					core::system_error('Writing text on the TIFF images is not yet supported by resize_save().');
 				} else {
-					$options['add_elements'] = array(
-						array(
+					$options['add_elements'] = [
+						[
 							'type' => 'text',
 							'add_transp_bg' => true,
 							'position' => 'bottom_left',
 							'writetext' => $options['add_elements'],
 							'fontsize' => 10,
 							'angle' => 0,
-						)
-					);
+						]
+					];
 				}
 			}
 			if (!is_array($options['add_elements'])) {
-				$options['add_elements'] = array();
+				$options['add_elements'] = [];
 			}
 			foreach ($options['add_elements'] as $elem) {
 				if ($elem['type'] == 'text') {
@@ -323,7 +323,7 @@ class imaging {
 				$img_src->clear();
 				$img_src->destroy();
 			} else {
-				if (in_array($dest_ext, array('jpg', 'jpeg'))) {
+				if (in_array($dest_ext, ['jpg', 'jpeg'])) {
 					if (!imagejpeg($img_dst, $outputfilepath, $options['quality'])) {
 						$err_msg[] = 'Failed to write JPG file.';
 					}
@@ -351,17 +351,17 @@ class imaging {
 		}
 
 		if (count($err_msg) > 0) {
-			$result = array(
+			$result = [
 				'status' => 'error',
 				'err_msg' => $err_msg,
-				'result_msg' => array(),
-			);
+				'result_msg' => [],
+			];
 		} else {
-			$result = array(
+			$result = [
 				'status' => 'ok',
-				'err_msg' => array(),
+				'err_msg' => [],
 				'result_msg' => $result_msg,
-			);
+			];
 		}
 		if ($dest_ext == 'png' && $options['calc_png_compression_savings'] && $size_before) {
 			$result['png_compression_savings'] = $size_before - $size_after;
@@ -379,14 +379,14 @@ class imaging {
 	 * @param string $image_path_cmyk : Full path required
 	 * @return boolean : Whether the conversion actually took place
 	 */
-	static public function convert_rgb_to_cmyk($image_path_rgb, $image_path_cmyk, $options = array() ) {
-		$defaults = array(
+	static public function convert_rgb_to_cmyk($image_path_rgb, $image_path_cmyk, $options = []) {
+		$defaults = [
 			'rgb_icc_profile_path' => '',
 			'cmyk_icc_profile_path' => '',
 			'force_overwrite' => false,
 			'jpg_compression_quality' => 80,
 			'only_if_applicable' => false,
-		);
+		];
 
 		if (!extension_loaded('imagick')) {
 			core::system_error('The extension Imagick is not installed. Required for converting RGB to CMYK.');
@@ -448,7 +448,7 @@ class imaging {
 		$img->setImageFormat($file_format);   // (png doesn't support CMYK)
 
 		if (!$img->writeImage($image_path_cmyk)) {
-			core::system_error('Writing the CMYK file failed when converting RGB.', array('File' => $image_path_cmyk));
+			core::system_error('Writing the CMYK file failed when converting RGB.', ['File' => $image_path_cmyk]);
 		}
 		$img->clear();
 		$img->destroy();
@@ -626,13 +626,13 @@ class imaging {
 		// escapeshellarg() makes this safe to use with any path
 		if ($options['save_to_file']) {
 			$cmd = 'pngquant --quality='. $options['min_quality'] .'-'. $options['max_quality'] .' --output='. escapeshellarg($options['save_to_file']) . ($options['allow_overwrite'] ? ' --force' : '') .' '. escapeshellarg($input_file_png) .' 2>&1';  //redirect stderr to stdout in order to see error messages
-			$output = array();
+			$output = [];
 			$exitcode = null;
 			exec($cmd, $output, $exitcode);
 
 			if ($exitcode != 0 && !in_array($exitcode, $options['ignore_exitcodes']) && $options['ignore_exitcodes'][0] !== '*') {
 				// Possible exit codes: https://github.com/kornelski/pngquant/blob/master/rwpng.h#L22
-				$exitcode_map = array(
+				$exitcode_map = [
 					0 => 'SUCCESS',
 					1 => 'MISSING_ARGUMENT',
 					2 => 'READ_ERROR',
@@ -647,7 +647,7 @@ class imaging {
 					35 => 'LIBPNG_INIT_ERROR',
 					98 => 'TOO_LARGE_FILE',
 					99 => 'TOO_LOW_QUALITY',
-				);
+				];
 				core::system_error('Conversion to compressed PNG failed. '. $exitcode_map[$exitcode], ['File' => $input_file_png, 'Command' => $cmd, 'Exit code' => $exitcode, 'Output' => $output]);
 			}
 		} else {

@@ -17,7 +17,7 @@ class xml {
 		if (is_array($tag)) {
 			$attribs = $tag[1];
 			$tag = $tag[0];
-			$tmp = array();
+			$tmp = [];
 			foreach ($attribs as $name => $value) {
 				if (strpos($eff_flags, 'skip-entities') === false) {
 					$tmp[] = $name .'="'. xml_entities($value) .'"';
@@ -46,23 +46,23 @@ class xml {
 	public static function xml_entities($string) {
 		$string = (string) $string;
 		// Unlike HTML, XML supports only five "named character entities":
-		$named_entities = array(
+		$named_entities = [
 			'&' => '&amp;', //ampersand
 			'<' => '&lt;', //less-than
 			'>' => '&gt;', //greater-than
 			"'" => '&apos;', //apostrophe (single-quote)
 			'"' => '&quot;', //quotation (double-quote)
-		);
+		];
 		/*
 		FOR DEVELOPER:
-		The five characters above are the only characters that require escaping in XML. 
-		All other characters can be entered directly in an editor that supports UTF-8. 
-		You can also use numeric character references that specify 
+		The five characters above are the only characters that require escaping in XML.
+		All other characters can be entered directly in an editor that supports UTF-8.
+		You can also use numeric character references that specify
 		the Unicode for the character, for example:
 			©	copyright sign				&#xA9;
 			?	sound recording copyright	&#x2117;
 			™	trade mark sign				&#x2122;
-		
+
 		For more documentation see http://www.xml.com/axml/target.html#sec-references
 		*/
 		foreach ($named_entities as $name => $entity) {
@@ -100,9 +100,9 @@ class xml {
 		// Cast string values "true" and "false" to booleans
 		if ($options['convert_booleans']) {
 			$bool = function(&$item, $key) {
-				if (in_array($item, array('true', 'TRUE', 'True'), true)) {
+				if (in_array($item, ['true', 'TRUE', 'True'], true)) {
 					$item = true;
-				} elseif (in_array($item, array('false', 'FALSE', 'False'), true)) {
+				} elseif (in_array($item, ['false', 'FALSE', 'False'], true)) {
 					$item = false;
 				}
 			};

@@ -37,13 +37,13 @@ class salesforce_sync {
 	public function __construct($client_id, $client_secret, $username, $password, $security_token, $login_uri, $api_version, $enterprise_wsdl_path, $token_storage_instance = null) {
 		/*
 		DESCRIPTION:
-		- 
+		-
 		INPUT:
 		- $token_storage_instance : class with these methods:
 			- saveToken($access_token, $instance_url) which returns nothing
 			- getToken() which returns eg. array('access_token' => 'rELHinuBmp9i98HBV4h7mMWVh', 'instance_url' => 'https://na30.salesforce.com')
 		OUTPUT:
-		- 
+		-
 		*/
 		$this->client_id = $client_id;
 		$this->client_secret = $client_secret;
@@ -93,7 +93,7 @@ class salesforce_sync {
 			}
 
 			if (!class_exists('\Phpforce\SoapClient\ClientBuilder', true)) {
-				system_error('Salesforce SOAP API Client is not available. Please install composer package phpforce/soap-client.', array() );
+				system_error('Salesforce SOAP API Client is not available. Please install composer package phpforce/soap-client.', []);
 			}
 
 			$builder = new \Phpforce\SoapClient\ClientBuilder($this->enterprise_wsdl_path, $this->username, $this->password, $this->security_token);
@@ -132,7 +132,7 @@ class salesforce_sync {
 			- if $previous_values was provided only changed fields will be sent to salesforce
 			- not necessary when action=delete
 		OUTPUT:
-		- 
+		-
 		*/
 
 
@@ -222,7 +222,7 @@ class salesforce_sync {
 				file_put_contents('dump_sf_fields.txt', print_r($fields, true) ."\r\n--------------------- line ". __LINE__ ." in ". __FILE__ ." at ". date('Y-m-d H:i:s') ."\r\n\r\n\r\n", FILE_APPEND);
 			}
 
-			$sf_fields = array();
+			$sf_fields = [];
 			foreach ($fields as $sh_colname => $field) {
 				foreach ($field_map as $fld_cfg) {
 					if ($fld_cfg['trigger_field'] == $sh_colname) {
@@ -285,7 +285,7 @@ class salesforce_sync {
 				return;
 			}
 		} catch (\Exception $e) {
-			system_error('Failed to send record to Salesforce.', array('Salesforce fields' => $sf_fields, 'Exception' => $e), array('xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING') );
+			system_error('Failed to send record to Salesforce.', ['Salesforce fields' => $sf_fields, 'Exception' => $e], ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
 			return;
 		}
 	}
@@ -295,9 +295,9 @@ class salesforce_sync {
 		DESCRIPTION:
 		- receive a single record from Salesforce to be added/updated/deleted here
 		INPUT:
-		- 
+		-
 		OUTPUT:
-		- 
+		-
 		*/
 
 
@@ -316,7 +316,7 @@ class salesforce_sync {
 		- $field_map (req.) : array where the values contain an associative array according to the argument $field_cfg of the function convert_value_to_salesforce()
 		- $existing_records (req.) : output from get_existing_records()
 		OUTPUT:
-		- 
+		-
 		*/
 		if (PHP_SAPI !== 'cli') {
 			core::system_error('Salesforce table sync must be done from command line.');
@@ -340,10 +340,10 @@ class salesforce_sync {
 		}
 
 		$max_records_per_request = 200;  //Source: http://www.salesforce.com/us/developer/docs/api/Content/sforce_api_calls_create.htm
-		$sfrecords = array(
+		$sfrecords = [
 			'add' => [],
 			'update' => [],
-		);
+		];
 
 		$show_nonchanged = false;
 
@@ -419,7 +419,7 @@ class salesforce_sync {
 					}
 
 					// Set which fields need to have their values removed (this must also be done when $action == 'add')
-					$sfrecords[$action][$recindex]->fieldsToNull = array();
+					$sfrecords[$action][$recindex]->fieldsToNull = [];
 					foreach ($sfrecords[$action][$recindex] as $key => $d) {
 						if ($d === null || $d === '') {
 							$sfrecords[$action][$recindex]->fieldsToNull[] = $key;
@@ -436,7 +436,7 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 
 					if (count($sfrecords[$action]) >= $max_records_per_request) {
 						$this->do_salesforce_addupdate_request($action, $sf_object, $sfrecords[$action]);
-						$sfrecords[$action] = array();  //reset for next batch
+						$sfrecords[$action] = [];  //reset for next batch
 					}
 
 					echo ' Done';
@@ -472,7 +472,7 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		// Delete the contacts that are no longer found in our website database
 		if (count($existing_records) > 0) {
 			// TODO: don't we need to split it up into multiple requests if there are more than 200 records to be deleted?
-			$delete_IDs = array();
+			$delete_IDs = [];
 			foreach ($existing_records as $curr_recordID => $c_data) {
 				echo PHP_EOL ."Delete...";
 				echo ": ". $our_primkey ." ". $curr_recordID ."   (Salesforce ID ". $c_data['salesforce_id'] .")";
@@ -499,7 +499,7 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 
 			foreach ($response as $result) {
 				if ( ! $result->isSuccess()) {
-					core::system_error('Failed to delete '. $sf_object .' from Salesforce.', array('Salesforce ID' => $result->id, 'Err msg' => print_r($result->errors, true)) );
+					core::system_error('Failed to delete '. $sf_object .' from Salesforce.', ['Salesforce ID' => $result->id, 'Err msg' => print_r($result->errors, true) ]);
 				}
 			}
 			echo ' Done with all.';
@@ -561,13 +561,13 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		$errors = [];
 		foreach ($rsp as $curr_record) {
 			if ( ! $curr_record->isSuccess()) {
-				$errors[] = array('msg' => $curr_record->errors);
+				$errors[] = ['msg' => $curr_record->errors];
 			} else {
 				$success_count++;
 			}
 		}
 		if (count($errors) > 0) {
-			core::system_error('Failed to add/update '. $sf_object .' in Salesforce.', array('Success count' => $success_count .' of '. count($rsp), 'Action' => $action, 'SF object' => $sf_object, 'Err msg' => print_r($errors, true)) );
+			core::system_error('Failed to add/update '. $sf_object .' in Salesforce.', ['Success count' => $success_count .' of '. count($rsp), 'Action' => $action, 'SF object' => $sf_object, 'Err msg' => print_r($errors, true) ]);
 		}
 	}
 
@@ -581,7 +581,7 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		- $sf_lastmodified : Salesforce field name holding the value of our last modified timestamp (eg. ShareHim_LastModified__c)
 		- $our_timestamp_timezone : if our data is not in UTC provide the PHP timezone string that must be applied to convert the timestamps to UTC (otherwise set null or false)
 		OUTPUT:
-		- 
+		-
 		*/
 		// Field list is found in WSDL (or standard fields: https://na14.salesforce.com/p/setup/layout/LayoutFieldList?type=Contact&setupid=ContactFields&retURL=%2Fui%2Fsetup%2FSetup%3Fsetupid%3DContact)
 		// REMEMBER! New custom fields must be added to the WSDL (= regenerated) before they are visible here!
@@ -629,22 +629,22 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 			call_user_func($this->exec_curl_log_callback, $data);
 		}
 
-		$existing = array();
+		$existing = [];
 		foreach ($results as $record) {  //the iterator automatically do additional calls to fetch all records when the total is more than 2000
 			if (!property_exists($record, $sf_primkey)) {
 				core::system_error('Property holding value of our primary key does not exist '. $sf_object .' in Salesforce.', ['PrimKey' => $sf_primkey, 'More' => 'Maybe we forgot to generate new WSDL?']);
 			}
 			if (is_numeric($record->{$sf_primkey})) {  //don't touch records that don't have a ShareHim personID
 				if ($record->$sf_lastmodified) {
-					$existing[$record->{$sf_primkey}] = array(
+					$existing[$record->{$sf_primkey}] = [
 						'our_last_modified' => ($our_timestamp_timezone != 'system' && $our_timestamp_timezone != date_default_timezone_get() ? datetime::change_timestamp_timezone($record->$sf_lastmodified->format('Y-m-d H:i:s'), date_default_timezone_get(), $our_timestamp_timezone) : $record->$sf_lastmodified->format('Y-m-d H:i:s')),   //get the timestamp in our own timezone (OBS!! Phpforce\SoapClient automatically converts timestamp to the system timezone!)
 						'salesforce_id' => $record->Id,
-					);
+					];
 				} else {
-					$existing[$record->{$sf_primkey}] = array(
+					$existing[$record->{$sf_primkey}] = [
 						'our_last_modified' => null,
 						'salesforce_id' => $record->Id,
-					);
+					];
 				}
 			}
 		}
@@ -658,7 +658,7 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 	}
 
 	public function fields_updated($config_instance, $our_table, $oldinfo, $newinfo) {
-		$changes = array();
+		$changes = [];
 
 		$fields = $config_instance->fields_to_sync($our_table);
 		foreach ($fields as $field) {
@@ -678,7 +678,7 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		- $existing_records : output from get_existing_records()
 		- $our_ID : ID from our database that we need to find the Salesforce ID of
 		OUTPUT:
-		- 
+		-
 		*/
 		if (empty($our_ID)) {
 			core::system_error('Missing our ID for finding Salesforce ID.'. json_encode($existing_records[0]));

@@ -17,9 +17,9 @@ class csv_parser {
 	// Runtime
 	public $fieldcount_differs = false;
 
-	public function __construct($options = array()) {
+	public function __construct($options = []) {
 		if (!empty($options)) {
-			$option_names = array('delimiter', 'enclosure', 'escape', 'first_line_is_header', 'replace_tab_with_comma', 'trim_values', 'max_line_length');
+			$option_names = ['delimiter', 'enclosure', 'escape', 'first_line_is_header', 'replace_tab_with_comma', 'trim_values', 'max_line_length'];
 			foreach ($option_names as $option_name) {
 				if (array_key_exists($option_name, $options)) {
 					$this->$option_name = $options[$option_name];
@@ -49,8 +49,8 @@ class csv_parser {
 
 		$row_count = 0;
 		$fieldcount = false;
-		$output = array();
-		$fieldnames = array();
+		$output = [];
+		$fieldnames = [];
 		// Write string to memory
 		$handle = fopen('php://temp', 'w');   //Source: http://no2.php.net/wrappers.php (PHP input/output streams)
 		fwrite($handle, $csv_data);
@@ -61,7 +61,7 @@ class csv_parser {
 				return false;
 			}
 		    $row_count++;
-			$curr_row = array();
+			$curr_row = [];
 			$curr_fieldcount = count($data);
 			if ($fieldcount !== false && $curr_fieldcount != $fieldcount) {
 				//different number of fields per line was discovered
