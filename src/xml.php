@@ -114,7 +114,7 @@ class xml {
 
 	public static function dump_xml($xml_string) {
 		echo '<pre style="background-color: #feccfc; padding: 5px; border: 1px solid #e8aee6; border-radius: 3px; display: inline-block">';
-		$dom = new DOMDocument;
+		$dom = new \DOMDocument;
 		$dom->preserveWhiteSpace = FALSE;
 		$dom->loadXML($xml_string);
 		$dom->formatOutput = TRUE;
