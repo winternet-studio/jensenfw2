@@ -19,7 +19,7 @@ class datetime {
 	 *
 	 * Works together with [format_local()]
 	 *
-	 * @param string : ICU locale. Eg. `en_US`, `da_DK` or `nb_NO`
+	 * @param string $locale : ICU locale. Eg. `en_US`, `da_DK` or `nb_NO`
 	 */
 	public static function set_default_locale($locale) {
 		static::$_defaultLocale = $locale;
@@ -33,7 +33,8 @@ class datetime {
 	 *
 	 * Uses the Intl extension.
 	 *
-	 * @param DateTime|integer : DateTime object (timezone not respected) or Unix timestamp or anything IntlDateFormatter::format() accepts.
+	 * @param DateTime|integer $datetime : DateTime object (timezone not respected) or Unix timestamp or anything IntlDateFormatter::format() accepts.
+	 * @param string $format : According to https://www.php.net/manual/en/intldateformatter.setpattern.php
 	 */
 	public static function format_local($datetime, $format, $locale = null) {
 		if ($locale) {
@@ -52,7 +53,42 @@ class datetime {
 	}
 
 	/**
-	 * Format dates and/or times according to locale settings
+	 * Get the local format of writing day and month
+	 *
+	 * Wikipedia article about date formatting in different countries: https://en.wikipedia.org/wiki/Date_format_by_country
+	 *
+	 * @param string $locale : ICU locale. Eg. `en_US`, `da_DK` or `nb_NO`
+	 * @param string $options : Available options:
+	 *   - `shortMonthDot`   : use 3-letter month abbreviation instead of fully spelled out with    dot after the abbreviation
+	 *   - `shortMonthNoDot` : use 3-letter month abbreviation instead of fully spelled out without dot after the abbreviation
+	 *
+	 * @return string : Format that can be used with [format_local()] according to https://www.php.net/manual/en/intldateformatter.setpattern.php. Eg. `
+	 */
+	public static function day_month_local_format($locale = null, $options = []) {
+		if (!$locale) {
+			$locale = static::$_defaultLocale;
+		}
+		if ($locale === 'en_US') {
+			if ($options['shortMonthDot']) {
+				return 'MMM. d';
+			} elseif ($options['shortMonthNoDot']) {
+				return 'MMM d';
+			} else {
+				return 'MMMM d';
+			}
+		} else {
+			if ($options['shortMonthDot']) {
+				return 'd. MMM.';
+			} elseif ($options['shortMonthNoDot']) {
+				return 'd. MMM';
+			} else {
+				return 'd. MMMM';
+			}
+		}
+	}
+
+	/**
+	 * DEPRECATED. Format dates and/or times according to locale settings
 	 *
 	 * Based on strftime() but adjusted to work correctly
 	 *
