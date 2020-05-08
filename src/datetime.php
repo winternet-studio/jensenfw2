@@ -9,6 +9,48 @@ class datetime {
 	public static $scripttimer_meantimecount = null;
 	public static $scripttimer_lastmeantime = null;
 
+	public static $_formatters = [];
+	public static $_defaultLocale = null;
+
+	/**
+	 * Set default locale
+	 *
+	 * Uses the Intl extension.
+	 *
+	 * Works together with [format_local()]
+	 *
+	 * @param string : ICU locale. Eg. `en_US`, `da_DK` or `nb_NO`
+	 */
+	public static function set_default_locale($locale) {
+		static::$_defaultLocale = $locale;
+		if (!array_key_exists($locale, static::$_formatters)) {
+			static::$_formatters[$effLocale] = new \IntlDateFormatter($locale, \IntlDateFormatter::SHORT, \IntlDateFormatter::SHORT);
+		}
+	}
+
+	/**
+	 * Format dates and/or times according to locale settings
+	 *
+	 * Uses the Intl extension.
+	 *
+	 * @param DateTime|integer : DateTime object (timezone not respected) or Unix timestamp or anything IntlDateFormatter::format() accepts.
+	 */
+	public static function format_local($datetime, $format, $locale = null) {
+		if ($locale) {
+			$effLocale = $locale;
+		} elseif (static::$_defaultLocale) {
+			$effLocale = static::$_defaultLocale;
+		} else {
+			$effLocale = setlocale(LC_TIME, 0);
+		}
+		if (!array_key_exists($effLocale, static::$_formatters)) {
+			static::$_formatters[$effLocale] = new \IntlDateFormatter($effLocale, \IntlDateFormatter::SHORT, \IntlDateFormatter::SHORT);
+		}
+
+		static::$_formatters[$effLocale]->setPattern($format);
+		return static::$_formatters[$effLocale]->format($datetime);
+	}
+
 	/**
 	 * Format dates and/or times according to locale settings
 	 *
@@ -20,6 +62,8 @@ class datetime {
 	 * @return string
 	 */
 	public static function format_datetime_local($format, $date_unix) {
+		trigger_error('format_datetime_local() has been deprecated. You should use format_local() instead - it uses the Intl extension.', E_USER_DEPRECATED);
+
 		$output = $format;
 		$working = ['a', 'A', 'B', 'c', 'C', 'd', 'D', 'g', 'h', 'H', 'I', 'j', 'm', 'n', 'p', 'r', 'R', 'S', 't', 'T', 'u', 'U', 'V', 'W', 'w', 'x', 'X', 'y', 'Y', 'Z'];
 		// Do all the working values
