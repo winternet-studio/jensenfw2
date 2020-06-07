@@ -4,6 +4,8 @@ namespace winternet\jensenfw2;
 /**
  * Methods related to geography
  *
+ * Latitude/longitude is specified in WGS84 (also named EPSG:4326).
+ *
  * TESTS:
  * ```
  * $longitude_x = 37.6;  // x-coordinate of the point to test
@@ -11,7 +13,7 @@ namespace winternet\jensenfw2;
  *
  * $polygon = array(array(37.628134,-77.458334), array(37.629867,-77.449021), array(37.62324,-77.445416), array(37.622424,-77.457819));
  *
- * if (is_in_polygon($polygon, $longitude_x, $latitude_y)) {
+ * if (geography::is_in_polygon($polygon, $longitude_x, $latitude_y)) {
  * 	echo 'Is inside polygon';
  * } else {
  * 	echo 'Is outside polygon';
@@ -196,6 +198,8 @@ class geography {
 	/**
 	 * Calculate the coordinates for a square around a center point
 	 *
+	 * @see latlng_to_bbox()
+	 *
 	 * @param float $lat : Center point latitude
 	 * @param float $lng : Center point longitude
 	 * @param float $distance : Distance from the center point to the edge in kilometers
@@ -347,5 +351,80 @@ class geography {
 				$c = !$c;
 		}
 		return $c;
+	}
+
+	/**
+	 * Convert X/Y/Zoom from slippy map tile names to latitude/longitude
+	 *
+	 * @link https://gis.stackexchange.com/questions/109095/converting-xyz-tile-request-to-wms-request
+	 * @link https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
+	 */
+	public static function convert_xyzoom_to_latlng($xtile, $ytile, $zoom) {
+		$n = pow(2, $zoom);
+		$lon_deg = $xtile / $n * 360.0 - 180.0;
+		$lat_deg = rad2deg(atan(sinh(pi() * (1 - 2 * $ytile / $n))));
+		return [
+			'lng' => $lon_deg,
+			'lat' => $lat_deg,
+		];
+	}
+
+	/**
+	 * Convert latitude/longitude to X/Y/Zoom from slippy map tile names
+	 */
+	public static function convert_latlng_to_xyzoom($lat, $lng, $zoom) {
+		$xtile = floor((($lng + 180) / 360) * pow(2, $zoom));
+		$ytile = floor((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) /2 * pow(2, $zoom));
+		return [
+			'x' => $xtile,
+			'y' => $ytile,
+		];
+	}
+
+	/**
+	 * Convert latitude/longitude to a bounding box
+	 *
+	 * @link https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Lon..2Flat._to_bbox
+	 *
+	 * @see square_around_point()
+	 *
+	 * @param string $anchor_point : `center` or `top-left`
+	 */
+	public static function latlng_to_bbox($lat, $lng, $zoom, $map_width = 1000, $map_height = 1000, $anchor_point = 'center') {
+		$tile_size = 256;
+
+		list('x' => $xtile, 'y' => $ytile) = static::convert_latlng_to_xyzoom($lat, $lng, $zoom);
+
+		if ($anchor_point === 'center') {
+			$xtile_s = ($xtile * $tile_size - $map_width/2) / $tile_size;
+			$ytile_s = ($ytile * $tile_size - $map_height/2) / $tile_size;
+			$xtile_e = ($xtile * $tile_size + $map_width/2) / $tile_size;
+			$ytile_e = ($ytile * $tile_size + $map_height/2) / $tile_size;
+		} elseif ($anchor_point === 'top-left') {
+			$xtile_s = ($xtile * $tile_size ) / $tile_size;
+			$ytile_s = ($ytile * $tile_size ) / $tile_size;
+			$xtile_e = ($xtile * $tile_size + $map_width) / $tile_size;
+			$ytile_e = ($ytile * $tile_size + $map_height) / $tile_size;
+		} else {
+			core::system_error('Invalid anchor point for converting latitude/longitude to a bounding box.', ['Anchor point' => $anchor_point]);
+		}
+
+		list('lng' => $lng_s, 'lat' => $lat_s) = static::convert_xyzoom_to_latlng($xtile_s, $ytile_s, $zoom);
+		list('lng' => $lng_e, 'lat' => $lat_e) = static::convert_xyzoom_to_latlng($xtile_e, $ytile_e, $zoom);
+
+		return [
+			'min_lng' => $lng_s,  //west
+			'max_lng' => $lng_e,  //east
+			'min_lat' => $lat_e,  //south
+			'max_lat' => $lat_s,  //north
+		];
+	}
+
+	/**
+	 * Convert X/Y/Zoom to a latitude/longitude bounding box, which can be used in a WMS service
+	 */
+	public static function xyzoom_to_bbox($xtile, $ytile, $zoom, $tile_size = 256) {
+		$coord = static::convert_xyzoom_to_latlng($xtile, $ytile, $zoom);
+		return static::latlng_to_bbox($coord['lat'], $coord['lng'], $zoom, $tile_size, $tile_size, 'top-left');  //default tile size is from https://tile.openstreetmap.org/16/34317/18715.png
 	}
 }
