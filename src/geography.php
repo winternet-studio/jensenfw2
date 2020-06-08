@@ -6,6 +6,9 @@ namespace winternet\jensenfw2;
  *
  * Latitude/longitude is specified in WGS84 (also named EPSG:4326).
  *
+ * @see https://github.com/proj4php/proj4php (another library that can convert between datums/projections)
+ * @see https://github.com/proj4js/proj4js
+ *
  * TESTS:
  * ```
  * $longitude_x = 37.6;  // x-coordinate of the point to test
@@ -198,7 +201,7 @@ class geography {
 	/**
 	 * Calculate the coordinates for a square around a center point
 	 *
-	 * @see latlng_to_bbox()
+	 * @see latlng_to_tile_map_bbox()
 	 *
 	 * @param float $lat : Center point latitude
 	 * @param float $lng : Center point longitude
@@ -382,6 +385,24 @@ class geography {
 	}
 
 	/**
+	 * Convert X/Y/Zoom from slippy map tile names to TMS tiles, or vice versa
+	 *
+	 * HAS NOT BEEN TESTED!
+	 *
+	 * @see https://gis.stackexchange.com/questions/132242/what-are-the-differences-between-tms-xyz-wmts
+	 *
+	 * @source https://gist.github.com/tmcw/4954720
+	 */
+	public static function convert_xyzoom_tofrom_tms($xtile, $ytile, $zoom) {
+		$ytile = pow(2, $zoom) - $ytile - 1;
+		return [
+			'x' => $xtile,
+			'y' => $ytile,
+			'zoom' => $zoom,
+		];
+	}
+
+	/**
 	 * Convert latitude/longitude to a bounding box
 	 *
 	 * @link https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Lon..2Flat._to_bbox
@@ -390,7 +411,7 @@ class geography {
 	 *
 	 * @param string $anchor_point : `center` or `top-left`
 	 */
-	public static function latlng_to_bbox($lat, $lng, $zoom, $map_width = 1000, $map_height = 1000, $anchor_point = 'center') {
+	public static function latlng_to_tile_map_bbox($lat, $lng, $zoom, $map_width = 1000, $map_height = 1000, $anchor_point = 'center') {
 		$tile_size = 256;
 
 		list('x' => $xtile, 'y' => $ytile) = static::convert_latlng_to_xyzoom($lat, $lng, $zoom);
@@ -425,6 +446,6 @@ class geography {
 	 */
 	public static function xyzoom_to_bbox($xtile, $ytile, $zoom, $tile_size = 256) {
 		$coord = static::convert_xyzoom_to_latlng($xtile, $ytile, $zoom);
-		return static::latlng_to_bbox($coord['lat'], $coord['lng'], $zoom, $tile_size, $tile_size, 'top-left');  //default tile size is from https://tile.openstreetmap.org/16/34317/18715.png
+		return static::latlng_to_tile_map_bbox($coord['lat'], $coord['lng'], $zoom, $tile_size, $tile_size, 'top-left');  //default tile size is from https://tile.openstreetmap.org/16/34317/18715.png
 	}
 }
