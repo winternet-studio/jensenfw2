@@ -953,6 +953,16 @@ class core {
 	//////////////////////////// Extra utility functions ////////////////////////////
 
 	/**
+	 * @param string|integer|float $integer
+	 */
+	public static function is_integer($variable) {
+		if (filter_var($variable, FILTER_VALIDATE_INT) === false) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
 	 * Searches for a given string (full or part) in an array, case-insensitive
 	 */
 	public static function arristr($haystack = '', $needle = []) {
