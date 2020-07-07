@@ -104,7 +104,7 @@ class network {
 	 * - NO code or output after calling this function will be processed as the script is terminated when this function is done (unless an error occurs)
 	 * - for serving from file system MIME.magic needs to be installed if the function should automatically determine the MIME type/Content Type
 	 *
-	 * WARNING - PROBLEM!! On sharehim.org it locks the user from requesting any other pages (PHP page only I believe) while it is serving the file! Is there a solution for this?! Alternative could be to just redirect to the real file (but the user will then be able to see the location)
+	 * WARNING - PROBLEM!! On one host it locked the user from requesting any other pages (PHP page only I believe) while it is serving the file! Is there a solution for this?! Is it a session locking issue? Alternative could be to just redirect to the real file (but the user will then be able to see the location)
 	 *
 	 * @param string|array $file (req.) : File on the server (incl. path if in different folder) or URL that you want to send (the file name suggested to the user will be the same as the original file name) or the file content itself (then the array method must be used)
 	 *	- if a two-item numeric array:

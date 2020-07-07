@@ -76,8 +76,8 @@ class system_administration {
 	 *      Example:
 	 * 		```
 	 *		$databases = [
-	 *			'swiftlayout_main' => [
-	 *				'ignore_tables' => ['temp_emaillog_raw', 'temp_indesign_export_requests', 'temp_server_usage'],
+	 *			'mydatabase_main' => [
+	 *				'ignore_tables' => ['temp_emaillog_raw', 'temp_logs'],
 	 *			],
 	 *		];
 	 *		```
@@ -233,9 +233,9 @@ class system_administration {
 	 *   - `source_path` (req.) : path to backup. End with slash to copy all contents, leave slash out to copy including the folder itself.
 	 *   - `destination_server` (req.) : user and server to backup to. Eg. `someuser@yourbackupserver.com`. Private key authentication, port, etc must be put in ~/.ssh/config for the user running this script, eg.:
 	 *      ```
-	 *      Host tn1.sharehim.org
-	 *          Port 22100
-	 *          IdentityFile ~/tn1_swiftbck.pem
+	 *      Host myhost.com
+	 *          Port 22
+	 *          IdentityFile ~/keyfile.pem
 	 *          IdentitiesOnly yes
 	 *      ```
 	 *      Note: The user we connect as should be owner of all files and folders in the destination.

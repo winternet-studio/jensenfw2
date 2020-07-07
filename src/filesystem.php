@@ -848,7 +848,7 @@ class filesystem {
 
 			$headers = [[0, 1, 0, 0]];  //hex: 00 01 00 00 00
 
-		} elseif ((!$options['is_mime'] && $ext_or_mime === 'indd') || ($options['is_mime'] && in_array($ext_or_mime, ['application/x-indesign', 'application/octet-stream' /*on Swiftlayout server it gave this type for .indd files*/], true))) {
+		} elseif ((!$options['is_mime'] && $ext_or_mime === 'indd') || ($options['is_mime'] && in_array($ext_or_mime, ['application/x-indesign', 'application/octet-stream' /*on one server it gave this type for .indd files*/], true))) {
 
 			$headers = [[6, 6, 237, 245, 216, 29, 70, 229, 189, 49, 239, 231, 254, 116, 183, 29]];  //hex: 06 06 ED F5 D8 1D 46 e5 BD 31 EF E7 FE 74 B7 1D - followed by an 8-byte file type specifier: "DOCUMENT" (even when saved as template), "BOOKBOOK", or "LIBRARY4", which need the proper extensions .indd, .indb, .indl. (source: https://forums.adobe.com/thread/705908)
 

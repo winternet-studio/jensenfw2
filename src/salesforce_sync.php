@@ -352,15 +352,8 @@ class salesforce_sync {
 		// Get all records from our database and check each one if they need to be updated or added
 		$sql  = "SELECT * ";
 		$sql .= "FROM ". $our_table ." ";
-		// if ($our_table == 'main_people') {
-		// 	$sql .= "WHERE personID <= 200 ";
-		// } elseif ($our_table == 'main_people_addresses') {
-		// 	$sql .= "WHERE padr_personID <= 200 ";
-		// } elseif ($our_table == 'main_people_phones') {
-		// 	$sql .= "WHERE ptel_personID <= 200 ";
-		// }
 		$sql .= "ORDER BY ". $our_primkey ." ";
-		$records =& core::database_query($sql, 'Database query failed for getting ShareHim records failed.');
+		$records =& core::database_query($sql, 'Database query failed for getting local records failed.');
 		if (mysqli_num_rows($records) > 0) {
 
 			$this->connect_salesforce_soap();
@@ -577,8 +570,8 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		- get existing records from Salesforce for a given object (= database table)
 		INPUT:
 		- $sf_object : Salesforce object to retrieve existing records from
-		- $sf_primkey : Salesforce field name holding the value of the ShareHim primary key (eg. ShareHim_Person_ID__c)
-		- $sf_lastmodified : Salesforce field name holding the value of our last modified timestamp (eg. ShareHim_LastModified__c)
+		- $sf_primkey : Salesforce field name holding the value of our own primary key (eg. MyPhpSystem_Person_ID__c)
+		- $sf_lastmodified : Salesforce field name holding the value of our last modified timestamp (eg. MyPhpSystem_LastModified__c)
 		- $our_timestamp_timezone : if our data is not in UTC provide the PHP timezone string that must be applied to convert the timestamps to UTC (otherwise set null or false)
 		OUTPUT:
 		-
@@ -634,7 +627,7 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 			if (!property_exists($record, $sf_primkey)) {
 				core::system_error('Property holding value of our primary key does not exist '. $sf_object .' in Salesforce.', ['PrimKey' => $sf_primkey, 'More' => 'Maybe we forgot to generate new WSDL?']);
 			}
-			if (is_numeric($record->{$sf_primkey})) {  //don't touch records that don't have a ShareHim personID
+			if (is_numeric($record->{$sf_primkey})) {  //don't touch records in Salesforce that don't have an integer reference to the primary key in our own table
 				if ($record->$sf_lastmodified) {
 					$existing[$record->{$sf_primkey}] = [
 						'our_last_modified' => ($our_timestamp_timezone != 'system' && $our_timestamp_timezone != date_default_timezone_get() ? datetime::change_timestamp_timezone($record->$sf_lastmodified->format('Y-m-d H:i:s'), date_default_timezone_get(), $our_timestamp_timezone) : $record->$sf_lastmodified->format('Y-m-d H:i:s')),   //get the timestamp in our own timezone (OBS!! Phpforce\SoapClient automatically converts timestamp to the system timezone!)
