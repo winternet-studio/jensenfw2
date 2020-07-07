@@ -19,7 +19,6 @@
     "autoload": {
         "psr-4": {
             "winternet\\jensenfw2\\": "src/"
-        },
-        "_comment": "To always include a file whenever this library is used add a property here here called 'files' with the value of [\"src/_functions.php\"]"
+        }
     }
 }
