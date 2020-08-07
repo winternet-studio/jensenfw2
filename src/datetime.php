@@ -34,9 +34,14 @@ class datetime {
 	 * Uses the Intl extension.
 	 *
 	 * @param DateTime|integer $datetime : DateTime object (timezone not respected) or Unix timestamp or anything IntlDateFormatter::format() accepts.
-	 * @param string $format : According to https://www.php.net/manual/en/intldateformatter.setpattern.php
+	 * @param string $format : According to https://www.php.net/manual/en/intldateformatter.setpattern.php. Eg. `EEEE, d. MMMM yyyy`
+	 *   - use string `DAYMTH` to automatically insert day and month in correct order. Eg. `EEEE, DAYMTH yyyy`
+	 * @param string $locale : ICU locale. Eg. `en_US`, `en-US`, `da_DK` or `nb_NO`
+	 * @param string $options : Available options:
+	 *   - `shortMonth`      : set true to use abbreviated month name (Intl automatically determines if dot should be added)    (only applicable if pattern `DAYMTH` is used in `$format`)
+	 *   - `shortMonthNoDot` : set true to use abbreviated month name instead of fully spelled out, and enforce no trailing dot (only applicable if pattern `DAYMTH` is used in `$format`)
 	 */
-	public static function format_local($datetime, $format, $locale = null) {
+	public static function format_local($datetime, $format, $locale = null, $options = []) {
 		if ($locale) {
 			$effLocale = $locale;
 		} elseif (static::$_defaultLocale) {
@@ -48,8 +53,17 @@ class datetime {
 			static::$_formatters[$effLocale] = new \IntlDateFormatter($effLocale, \IntlDateFormatter::SHORT, \IntlDateFormatter::SHORT);
 		}
 
+		if (strpos($format, 'DAYMTH') !== false) {
+			$dayMonthFormat = static::day_month_local_format($locale, $options);
+			$format = str_replace('DAYMTH', $dayMonthFormat, $format);
+		}
+
 		static::$_formatters[$effLocale]->setPattern($format);
-		return static::$_formatters[$effLocale]->format($datetime);
+		$output = static::$_formatters[$effLocale]->format($datetime);
+		if ($options['shortMonthNoDot']) {
+			$output = preg_replace("/([^0-9]{3,})\\./", '$1', $output);
+		}
+		return $output;
 	}
 
 	/**
@@ -57,29 +71,25 @@ class datetime {
 	 *
 	 * Wikipedia article about date formatting in different countries: https://en.wikipedia.org/wiki/Date_format_by_country
 	 *
-	 * @param string $locale : ICU locale. Eg. `en_US`, `da_DK` or `nb_NO`
+	 * @param string $locale : ICU locale. Eg. `en_US`, `en-US`, `da_DK` or `nb_NO`
 	 * @param string $options : Available options:
-	 *   - `shortMonthDot`   : use 3-letter month abbreviation instead of fully spelled out with    dot after the abbreviation
-	 *   - `shortMonthNoDot` : use 3-letter month abbreviation instead of fully spelled out without dot after the abbreviation
+	 *   - `shortMonth`   : use abbreviated month name instead of fully spelled out (Intl extension automatically determines if dot should be added)  (the alternative `shortMonthNoDot` is just for internal use through format_local() )
 	 *
-	 * @return string : Format that can be used with [format_local()] according to https://www.php.net/manual/en/intldateformatter.setpattern.php. Eg. `
+	 * @return string : Format that can be used with [format_local()] according to https://www.php.net/manual/en/intldateformatter.setpattern.php. Eg. `d. MMMM`
 	 */
 	public static function day_month_local_format($locale = null, $options = []) {
 		if (!$locale) {
 			$locale = static::$_defaultLocale;
 		}
-		if ($locale === 'en_US') {
-			if ($options['shortMonthDot']) {
-				return 'MMM. d';
-			} elseif ($options['shortMonthNoDot']) {
+
+		if ($locale === 'en_US' || $locale === 'en-US') {
+			if ($options['shortMonth'] || $options['shortMonthNoDot']) {
 				return 'MMM d';
 			} else {
 				return 'MMMM d';
 			}
 		} else {
-			if ($options['shortMonthDot']) {
-				return 'd. MMM.';
-			} elseif ($options['shortMonthNoDot']) {
+			if ($options['shortMonth'] || $options['shortMonthNoDot']) {
 				return 'd. MMM';
 			} else {
 				return 'd. MMMM';
