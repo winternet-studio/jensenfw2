@@ -24,6 +24,10 @@ final class datetimeTest extends TestCase {
 		$expect = 'Saturday, 8. August';
 		$this->assertSame($expect, $result);
 
+		// Test automatic handling of comma between day and year
+		$this->assertSame('August 8, 2020', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'd. MMM yyyy', 'en_US'));
+		$this->assertSame('8. august 2020', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'd. MMM yyyy', 'da_DK'));
+
 		$this->assertSame('June 8', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'en_US'));
 		$this->assertSame('8. juni', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'da_DK'));
 		$this->assertSame('Jun 8', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'en_US', ['shortMonth' => true]));

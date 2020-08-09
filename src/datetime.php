@@ -35,11 +35,12 @@ class datetime {
 	 *
 	 * @param DateTime|integer $datetime : DateTime object (timezone not respected) or Unix timestamp or anything IntlDateFormatter::format() accepts.
 	 * @param string $format : According to https://www.php.net/manual/en/intldateformatter.setpattern.php. Eg. `EEEE, d. MMMM yyyy`
-	 *   - use string `DAYMTH` to automatically insert day and month in correct order. Eg. `EEEE, DAYMTH yyyy`
+	 *   - use string `DAYMTH` to automatically insert day and month in correct order. Eg. `EEEE, DAYMTH yyyy`  (comma will automatically be added between month and year when needed)
 	 * @param string $locale : ICU locale. Eg. `en_US`, `en-US`, `da_DK` or `nb_NO`
 	 * @param string $options : Available options:
-	 *   - `shortMonth`      : set true to use abbreviated month name (Intl automatically determines if dot should be added)    (only applicable if pattern `DAYMTH` is used in `$format`)
-	 *   - `shortMonthNoDot` : set true to use abbreviated month name instead of fully spelled out, and enforce no trailing dot (only applicable if pattern `DAYMTH` is used in `$format`)
+	 *   - `short_month`      : set true to use abbreviated month name (Intl automatically determines if dot should be added)    (only applicable if pattern `DAYMTH` is used in `$format`)
+	 *   - `short_month_no_dot` : set true to use abbreviated month name instead of fully spelled out, and enforce no trailing dot (only applicable if pattern `DAYMTH` is used in `$format`)
+	 *   - `skip_auto_comma_year` : set true to skip automatically handling comma between day and year
 	 */
 	public static function format_local($datetime, $format, $locale = null, $options = []) {
 		if ($locale) {
@@ -58,9 +59,14 @@ class datetime {
 			$format = str_replace('DAYMTH', $dayMonthFormat, $format);
 		}
 
+		// Automatically add comma between day and year, but not between month and year
+		if (!$options['skip_auto_comma_year'] && strpos($format, 'd yy') !== false) {
+			$format = str_replace('d yy', 'd, yy', $format);
+		}
+
 		static::$_formatters[$effLocale]->setPattern($format);
 		$output = static::$_formatters[$effLocale]->format($datetime);
-		if ($options['shortMonthNoDot']) {
+		if ($options['short_month_no_dot']) {
 			$output = preg_replace("/([^0-9]{3,})\\./", '$1', $output);
 		}
 		return $output;
@@ -73,7 +79,7 @@ class datetime {
 	 *
 	 * @param string $locale : ICU locale. Eg. `en_US`, `en-US`, `da_DK` or `nb_NO`
 	 * @param string $options : Available options:
-	 *   - `shortMonth`   : use abbreviated month name instead of fully spelled out (Intl extension automatically determines if dot should be added)  (the alternative `shortMonthNoDot` is just for internal use through format_local() )
+	 *   - `short_month`   : use abbreviated month name instead of fully spelled out (Intl extension automatically determines if dot should be added)  (the alternative `short_month_no_dot` is just for internal use through format_local() )
 	 *
 	 * @return string : Format that can be used with [format_local()] according to https://www.php.net/manual/en/intldateformatter.setpattern.php. Eg. `d. MMMM`
 	 */
@@ -83,13 +89,13 @@ class datetime {
 		}
 
 		if ($locale === 'en_US' || $locale === 'en-US') {
-			if ($options['shortMonth'] || $options['shortMonthNoDot']) {
+			if ($options['short_month'] || $options['short_month_no_dot']) {
 				return 'MMM d';
 			} else {
 				return 'MMMM d';
 			}
 		} else {
-			if ($options['shortMonth'] || $options['shortMonthNoDot']) {
+			if ($options['short_month'] || $options['short_month_no_dot']) {
 				return 'd. MMM';
 			} else {
 				return 'd. MMMM';
