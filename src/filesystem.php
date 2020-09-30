@@ -608,6 +608,43 @@ class filesystem {
 	}
 
 	/**
+	 * Shorten a file path by only keeping the last x number of folders
+	 *
+	 * Example: `/var/www/site.com/appdata/20200930.log` becomes `appdata/20200930.log`
+	 *
+	 * @param string $filepath : An absolute file path
+	 * @param array $options : Available options:
+	 *   - `keep_folders` : keep the last X number of folders in the path. Default 1.
+	 * @return string
+	 */
+	public static function shorten_path($filepath, $options = []) {
+		$defaults = [
+			'keep_folders' => 1,
+			'use_native_folder_separator' => false,
+		];
+		$options = array_merge($defaults, $options);
+
+		$filepath = static::cleanup_path($filepath);
+		$info = pathinfo($filepath);
+
+		if ($info['dirname'] === '.') {
+			return $info['basename'];
+		} else {
+
+			$folders = explode('/', $info['dirname']);
+			$folders = array_slice($folders, -$options['keep_folders']);  //only keep the last X number of folders
+
+			$sep = '/';
+			if ($options['use_native_folder_separator']) {
+				$sep = DIRECTORY_SEPARATOR;
+			}
+
+			return implode($sep, $folders) . $sep . $info['basename'];
+		}
+
+	}
+
+	/**
 	 * Ensure that a file OR directory will be unique in a certain folder by adding a number after the name
 	 *
 	 * @param string $filename : File name to check uniqueness of
