@@ -36,6 +36,8 @@ class datetime {
 	 * @param DateTime|integer $datetime : DateTime object (timezone not respected) or Unix timestamp or anything IntlDateFormatter::format() accepts.
 	 * @param string $format : According to https://www.php.net/manual/en/intldateformatter.setpattern.php. Eg. `EEEE, d. MMMM yyyy`
 	 *   - use string `DAYMTH` to automatically insert day and month in correct order. Eg. `EEEE, DAYMTH yyyy`  (comma will automatically be added between month and year when needed)
+	 *   - use string `HOUR` to automatically insert hour in 24-hour or 12-hour format. Eg. `HOUR:mm`
+	 *   - use string `AMPM` to automatically insert am/pm marker if needed. Eg. `HOUR:mmAMPM`
 	 * @param string $locale : ICU locale. Eg. `en_US`, `en-US`, `da_DK` or `nb_NO`
 	 * @param string $options : Available options:
 	 *   - `short_month`      : set true to use abbreviated month name (Intl automatically determines if dot should be added)    (only applicable if pattern `DAYMTH` is used in `$format`)
@@ -57,6 +59,12 @@ class datetime {
 		if (strpos($format, 'DAYMTH') !== false) {
 			$dayMonthFormat = static::day_month_local_format($locale, $options);
 			$format = str_replace('DAYMTH', $dayMonthFormat, $format);
+		}
+
+		if (strpos($format, 'HOUR') !== false || strpos($format, 'AMPM') !== false) {
+			$timeFormat = static::time_local_format($locale, $options);
+			$format = str_replace('HOUR', $timeFormat['hour'], $format);
+			$format = str_replace('AMPM', $timeFormat['ampm'], $format);
 		}
 
 		// Automatically add comma between day and year, but not between month and year
@@ -100,6 +108,30 @@ class datetime {
 			} else {
 				return 'd. MMMM';
 			}
+		}
+	}
+
+	/**
+	 * Get the local format of writing a time (24-hour or 12-hour format)
+	 *
+	 * Wikipedia article about countries using 12-hour clock: https://en.wikipedia.org/wiki/12-hour_clock
+	 *
+	 * @param string $locale : ICU locale. Eg. `en_US`, `en-US`, `da_DK` or `nb_NO`
+	 * @param string $options : Available options:
+	 *   - `country` : provide country (ISO-3166 alpha-2) to correctly determine when to use 12-hour clock when the locale is not specific enough
+	 *
+	 * @return array : Array with `hour` and `ampm` designators that can be used with [format_local()] according to https://www.php.net/manual/en/intldateformatter.setpattern.php
+	 */
+	public static function time_local_format($locale = null, $options = []) {
+		if (!$locale) {
+			$locale = static::$_defaultLocale;
+		}
+
+		$locale = str_replace('-', '_', $locale);
+		if (in_array($locale, ['en_US', 'en_GB', 'en_AU', 'hi_IN']) || ($options['country'] && in_array(strtoupper($options), ['US', 'GB', 'AU', 'IN', 'IE', 'CA', 'NZ', 'PK', 'BD', 'MY', 'MT']))) {
+			return ['hour' => 'h', 'ampm' => 'a', '12hour' => true];
+		} else {
+			return ['hour' => 'H', 'ampm' => '', '12hour' => false];
 		}
 	}
 
