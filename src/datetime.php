@@ -118,7 +118,7 @@ class datetime {
 	 *
 	 * @param string $locale : ICU locale. Eg. `en_US`, `en-US`, `da_DK` or `nb_NO`
 	 * @param string $options : Available options:
-	 *   - `country` : provide country (ISO-3166 alpha-2) to correctly determine when to use 12-hour clock when the locale is not specific enough
+	 *   - `country` : provide country (ISO-3166 alpha-2) to correctly determine when to use 12-hour clock when the locale is not specific enough. To only consider country set $locale to "DONTUSE"
 	 *
 	 * @return array : Array with `hour` and `ampm` designators that can be used with [format_local()] according to https://www.php.net/manual/en/intldateformatter.setpattern.php
 	 */
@@ -128,7 +128,7 @@ class datetime {
 		}
 
 		$locale = str_replace('-', '_', $locale);
-		if (in_array($locale, ['en_US', 'en_GB', 'en_AU', 'hi_IN']) || ($options['country'] && in_array(strtoupper($options), ['US', 'GB', 'AU', 'IN', 'IE', 'CA', 'NZ', 'PK', 'BD', 'MY', 'MT']))) {
+		if (in_array($locale, ['en_US', 'en_GB', 'en_AU', 'hi_IN']) || ($options['country'] && in_array(strtoupper($options['country']), ['US', 'GB', 'AU', 'IN', 'IE', 'CA', 'NZ', 'PK', 'BD', 'MY', 'MT']))) {
 			return ['hour' => 'h', 'ampm' => 'a', '12hour' => true];
 		} else {
 			return ['hour' => 'H', 'ampm' => '', '12hour' => false];
