@@ -43,6 +43,7 @@ class datetime {
 	 *   - `short_month`      : set true to use abbreviated month name (Intl automatically determines if dot should be added)    (only applicable if pattern `DAYMTH` is used in `$format`)
 	 *   - `short_month_no_dot` : set true to use abbreviated month name instead of fully spelled out, and enforce no trailing dot (only applicable if pattern `DAYMTH` is used in `$format`)
 	 *   - `skip_auto_comma_year` : set true to skip automatically handling comma between day and year
+	 *   - `short_ampm` : use `a` and `p` instead of `am` and `pm` in times
 	 */
 	public static function format_local($datetime, $format, $locale = null, $options = []) {
 		if ($locale) {
@@ -61,10 +62,13 @@ class datetime {
 			$format = str_replace('DAYMTH', $dayMonthFormat, $format);
 		}
 
+		$possibly_ampm = false;
 		if (strpos($format, 'HOUR') !== false || strpos($format, 'AMPM') !== false) {
-			$timeFormat = static::time_local_format($locale, $options);
+			$timeFormat = static::time_local_format($locale, (strpos($format, 'HOUR2') !== false ? array_merge($options, ['twodigit_hour' => true]) : $options) );
+			$format = str_replace('HOUR2', $timeFormat['hour'], $format);
 			$format = str_replace('HOUR', $timeFormat['hour'], $format);
 			$format = str_replace('AMPM', $timeFormat['ampm'], $format);
+			$possibly_ampm = true;
 		}
 
 		// Automatically add comma between day and year, but not between month and year
@@ -76,6 +80,16 @@ class datetime {
 		$output = static::$_formatters[$effLocale]->format($datetime);
 		if ($options['short_month_no_dot']) {
 			$output = preg_replace("/([^0-9]{3,})\\./", '$1', $output);
+		}
+		if ($possibly_ampm) {
+			$output = preg_replace_callback('/([^a-z])(AM|PM)\b/i', function($matches) use (&$options) {
+				if ($options['short_ampm']) {
+					return $matches[1] . strtolower(substr($matches[2], 0, 1));
+				} else {
+					// just convert to lower case
+					return $matches[1] . strtolower($matches[2]);
+				}
+			}, $output);
 		}
 		return $output;
 	}
@@ -129,9 +143,11 @@ class datetime {
 
 		$locale = str_replace('-', '_', $locale);
 		if (in_array($locale, ['en_US', 'en_GB', 'en_AU', 'hi_IN']) || ($options['country'] && in_array(strtoupper($options['country']), ['US', 'GB', 'AU', 'IN', 'IE', 'CA', 'NZ', 'PK', 'BD', 'MY', 'MT']))) {
-			return ['hour' => 'h', 'ampm' => 'a', '12hour' => true];
+			$hour_symbol = ($options['twodigit_hour'] ? 'hh' : 'h');
+			return ['hour' => $hour_symbol, 'ampm' => 'a', '12hour' => true];
 		} else {
-			return ['hour' => 'H', 'ampm' => '', '12hour' => false];
+			$hour_symbol = ($options['twodigit_hour'] ? 'HH' : 'H');
+			return ['hour' => $hour_symbol, 'ampm' => '', '12hour' => false];
 		}
 	}
 

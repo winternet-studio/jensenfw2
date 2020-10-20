@@ -39,6 +39,15 @@ final class datetimeTest extends TestCase {
 		$this->assertSame('August 8, 2020', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'DAYMTH yyyy', 'en_US'));
 		$this->assertSame('8. august 2020', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'DAYMTH yyyy', 'da_DK'));
 
+		// Test the special HOUR and AMPM tags
+		$this->assertSame('2:23pm', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'HOUR:mmAMPM', 'en_US'));
+		$this->assertSame('2:23pm', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'HOUR:mmAMPM', 'DONTUSE', ['country' => 'CA']));
+		$this->assertSame('02:23pm', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'HOUR2:mmAMPM', 'en_US'));
+		$this->assertSame('2:23p', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'HOUR:mmAMPM', 'en_US', ['short_ampm' => true]));
+		$this->assertSame('14:23', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'HOUR:mmAMPM', 'da_DK'));
+		$this->assertSame('8:23', datetime::format_local(new \DateTime('2020-08-08 08:23:05'), 'HOUR:mmAMPM', 'da_DK'));
+		$this->assertSame('08:23', datetime::format_local(new \DateTime('2020-08-08 08:23:05'), 'HOUR2:mmAMPM', 'da_DK'));
+
 		// Verify that the behavior of when to add the dot (for longer month names) doesn't change
 		// June
 		$this->assertSame('Jun', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'MMM', 'en_US'));
