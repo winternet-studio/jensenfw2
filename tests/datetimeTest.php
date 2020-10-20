@@ -24,19 +24,20 @@ final class datetimeTest extends TestCase {
 		$expect = 'Saturday, 8. August';
 		$this->assertSame($expect, $result);
 
-		// Test automatic handling of comma between day and year
-		$this->assertSame('August 8, 2020', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'd. MMM yyyy', 'en_US'));
-		$this->assertSame('8. august 2020', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'd. MMM yyyy', 'da_DK'));
-
+		// Test the special DAYMTH tag
 		$this->assertSame('June 8', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'en_US'));
 		$this->assertSame('8. juni', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'da_DK'));
-		$this->assertSame('Jun 8', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'en_US', ['shortMonth' => true]));
-		$this->assertSame('8. Juni', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'de_DE', ['shortMonth' => true]));
-		$this->assertSame('8. jun.', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'da_DK', ['shortMonth' => true]));
-		$this->assertSame('8. jun', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'da_DK', ['shortMonthNoDot' => true]));
-		$this->assertSame('8. jun.', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'nb_NO', ['shortMonth' => true]));
-		$this->assertSame('8. jun.', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'es_ES', ['shortMonth' => true]));
-		$this->assertSame('8. kesäk.', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'fi_FI', ['shortMonth' => true]));
+		$this->assertSame('Jun 8', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'en_US', ['short_month' => true]));
+		$this->assertSame('8. Juni', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'de_DE', ['short_month' => true]));
+		$this->assertSame('8. jun.', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'da_DK', ['short_month' => true]));
+		$this->assertSame('8. jun', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'da_DK', ['short_month_no_dot' => true]));
+		$this->assertSame('8. jun.', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'nb_NO', ['short_month' => true]));
+		$this->assertSame('8. jun.', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'es_ES', ['short_month' => true]));
+		$this->assertSame('8. kesäk.', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'fi_FI', ['short_month' => true]));
+
+		// Test automatic handling of comma between day and year
+		$this->assertSame('August 8, 2020', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'DAYMTH yyyy', 'en_US'));
+		$this->assertSame('8. august 2020', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'DAYMTH yyyy', 'da_DK'));
 
 		// Verify that the behavior of when to add the dot (for longer month names) doesn't change
 		// June
