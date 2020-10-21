@@ -86,4 +86,19 @@ final class datetimeTest extends TestCase {
 		$this->assertSame('MMMM d', datetime::day_month_local_format('en_US'));
 		$this->assertSame('d. MMMM', datetime::day_month_local_format('nb_NO'));
 	}
+
+	public function testFormatTimeperiod() {
+		$this->assertSame('Oct. 18-22, 2020', datetime::format_timeperiod('2020-10-18 17:00:00', '2020-10-22 12:00:00'));
+		$this->assertSame('Oct 18-22, 2020', datetime::format_timeperiod('2020-10-18 17:00:00', '2020-10-22 12:00:00', ['no_dot_after_month' => true]));
+		$this->assertSame('June 18-22, 2020', datetime::format_timeperiod('2020-06-18 17:00:00', '2020-06-22 12:00:00'));
+		$this->assertSame('Jun. 18-22, 2020', datetime::format_timeperiod('2020-06-18 17:00:00', '2020-06-22 12:00:00', ['always_abbrev_months' => true]));
+		$this->assertSame('Jun 18-22, 2020', datetime::format_timeperiod('2020-06-18 17:00:00', '2020-06-22 12:00:00', ['always_abbrev_months' => true, 'no_dot_after_month' => true]));
+		$this->assertSame('Oct. 18-22, 2020', datetime::format_timeperiod('2020-10-18 17:00:00', '2020-10-22 12:00:00', ['always_abbrev_months' => true]));
+		$this->assertSame('Oct 18-22, 2020', datetime::format_timeperiod('2020-10-18 17:00:00', '2020-10-22 12:00:00', ['always_abbrev_months' => true, 'no_dot_after_month' => true]));
+		$this->assertSame('Oct. 18 - Nov. 22, 2020', datetime::format_timeperiod('2020-10-18 17:00:00', '2020-11-22 12:00:00'));
+		$this->assertSame('Oct 18 - Nov 22, 2020', datetime::format_timeperiod('2020-10-18 17:00:00', '2020-11-22 12:00:00', ['no_dot_after_month' => true]));
+		$this->assertSame('June 18 - Nov. 22, 2020', datetime::format_timeperiod('2020-06-18 17:00:00', '2020-11-22 12:00:00'));
+		$this->assertSame('June 18 - Nov 22, 2020', datetime::format_timeperiod('2020-06-18 17:00:00', '2020-11-22 12:00:00', ['no_dot_after_month' => true]));
+		$this->assertSame('June 18, 2020 - Nov. 22, 2021', datetime::format_timeperiod('2020-06-18 17:00:00', '2021-11-22 12:00:00'));
+	}
 }

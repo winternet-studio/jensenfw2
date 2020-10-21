@@ -699,6 +699,7 @@ class datetime {
 			- 'no_year' : set true to don't show year at all
 			- 'always_abbrev_months' : set true to don't spell out fully the short months March, April, May, June and July
 			- 'never_abbrev_months' : set true to always spell out fully the month names
+			- 'no_dot_after_month' : set true to not show dot after abbreviated month name
 			- 'input_timezone' : timezone of input when it is in MySQL format and it is not UTC
 			- 'output_timezone' : timezone to use for the output. Defaults to system timezone.
 		OUTPUT:
@@ -747,25 +748,26 @@ class datetime {
 		}
 
 		$yrmode = ($options['2digit_year'] ? '2dig' : ($options['no_year'] ? 'noyr' : '4dig'));
+		$dot = ($options['no_dot_after_month'] ? '' : '.');
 
 		if ($options['never_abbrev_months']) {
 			$frommonth = $fromdate->format('F');
 			$tomonth = $todate->format('F');
-		} elseif ($options['always_abbrev_months']) {
+		} elseif (!$options['always_abbrev_months']) {
 			$shortmonths = [3, 4, 5, 6, 7];
 			if (in_array($fromdate->format('n'), $shortmonths)) {
 				$frommonth = $fromdate->format('F');
 			} else {
-				$frommonth = $fromdate->format('M.');
+				$frommonth = $fromdate->format('M'. $dot);
 			}
 			if (in_array($todate->format('n'), $shortmonths)) {
 				$tomonth = $todate->format('F');
 			} else {
-				$tomonth = $todate->format('M.');
+				$tomonth = $todate->format('M'. $dot);
 			}
 		} else {
-			$frommonth = $fromdate->format('M.');
-			$tomonth = $todate->format('M.');
+			$frommonth = $fromdate->format('M'. $dot);
+			$tomonth = $todate->format('M'. $dot);
 		}
 
 		if ($yrmode !== 'noyr') {
