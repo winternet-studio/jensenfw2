@@ -24,7 +24,7 @@ class datetime {
 	public static function set_default_locale($locale) {
 		static::$_defaultLocale = $locale;
 		if (!array_key_exists($locale, static::$_formatters)) {
-			static::$_formatters[$effLocale] = new \IntlDateFormatter($locale, \IntlDateFormatter::SHORT, \IntlDateFormatter::SHORT);
+			static::$_formatters[$locale] = new \IntlDateFormatter($locale, \IntlDateFormatter::SHORT, \IntlDateFormatter::SHORT);
 		}
 	}
 
@@ -44,18 +44,10 @@ class datetime {
 	 *   - `short_month_no_dot` : set true to use abbreviated month name instead of fully spelled out, and enforce no trailing dot (only applicable if pattern `DAYMTH` is used in `$format`)
 	 *   - `skip_auto_comma_year` : set true to skip automatically handling comma between day and year
 	 *   - `short_ampm` : use `a` and `p` instead of `am` and `pm` in times
+	 *   - `country` : ISO-3166 alpha-2 country code which will in some cases help with determining formatting, eg. in local time
 	 */
 	public static function format_local($datetime, $format, $locale = null, $options = []) {
-		if ($locale) {
-			$effLocale = $locale;
-		} elseif (static::$_defaultLocale) {
-			$effLocale = static::$_defaultLocale;
-		} else {
-			$effLocale = setlocale(LC_TIME, 0);
-		}
-		if (!array_key_exists($effLocale, static::$_formatters)) {
-			static::$_formatters[$effLocale] = new \IntlDateFormatter($effLocale, \IntlDateFormatter::SHORT, \IntlDateFormatter::SHORT);
-		}
+		$locale = static::determine_locale($locale);
 
 		if (strpos($format, 'DAYMTH') !== false) {
 			$dayMonthFormat = static::day_month_local_format($locale, $options);
@@ -76,8 +68,8 @@ class datetime {
 			$format = str_replace('d yy', 'd, yy', $format);
 		}
 
-		static::$_formatters[$effLocale]->setPattern($format);
-		$output = static::$_formatters[$effLocale]->format($datetime);
+		static::$_formatters[$locale]->setPattern($format);
+		$output = static::$_formatters[$locale]->format($datetime);
 		if ($options['short_month_no_dot']) {
 			$output = preg_replace("/([^0-9]{3,})\\./", '$1', $output);
 		}
@@ -95,13 +87,55 @@ class datetime {
 	}
 
 	/**
+	 * Method used internally to determine the locale to work with
+	 */
+	public static function determine_locale($locale = null) {
+		if ($locale) {
+			// do nothing
+		} elseif (static::$_defaultLocale) {
+			$locale = static::$_defaultLocale;
+		} else {
+			$locale = setlocale(LC_TIME, 0);
+		}
+
+		$locale = static::clean_locale($locale);
+
+		if (!array_key_exists($locale, static::$_formatters)) {
+			static::$_formatters[$locale] = new \IntlDateFormatter($locale, \IntlDateFormatter::SHORT, \IntlDateFormatter::SHORT);
+		}
+		return $locale;
+	}
+
+	/**
+	 * Clean locale by converting eg. `en-US` to `en_US`
+	 */
+	public static function clean_locale($locale) {
+		return str_replace('-', '_', $locale);
+	}
+
+	/**
+	 * List of locales/countries that use a dot after the date, eg. `21. oktober`
+	 *
+	 * Deduced from Windows region formats.
+	 *
+	 * @return array : List of ICU locale and ISO-3166 alpha-2 countries
+	 */
+	public static function uses_dot_after_date() {
+		return [
+			'da_DK', 'da_GL', 'de_AT', 'de_BE', 'de_CH', 'cs-CZ', 'de_DE', 'de_IT', 'de_LI', 'de_LU', 'lb_LU', 'et_EE', 'fi_FI', 'fo_DK', 'fo_FO', 'hr_HR', 'hu_HU', 'is_IS', 'lv_LV', 'nb_NO', 'nn_NO', 'sk_SK', 'sl_SI',
+			'CZ', 'DK', 'GL', 'AT', 'BA', 'DE', 'LI', 'EE', 'FO', 'HR', 'HU', 'IS', 'LV', 'NO', 'SK', 'SI', 'ME', 'RS', 'XK',   //when the whole (or all locales in the country) uses it they can be listed here as well
+		];
+	}
+
+	/**
 	 * Get the local format of writing day and month
 	 *
 	 * Wikipedia article about date formatting in different countries: https://en.wikipedia.org/wiki/Date_format_by_country
 	 *
 	 * @param string $locale : ICU locale. Eg. `en_US`, `en-US`, `da_DK` or `nb_NO`
 	 * @param string $options : Available options:
-	 *   - `short_month`   : use abbreviated month name instead of fully spelled out (Intl extension automatically determines if dot should be added)  (the alternative `short_month_no_dot` is just for internal use through format_local() )
+	 *   - `short_month` : use abbreviated month name instead of fully spelled out (Intl extension automatically determines if dot should be added)  (the alternative `short_month_no_dot` is just for internal use through format_local() )
+	 *   - `return_boolean` : return a boolean indicating whether month comes before the date
 	 *
 	 * @return string : Format that can be used with [format_local()] according to https://www.php.net/manual/en/intldateformatter.setpattern.php. Eg. `d. MMMM`
 	 */
@@ -111,13 +145,17 @@ class datetime {
 		}
 
 		if ($locale === 'en_US' || $locale === 'en-US') {
-			if ($options['short_month'] || $options['short_month_no_dot']) {
+			if ($options['return_boolean']) {
+				return true;
+			} elseif ($options['short_month'] || $options['short_month_no_dot']) {
 				return 'MMM d';
 			} else {
 				return 'MMMM d';
 			}
 		} else {
-			if ($options['short_month'] || $options['short_month_no_dot']) {
+			if ($options['return_boolean']) {
+				return false;
+			} elseif ($options['short_month'] || $options['short_month_no_dot']) {
 				return 'd. MMM';
 			} else {
 				return 'd. MMMM';
@@ -687,27 +725,24 @@ class datetime {
 		return implode(', ', $output);
 	}
 
+	/**
+	 * Formats a time period nicely
+	 *
+	 * @param integer|string $fromdate : Date in Unix or MySQL format
+	 * @param integer|string $todate   : Date in Unix or MySQL format
+	 * @param array $options : Associative array with any combination of these keys:
+	 *   - `2digit_year` : set true to only show 2 digits in the year(s)
+	 *   - `no_year` : set true to don't show year at all
+	 *   - `always_abbrev_months` : set true to don't spell out fully the short months March, April, May, June and July
+	 *   - `never_abbrev_months` : set true to always spell out fully the month names
+	 *   - `no_dot_after_month` : set true to not show dot after abbreviated month name
+	 *   - `input_timezone` : timezone of input when it is in MySQL format and it is not UTC
+	 *   - `output_timezone` : timezone to use for the output. Defaults to system timezone.
+	 *   - `short_months` : provide array with month numbers of month names that in the given locale (= language) are already short and do not need to be abbreviated unless specifically requested. Default is `[3, 4, 5, 6, 7]`.
+	 * @return string : Eg. `Dec. 3-5, 2010` or `Nov. 30 - Dec. 4, 2010` or `Dec. 27, 2010 - Jan. 2, 2011`
+	 */
 	public static function format_timeperiod($fromdate, $todate, $options = []) {
-		/*
-		DESCRIPTION:
-		- formats a time period nicely
-		INPUT:
-		- $fromdate : date in Unix or MySQL format
-		- $todate   : date in Unix or MySQL format
-		- $options : associative array with any combination of these keys:
-			- '2digit_year' : set true to only show 2 digits in the year(s)
-			- 'no_year' : set true to don't show year at all
-			- 'always_abbrev_months' : set true to don't spell out fully the short months March, April, May, June and July
-			- 'never_abbrev_months' : set true to always spell out fully the month names
-			- 'no_dot_after_month' : set true to not show dot after abbreviated month name
-			- 'input_timezone' : timezone of input when it is in MySQL format and it is not UTC
-			- 'output_timezone' : timezone to use for the output. Defaults to system timezone.
-		OUTPUT:
-		- string
-		- eg. "Dec. 3-5, 2010" or "Nov. 30 - Dec. 4, 2010" or "Dec. 27, 2010 - Jan. 2, 2011"
-		*/
-
-		// Backward compatibility to when $options should be a string
+		// Backward compatibility to when $options could be a string
 		if (is_string($options)) {
 			$newoptions = [];
 			if (strpos($options, '2digit_year') !== false) $newoptions['2digit_year'] = true;
@@ -717,6 +752,21 @@ class datetime {
 			$options = $newoptions;
 		}
 
+		// Prepare for using a specific locale
+		if (array_key_exists('_locale', $options)) {
+			$locale = static::determine_locale($options['_locale']);
+			$formatter =& static::$_formatters[$locale];
+
+			$month_before_date = static::day_month_local_format($locale, ['return_boolean' => true]);
+
+			$dot_after_date = false;
+			$locales_countries = static::uses_dot_after_date();
+			if (in_array($locale, $locales_countries, true) || ($options['country'] && in_array($options['country'], $locales_countries, true))) {
+				$dot_after_date = true;
+			}
+		}
+
+		// Streamline input into DateTime objects
 		if (!is_numeric($fromdate)) {
 			if ($options['input_timezone']) {
 				$fromdate = new \DateTime($fromdate, new \DateTimeZone($options['input_timezone']));
@@ -736,9 +786,14 @@ class datetime {
 			$todate = new \DateTime($todate);
 		}
 
+		// Handle timezone options
 		if ($options['output_timezone']) {
-			$fromdate->setTimezone(new \DateTimeZone($options['output_timezone']));
-			$todate->setTimezone(new \DateTimeZone($options['output_timezone']));
+			$timezone = new \DateTimeZone($options['output_timezone']);
+			$fromdate->setTimezone($timezone);
+			$todate->setTimezone($timezone);
+			if ($locale) {
+				$formatter->setTimeZone($timezone);
+			}
 		} else {
 			// in this case only mess with timezone if an *input* timezone was specified, otherwise leave everything in the same timezone to "ignore" timezone handling
 			if ($options['input_timezone']) {
@@ -748,26 +803,79 @@ class datetime {
 		}
 
 		$yrmode = ($options['2digit_year'] ? '2dig' : ($options['no_year'] ? 'noyr' : '4dig'));
-		$dot = ($options['no_dot_after_month'] ? '' : '.');
+		$monthdot = ($options['no_dot_after_month'] ? '' : '.');
 
-		if ($options['never_abbrev_months']) {
-			$frommonth = $fromdate->format('F');
-			$tomonth = $todate->format('F');
-		} elseif (!$options['always_abbrev_months']) {
-			$shortmonths = [3, 4, 5, 6, 7];
-			if (in_array($fromdate->format('n'), $shortmonths)) {
-				$frommonth = $fromdate->format('F');
+		$conditional_comma = function($string) {
+			// Only add comma before year if the part before ends on a digit
+			if (in_array(substr($string, -1), ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], true)) {
+				return ',';
 			} else {
-				$frommonth = $fromdate->format('M'. $dot);
+				return '';
+			}
+		};
+
+		// Determine "to" and "from" month names
+		if ($options['never_abbrev_months']) {
+			if ($locale) {
+				$formatter->setPattern('MMMM');
+				$frommonth = $formatter->format($fromdate);
+				$tomonth   = $formatter->format($todate);
+			} else {
+				$frommonth = $fromdate->format('F');
+				$tomonth   = $todate->format('F');
+			}
+		} elseif (!$options['always_abbrev_months']) {
+			$shortmonths = (is_array($options['short_months']) ? $options['short_months'] : [3, 4, 5, 6, 7]);
+			if (in_array($fromdate->format('n'), $shortmonths)) {
+				if ($locale) {
+					$formatter->setPattern('MMMM');
+					$frommonth = $formatter->format($fromdate);
+				} else {
+					$frommonth = $fromdate->format('F');
+				}
+			} else {
+				if ($locale) {
+					$formatter->setPattern('MMM');  //the formatter automatically adds month dot if needed, so no need to use $monthdot
+					$frommonth = $formatter->format($fromdate);
+					if ($options['no_dot_after_month']) {  //remove what formatter automatically might have added
+						$frommonth = rtrim($frommonth, '.');
+					}
+				} else {
+					$frommonth = $fromdate->format('M'. $monthdot);
+				}
 			}
 			if (in_array($todate->format('n'), $shortmonths)) {
-				$tomonth = $todate->format('F');
+				if ($locale) {
+					$formatter->setPattern('MMMM');
+					$tomonth = $formatter->format($todate);
+				} else {
+					$tomonth = $todate->format('F');
+				}
 			} else {
-				$tomonth = $todate->format('M'. $dot);
+				if ($locale) {
+					$formatter->setPattern('MMM');  //the formatter automatically adds month dot if needed, so no need to use $monthdot
+					$tomonth = $formatter->format($todate);
+					if ($options['no_dot_after_month']) {  //remove what formatter automatically might have added
+						$tomonth = rtrim($tomonth, '.');
+					}
+				} else {
+					$tomonth = $todate->format('M'. $monthdot);
+				}
 			}
 		} else {
-			$frommonth = $fromdate->format('M'. $dot);
-			$tomonth = $todate->format('M'. $dot);
+			// always_abbrev_months = true
+			if ($locale) {
+				$formatter->setPattern('MMM');
+				$frommonth = $formatter->format($fromdate);
+				$tomonth   = $formatter->format($todate);
+				if ($options['no_dot_after_month']) {  //remove what formatter automatically might have added
+					$frommonth = rtrim($frommonth, '.');
+					$tomonth = rtrim($tomonth, '.');
+				}
+			} else {
+				$frommonth = $fromdate->format('M'. $monthdot);
+				$tomonth = $todate->format('M'. $monthdot);
+			}
 		}
 
 		if ($yrmode !== 'noyr') {
@@ -777,26 +885,90 @@ class datetime {
 			$fromyear = $toyear = '';
 		}
 
-		$output = $frommonth .' '. $fromdate->format('j');
-
-		if ($fromdate->format('Y-m-d') == $todate->format('Y-m-d')) {
-			// only one day, don't write ending date
+		// Build the "from" part, eg. "Oct. 18", or "18" if month comes after date
+		$from_month_cond = null;
+		if (!$locale) {
+			$output = $frommonth .' '. $fromdate->format('j');
 		} else {
-			if ($frommonth == $tomonth && $fromyear == $toyear) {
-				$output .= '-'. $todate->format('j');
-			} elseif ($fromyear == $toyear) {
-				//months are not the same
-				$output .= ' - '. $tomonth .' '. $todate->format('j');
+			$formatter->setPattern('d');
+			if ($month_before_date) {
+				$output = $frommonth .' '. $formatter->format($fromdate);
 			} else {
-				//years are not the same
-				$output .= ', '. ($yrmode == '2dig' ? "'". substr($fromyear, 2) : $fromyear) .' - '. $tomonth .' '. $todate->format('j');
+				$output = $formatter->format($fromdate);
+				$from_month_cond = $frommonth;  //must be added AFTER the ending date has been added below
 			}
 		}
+
+		if ($fromdate->format('Y-m-d') == $todate->format('Y-m-d')) {
+			// Only one day, don't write ending date, eg. "Oct. 18, 2020" or "18. okt. 2020"
+			if ($locale && $from_month_cond) {
+				if ($dot_after_date) {
+					$output .= '.';
+				}
+				$output .= ' '. $from_month_cond;
+			}
+		} else {
+			if ($frommonth == $tomonth && $fromyear == $toyear) {
+				// Month and year are the same, eg. "Oct. 18-22, 2020" or "18-22. okt. 2020"
+				$output .= '-'. $todate->format('j');
+				if ($locale && $from_month_cond) {
+					if ($dot_after_date) {
+						$output .= '.';
+					}
+					$output .= ' '. $from_month_cond;
+				}
+			} else {
+				// build "to" month and date when are the same for the remaining two scenarios below
+				if (!$locale) {
+					$to_month_and_date = $tomonth .' '. $todate->format('j');
+				} else {
+					$formatter->setPattern('d');
+					if ($month_before_date) {
+						$to_month_and_date = $tomonth .' '. $formatter->format($todate);
+					} else {
+						$to_month_and_date = $formatter->format($todate);
+						if ($dot_after_date) {
+							$to_month_and_date .= '.';
+						}
+						$to_month_and_date .= ' '. $tomonth;
+					}
+				}
+
+				// also common for the two scenarios
+				if ($locale && $from_month_cond) {
+					if ($dot_after_date) {
+						$output .= '.';
+					}
+					$output .= ' '. $from_month_cond;
+				}
+
+				// Remaining two possible scenarios...
+				if ($fromyear == $toyear) {
+					// Months are not the same, eg. "Oct. 18 - Nov. 22, 2020" or "18. okt. - 22. nov. 2020"
+					$output .= ' - '. $to_month_and_date;
+				} else {
+					// Years are not the same, eg. "June 18, 2020 - Nov. 22, 2021" or "18. juni 2020 - 22. nov. 2021"
+					$output .= $conditional_comma($output) .' '. ($yrmode == '2dig' ? "'". substr($fromyear, 2) : $fromyear) .' - '. $to_month_and_date;
+				}
+			}
+		}
+		// Add "to" year
 		if ($yrmode != 'noyr') {
-			$output .= ', '. ($yrmode == '2dig' ? "'". substr($toyear, 2) : $toyear);
+			$output .= $conditional_comma($output) .' '. ($yrmode == '2dig' ? "'". substr($toyear, 2) : $toyear);
 		}
 
 		return $output;
+	}
+
+	/**
+	 * Formats a time period nicely according to a locale
+	 *
+	 * @param array $options : Same as for `format_timeperiod()` plus these:
+	 *   - `country` : ISO-3166 alpha-2 country code which will in some cases help with determining formatting, eg. whether dot should be used after the date
+	 */
+	public static function format_timeperiod_local($fromdate, $todate, $locale = null, $options = []) {
+		$options['_locale'] = $locale;
+		return static::format_timeperiod($fromdate, $todate, $options);
 	}
 
 	/**

@@ -89,16 +89,61 @@ final class datetimeTest extends TestCase {
 
 	public function testFormatTimeperiod() {
 		$this->assertSame('Oct. 18-22, 2020', datetime::format_timeperiod('2020-10-18 17:00:00', '2020-10-22 12:00:00'));
-		$this->assertSame('Oct 18-22, 2020', datetime::format_timeperiod('2020-10-18 17:00:00', '2020-10-22 12:00:00', ['no_dot_after_month' => true]));
+		$this->assertSame('Oct 18-22, 2020',  datetime::format_timeperiod('2020-10-18 17:00:00', '2020-10-22 12:00:00', ['no_dot_after_month' => true]));
 		$this->assertSame('June 18-22, 2020', datetime::format_timeperiod('2020-06-18 17:00:00', '2020-06-22 12:00:00'));
 		$this->assertSame('Jun. 18-22, 2020', datetime::format_timeperiod('2020-06-18 17:00:00', '2020-06-22 12:00:00', ['always_abbrev_months' => true]));
-		$this->assertSame('Jun 18-22, 2020', datetime::format_timeperiod('2020-06-18 17:00:00', '2020-06-22 12:00:00', ['always_abbrev_months' => true, 'no_dot_after_month' => true]));
+		$this->assertSame('Jun 18-22, 2020',  datetime::format_timeperiod('2020-06-18 17:00:00', '2020-06-22 12:00:00', ['always_abbrev_months' => true, 'no_dot_after_month' => true]));
 		$this->assertSame('Oct. 18-22, 2020', datetime::format_timeperiod('2020-10-18 17:00:00', '2020-10-22 12:00:00', ['always_abbrev_months' => true]));
-		$this->assertSame('Oct 18-22, 2020', datetime::format_timeperiod('2020-10-18 17:00:00', '2020-10-22 12:00:00', ['always_abbrev_months' => true, 'no_dot_after_month' => true]));
 		$this->assertSame('Oct. 18 - Nov. 22, 2020', datetime::format_timeperiod('2020-10-18 17:00:00', '2020-11-22 12:00:00'));
-		$this->assertSame('Oct 18 - Nov 22, 2020', datetime::format_timeperiod('2020-10-18 17:00:00', '2020-11-22 12:00:00', ['no_dot_after_month' => true]));
+		$this->assertSame('Oct 18 - Nov 22, 2020',   datetime::format_timeperiod('2020-10-18 17:00:00', '2020-11-22 12:00:00', ['no_dot_after_month' => true]));
 		$this->assertSame('June 18 - Nov. 22, 2020', datetime::format_timeperiod('2020-06-18 17:00:00', '2020-11-22 12:00:00'));
-		$this->assertSame('June 18 - Nov 22, 2020', datetime::format_timeperiod('2020-06-18 17:00:00', '2020-11-22 12:00:00', ['no_dot_after_month' => true]));
+		$this->assertSame('June 18 - Nov 22, 2020',  datetime::format_timeperiod('2020-06-18 17:00:00', '2020-11-22 12:00:00', ['no_dot_after_month' => true]));
 		$this->assertSame('June 18, 2020 - Nov. 22, 2021', datetime::format_timeperiod('2020-06-18 17:00:00', '2021-11-22 12:00:00'));
+		$this->assertSame('June 18, 2020 - November 22, 2021', datetime::format_timeperiod('2020-06-18 17:00:00', '2021-11-22 12:00:00', ['never_abbrev_months' => true]));
+		$this->assertSame('Oct. 18, 2020', datetime::format_timeperiod('2020-10-18 17:00:00', '2020-10-18 20:00:00'));
+
+		// Test use of timezones
+		$this->assertSame('Oct. 18-22, 2020', datetime::format_timeperiod('2020-10-18 05:00:00', '2020-10-22 05:00:00', ['input_timezone' => 'America/Los_Angeles', 'output_timezone' => 'UTC']));
+		$this->assertSame('Oct. 17-21, 2020', datetime::format_timeperiod('2020-10-18 05:00:00', '2020-10-22 05:00:00', ['output_timezone' => 'America/Los_Angeles']));
+		$this->assertSame('Oct. 19-23, 2020', datetime::format_timeperiod('2020-10-18 15:00:00', '2020-10-22 15:00:00', ['input_timezone' => 'America/Los_Angeles', 'output_timezone' => 'Australia/Brisbane']));
+	}
+
+	public function testFormatTimeperiodLocal() {
+		$this->assertSame('Oct 18-22, 2020', datetime::format_timeperiod_local('2020-10-18 17:00:00', '2020-10-22 12:00:00', 'en_US'));
+
+		// Denmark (and Norway) uses date before month, and a dot after the date
+		$this->assertSame('18-22. okt. 2020', datetime::format_timeperiod_local('2020-10-18 17:00:00', '2020-10-22 12:00:00', 'da_DK'));
+		$this->assertSame('18-22. okt 2020',  datetime::format_timeperiod_local('2020-10-18 17:00:00', '2020-10-22 12:00:00', 'da_DK', ['no_dot_after_month' => true]));
+		$this->assertSame('18-22. juni 2020', datetime::format_timeperiod_local('2020-06-18 17:00:00', '2020-06-22 12:00:00', 'da_DK'));
+		$this->assertSame('18-22. jun. 2020', datetime::format_timeperiod_local('2020-06-18 17:00:00', '2020-06-22 12:00:00', 'da_DK', ['always_abbrev_months' => true]));
+		$this->assertSame('18-22. jun 2020',  datetime::format_timeperiod_local('2020-06-18 17:00:00', '2020-06-22 12:00:00', 'da_DK', ['always_abbrev_months' => true, 'no_dot_after_month' => true]));
+		$this->assertSame('18-22. okt. 2020', datetime::format_timeperiod_local('2020-10-18 17:00:00', '2020-10-22 12:00:00', 'da_DK', ['always_abbrev_months' => true]));
+		$this->assertSame('18. okt. - 22. nov. 2020', datetime::format_timeperiod_local('2020-10-18 17:00:00', '2020-11-22 12:00:00', 'da_DK'));
+		$this->assertSame('18. okt - 22. nov 2020',   datetime::format_timeperiod_local('2020-10-18 17:00:00', '2020-11-22 12:00:00', 'da_DK', ['no_dot_after_month' => true]));
+		$this->assertSame('18. juni - 22. nov. 2020', datetime::format_timeperiod_local('2020-06-18 17:00:00', '2020-11-22 12:00:00', 'da_DK'));
+		$this->assertSame('18. juni - 22. nov 2020',  datetime::format_timeperiod_local('2020-06-18 17:00:00', '2020-11-22 12:00:00', 'da_DK', ['no_dot_after_month' => true]));
+		$this->assertSame('18. juni 2020 - 22. nov. 2021', datetime::format_timeperiod_local('2020-06-18 17:00:00', '2021-11-22 12:00:00', 'da_DK'));
+		$this->assertSame('18. juni 2020 - 22. november 2021', datetime::format_timeperiod_local('2020-06-18 17:00:00', '2021-11-22 12:00:00', 'da_DK', ['never_abbrev_months' => true]));
+		$this->assertSame('18. okt. 2020', datetime::format_timeperiod_local('2020-10-18 17:00:00', '2020-10-18 20:00:00', 'da_DK'));
+
+		// Sweden also uses date before month, but no dot after the date
+		$this->assertSame('18-22 okt. 2020', datetime::format_timeperiod_local('2020-10-18 17:00:00', '2020-10-22 12:00:00', 'sv_SE'));
+		$this->assertSame('18-22 okt 2020',  datetime::format_timeperiod_local('2020-10-18 17:00:00', '2020-10-22 12:00:00', 'sv_SE', ['no_dot_after_month' => true]));
+		$this->assertSame('18-22 juni 2020', datetime::format_timeperiod_local('2020-06-18 17:00:00', '2020-06-22 12:00:00', 'sv_SE'));
+		$this->assertSame('18-22 juni 2020', datetime::format_timeperiod_local('2020-06-18 17:00:00', '2020-06-22 12:00:00', 'sv_SE', ['always_abbrev_months' => true]));  // ICU format "MMM" does not abbreviate short month names in Swedish
+		$this->assertSame('18-22 juni 2020',  datetime::format_timeperiod_local('2020-06-18 17:00:00', '2020-06-22 12:00:00', 'sv_SE', ['always_abbrev_months' => true, 'no_dot_after_month' => true]));  // ICU format "MMM" does not abbreviate short month names in Swedish
+		$this->assertSame('18-22 okt. 2020', datetime::format_timeperiod_local('2020-10-18 17:00:00', '2020-10-22 12:00:00', 'sv_SE', ['always_abbrev_months' => true]));
+		$this->assertSame('18 okt. - 22 nov. 2020', datetime::format_timeperiod_local('2020-10-18 17:00:00', '2020-11-22 12:00:00', 'sv_SE'));
+		$this->assertSame('18 okt - 22 nov 2020',   datetime::format_timeperiod_local('2020-10-18 17:00:00', '2020-11-22 12:00:00', 'sv_SE', ['no_dot_after_month' => true]));
+		$this->assertSame('18 juni - 22 nov. 2020', datetime::format_timeperiod_local('2020-06-18 17:00:00', '2020-11-22 12:00:00', 'sv_SE'));
+		$this->assertSame('18 juni - 22 nov 2020',  datetime::format_timeperiod_local('2020-06-18 17:00:00', '2020-11-22 12:00:00', 'sv_SE', ['no_dot_after_month' => true]));
+		$this->assertSame('18 juni 2020 - 22 nov. 2021', datetime::format_timeperiod_local('2020-06-18 17:00:00', '2021-11-22 12:00:00', 'sv_SE'));
+		$this->assertSame('18 juni 2020 - 22 november 2021', datetime::format_timeperiod_local('2020-06-18 17:00:00', '2021-11-22 12:00:00', 'sv_SE', ['never_abbrev_months' => true]));
+		$this->assertSame('18 okt. 2020', datetime::format_timeperiod_local('2020-10-18 17:00:00', '2020-10-18 20:00:00', 'sv_SE'));
+
+		// Test use of timezones
+		$this->assertSame('18-22. okt. 2020', datetime::format_timeperiod_local('2020-10-18 05:00:00', '2020-10-22 05:00:00', 'da_DK', ['input_timezone' => 'America/Los_Angeles', 'output_timezone' => 'UTC']));
+		$this->assertSame('17-21. okt. 2020', datetime::format_timeperiod_local('2020-10-18 05:00:00', '2020-10-22 05:00:00', 'da_DK', ['output_timezone' => 'America/Los_Angeles']));
+		$this->assertSame('19-23. okt. 2020', datetime::format_timeperiod_local('2020-10-18 15:00:00', '2020-10-22 15:00:00', 'da_DK', ['input_timezone' => 'America/Los_Angeles', 'output_timezone' => 'Australia/Brisbane']));
 	}
 }
