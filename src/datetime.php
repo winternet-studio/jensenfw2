@@ -29,6 +29,8 @@ class datetime {
 	 *   - `skip_auto_comma_year` : set true to skip automatically handling comma between day and year
 	 *   - `short_ampm` : use `a` and `p` instead of `am` and `pm` in times
 	 *   - `country` : ISO-3166 alpha-2 country code which will in some cases help with determining formatting, eg. in local time
+	 *   - `time_country` : ISO-3166 alpha-2 country code which will help determining formatting in local time but NOT in local date
+	 *   - `force_clock` : set to either `12hr` or `24hr` to enforce using a specific 24/12-hour clock setting
 	 */
 	public static function format_local($datetime, $format, $locale = null, $options = []) {
 		$locale = static::determine_locale($locale);
@@ -944,6 +946,8 @@ class datetime {
 	 * @param string $locale : ICU locale. Eg. `en_US`, `en-US`, `da_DK` or `nb_NO`
 	 * @param string $options : Available options:
 	 *   - `country` : provide country (ISO-3166 alpha-2) to correctly determine when to use 12-hour clock when the locale is not specific enough. To only consider country set $locale to "DONTUSE"
+	 *   - `time_country` : same as `country` but now $locale is not considered at all
+	 *   - `force_clock` : set to either `12hr` or `24hr` to enforce using a specific 24/12-hour clock setting
 	 *
 	 * @return array : Array with `hour` and `ampm` designators that can be used with [format_local()] according to https://www.php.net/manual/en/intldateformatter.setpattern.php
 	 */
@@ -951,9 +955,22 @@ class datetime {
 		if (!$locale) {
 			$locale = static::$_defaultLocale;
 		}
+		$locale = static::clean_locale($locale);
 
-		$locale = str_replace('-', '_', $locale);
-		if (in_array($locale, ['en_US', 'en_GB', 'en_AU', 'hi_IN']) || ($options['country'] && in_array(strtoupper($options['country']), ['US', 'GB', 'AU', 'IN', 'IE', 'CA', 'NZ', 'PK', 'BD', 'MY', 'MT']))) {
+		$country = null;
+		if ($options['time_country']) {
+			$country = $options['time_country'];
+		} elseif ($options['country']) {
+			$country = $options['country'];
+		}
+
+		if (
+			$options['force_clock'] === '12hr'
+				||
+			(in_array($locale, ['en_US', 'en_GB', 'en_AU', 'hi_IN']) && !$options['time_country'] && $options['force_clock'] !== '24hr')
+				||
+			($country && in_array(strtoupper($country), ['US', 'GB', 'AU', 'IN', 'IE', 'CA', 'NZ', 'PK', 'BD', 'MY', 'MT', '12hr']) && $options['force_clock'] !== '24hr')
+		) {
 			$hour_symbol = ($options['twodigit_hour'] ? 'hh' : 'h');
 			return ['hour' => $hour_symbol, 'ampm' => 'a', '12hour' => true];
 		} else {

@@ -63,6 +63,12 @@ final class datetimeTest extends TestCase {
 		$this->assertSame('aug.', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'MMM', 'nb_NO'));
 		$this->assertSame('ago.', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'MMM', 'es_ES'));
 		$this->assertSame('elok.', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'MMM', 'fi_FI'));
+
+		// Test overriding time formatting
+		$this->assertSame('June 8, 2:23pm', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH, HOUR:mmAMPM', 'en_US'));
+		$this->assertSame('June 8, 14:23', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH, HOUR:mmAMPM', 'en_US', ['time_country' => 'DK']));
+		$this->assertSame('June 8, 14:23', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH, HOUR:mmAMPM', 'en_US', ['force_clock' => '24hr']));
+		$this->assertSame('8. juni, 2:23pm', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH, HOUR:mmAMPM', 'da_DK', ['force_clock' => '12hr']));
 	}
 
 	public function testSetDefaultLocale() {
