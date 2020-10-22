@@ -105,9 +105,9 @@ class format {
 	 *
 	 * - examples:
 	 *   - (is_person=true) : the grapes of WratH  ==>  The Grapes Of Wrath
-	 *   - (is_person=true) : MARIE-LOU VAN DER PLANCK-ST.JOHN  ==>  Marie-Lou van der Planc-St.John
+	 *   - (is_person=true) : MARIE-LOU VAN DER PLANCK-ST. JOHN  ==>  Marie-Lou van der Planck-St. John
 	 *   - (is_person=false): to be or not to be  ==>  To Be or Not to Be
-	 *   - mcdonald o'neil  ==>  McDonald O'Neil
+	 *   - mcdonald o'neil  ==>  McDonald O'neil
 	 *
 	 * @param string $text : String to correct capitalization in
 	 * @param array $options : Associative array with any of these keys:
@@ -434,15 +434,6 @@ class format {
 		}
 
 		return $tokens;
-	}
-
-	public static function extractTags($pattern, $options = []) {
-		// Camel-case version
-		if (array_key_exists('fieldSeparator', $options)) {
-			$options['field_separator'] = $options['fieldSeparator'];
-			unset($options['fieldSeparator']);
-		}
-		return self::extract_tags($pattern, $options);
 	}
 
 	/**
