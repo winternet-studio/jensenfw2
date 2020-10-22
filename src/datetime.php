@@ -13,22 +13,6 @@ class datetime {
 	public static $_defaultLocale = null;
 
 	/**
-	 * Set default locale
-	 *
-	 * Uses the Intl extension.
-	 *
-	 * Works together with [format_local()]
-	 *
-	 * @param string $locale : ICU locale. Eg. `en_US`, `da_DK` or `nb_NO`
-	 */
-	public static function set_default_locale($locale) {
-		static::$_defaultLocale = $locale;
-		if (!array_key_exists($locale, static::$_formatters)) {
-			static::$_formatters[$locale] = new \IntlDateFormatter($locale, \IntlDateFormatter::SHORT, \IntlDateFormatter::SHORT);
-		}
-	}
-
-	/**
 	 * Format dates and/or times according to locale settings
 	 *
 	 * Uses the Intl extension.
@@ -87,184 +71,32 @@ class datetime {
 	}
 
 	/**
-	 * Method used internally to determine the locale to work with
+	 * Convert several date formats (except Unix) to MySQL format
+	 *
+	 * - a Javascript equivalent with the same name exists, it works exactly the same way
+	 * - TODO: maybe make possible to input Unix timestamp (like set $dateformat and/or $timeformat to 'unix'... or just provide a numeric value for $datetime?)
+	 *
+	 * @param string $datetime : Date and/or time to convert
+	 * @param string $dateformat : Format of the date to convert. Valid values are `dmy`, `mdy`, `ymd` added by a forth character which sets the delimiter which can be anything except a number
+	 *   - set to false if `$datetime` only contains a time value
+	 *   - see function convert_cc_exp_to_mysql_date() for converting credit card expiration dates
+	 * @param string $timeformat : Format of the time to convert. Valid values are `hm`, `hms` added by a forth character which sets the delimiter which can be anything except a number
+	 *   - if 12-clock it must be a cathe capitalized `H` (eg. `Hm` or `Hms`)
+	 *   - examples:
+	 *     - hh:mm            (24hr clock)
+	 *     - hh:mm:ss         (24hr clock)
+	 *     - hh:mm [am|pm]    (12hr clock, hh = (0)0-23, mm = (0)0-59, with or without space between time and am/pm)
+	 *     - hh:mm:ss [am|pm] (12hr clock, hh = (0)1-12, mm = (0)0-59, with or without space between time and am/pm)
+	 * @param string $returnonfail : String to return if conversion fails
+	 *   - provide string `source` to return the untouched datetime value
+	 *     - IMPORTANT: if this is used you MUST validate the datetime later on before using it (preferably on server-side)
+	 *   - provide string `empty` to return an empty string
+	 *
+	 * @return string : MySQL formatted date and/or time
+	 *   - or empty string if the values are empty
+	 *   - or if conversion fails and $returnonfail is set, it's value is returned
 	 */
-	public static function determine_locale($locale = null) {
-		if ($locale) {
-			// do nothing
-		} elseif (static::$_defaultLocale) {
-			$locale = static::$_defaultLocale;
-		} else {
-			$locale = setlocale(LC_TIME, 0);
-		}
-
-		$locale = static::clean_locale($locale);
-
-		if (!array_key_exists($locale, static::$_formatters)) {
-			static::$_formatters[$locale] = new \IntlDateFormatter($locale, \IntlDateFormatter::SHORT, \IntlDateFormatter::SHORT);
-		}
-		return $locale;
-	}
-
-	/**
-	 * Clean locale by converting eg. `en-US` to `en_US`
-	 */
-	public static function clean_locale($locale) {
-		return str_replace('-', '_', $locale);
-	}
-
-	/**
-	 * List of locales/countries that use a dot after the date, eg. `21. oktober`
-	 *
-	 * Deduced from Windows region formats.
-	 *
-	 * @return array : List of ICU locale and ISO-3166 alpha-2 countries
-	 */
-	public static function uses_dot_after_date() {
-		return [
-			'da_DK', 'da_GL', 'de_AT', 'de_BE', 'de_CH', 'cs-CZ', 'de_DE', 'de_IT', 'de_LI', 'de_LU', 'lb_LU', 'et_EE', 'fi_FI', 'fo_DK', 'fo_FO', 'hr_HR', 'hu_HU', 'is_IS', 'lv_LV', 'nb_NO', 'nn_NO', 'sk_SK', 'sl_SI',
-			'CZ', 'DK', 'GL', 'AT', 'BA', 'DE', 'LI', 'EE', 'FO', 'HR', 'HU', 'IS', 'LV', 'NO', 'SK', 'SI', 'ME', 'RS', 'XK',   //when the whole (or all locales in the country) uses it they can be listed here as well
-		];
-	}
-
-	/**
-	 * Get the local format of writing day and month
-	 *
-	 * Wikipedia article about date formatting in different countries: https://en.wikipedia.org/wiki/Date_format_by_country
-	 *
-	 * @param string $locale : ICU locale. Eg. `en_US`, `en-US`, `da_DK` or `nb_NO`
-	 * @param string $options : Available options:
-	 *   - `short_month` : use abbreviated month name instead of fully spelled out (Intl extension automatically determines if dot should be added)  (the alternative `short_month_no_dot` is just for internal use through format_local() )
-	 *   - `return_boolean` : return a boolean indicating whether month comes before the date
-	 *
-	 * @return string : Format that can be used with [format_local()] according to https://www.php.net/manual/en/intldateformatter.setpattern.php. Eg. `d. MMMM`
-	 */
-	public static function day_month_local_format($locale = null, $options = []) {
-		if (!$locale) {
-			$locale = static::$_defaultLocale;
-		}
-
-		if ($locale === 'en_US' || $locale === 'en-US') {
-			if ($options['return_boolean']) {
-				return true;
-			} elseif ($options['short_month'] || $options['short_month_no_dot']) {
-				return 'MMM d';
-			} else {
-				return 'MMMM d';
-			}
-		} else {
-			if ($options['return_boolean']) {
-				return false;
-			} elseif ($options['short_month'] || $options['short_month_no_dot']) {
-				return 'd. MMM';
-			} else {
-				return 'd. MMMM';
-			}
-		}
-	}
-
-	/**
-	 * Get the local format of writing a time (24-hour or 12-hour format)
-	 *
-	 * Wikipedia article about countries using 12-hour clock: https://en.wikipedia.org/wiki/12-hour_clock
-	 *
-	 * @param string $locale : ICU locale. Eg. `en_US`, `en-US`, `da_DK` or `nb_NO`
-	 * @param string $options : Available options:
-	 *   - `country` : provide country (ISO-3166 alpha-2) to correctly determine when to use 12-hour clock when the locale is not specific enough. To only consider country set $locale to "DONTUSE"
-	 *
-	 * @return array : Array with `hour` and `ampm` designators that can be used with [format_local()] according to https://www.php.net/manual/en/intldateformatter.setpattern.php
-	 */
-	public static function time_local_format($locale = null, $options = []) {
-		if (!$locale) {
-			$locale = static::$_defaultLocale;
-		}
-
-		$locale = str_replace('-', '_', $locale);
-		if (in_array($locale, ['en_US', 'en_GB', 'en_AU', 'hi_IN']) || ($options['country'] && in_array(strtoupper($options['country']), ['US', 'GB', 'AU', 'IN', 'IE', 'CA', 'NZ', 'PK', 'BD', 'MY', 'MT']))) {
-			$hour_symbol = ($options['twodigit_hour'] ? 'hh' : 'h');
-			return ['hour' => $hour_symbol, 'ampm' => 'a', '12hour' => true];
-		} else {
-			$hour_symbol = ($options['twodigit_hour'] ? 'HH' : 'H');
-			return ['hour' => $hour_symbol, 'ampm' => '', '12hour' => false];
-		}
-	}
-
-	/**
-	 * DEPRECATED. Format dates and/or times according to locale settings
-	 *
-	 * Based on strftime() but adjusted to work correctly
-	 *
-	 * @param string $format : According to strftime(), plus the following:  (literal % cannot be used)
-	 *   - ¤A : weekday name with abbreviated to 3 characters
-	 * @param integer $date_unix : UNIX timestamp of the date/time to be formatted
-	 * @return string
-	 */
-	public static function format_datetime_local($format, $date_unix) {
-		trigger_error('format_datetime_local() has been deprecated. You should use format_local() instead - it uses the Intl extension.', E_USER_DEPRECATED);
-
-		$output = $format;
-		$working = ['a', 'A', 'B', 'c', 'C', 'd', 'D', 'g', 'h', 'H', 'I', 'j', 'm', 'n', 'p', 'r', 'R', 'S', 't', 'T', 'u', 'U', 'V', 'W', 'w', 'x', 'X', 'y', 'Y', 'Z'];
-		// Do all the working values
-		foreach ($working as $c) {
-			$output = str_replace('%'.$c, strftime('%'.$c, $date_unix), $output);
-		}
-		// Make 3-letter weekday name
-		if (strpos($output, '¤A') !== false) {
-			$value = strftime('%A', $date_unix);
-			$value = mb_substr($value, 0, 3);
-			$output = str_replace('¤A', $value, $output);
-		}
-		// Fix non-working %b (some servers added "." after abbreviated month names (eg. domeneshop.no))
-		if (strpos($output, '%b') !== false) {
-			$value = rtrim(strftime('%b', $date_unix), '.');
-			$output = str_replace('%b', $value, $output);
-		}
-		// Fix non-working %e (do not have space in front of single digits, even though specification says it should have - and it didn't work at all on my local dev machine)
-		if (strpos($output, '%e') !== false) {
-			$value = date('j', $date_unix);
-			$output = str_replace('%e', $value, $output);
-		}
-		// Fix non-working %G (4-digit year doesn't work)
-		if (strpos($output, '%G') !== false) {
-			$value = date('Y', $date_unix);
-			$output = str_replace('%G', $value, $output);
-		}
-		// Fix non-working %M (minute doesn't work at all)
-		if (strpos($output, '%M') !== false) {
-			$value = date('i', $date_unix);
-			$output = str_replace('%M', $value, $output);
-		}
-		return $output;
-	}
-
 	public static function to_mysql_datetime($datetime, $dateformat, $timeformat = false, $returnonfail = false) {
-		/*
-		DESCRIPTION:
-		- convert several date formats (except Unix) to MySQL format
-		- use validate_date(), validate_time(), and validate_datetime() to ensure correct date/time values
-		- a Javascript equivalent with the same name exists, it works exactly the same way
-		- TODO: maybe make possible to input Unix timestamp (like set $dateformat and/or $timeformat to 'unix'... or just provide a numeric value for $datetime?)
-		INPUT:
-		- $date : date and/or time to convert
-		- $dateformat : format of the date to convert. Valid values are 'dmy', 'mdy', 'ymd' added by a forth character which sets the delimiter which can be anything except a number
-			- set to false if $datetime only contains a time value
-			- see function convert_cc_exp_to_mysql_date() for converting credit card expiration dates
-		- $timeformat : format of the time to convert. Valid values are 'hm', 'hms' added by a forth character which sets the delimiter which can be anything except a number
-			- if 12-clock it must be a cathe capitalized 'H' (eg. 'Hm' or 'Hms')
-			- examples:
-				- hh:mm            (24hr clock)
-				- hh:mm:ss         (24hr clock)
-				- hh:mm [am|pm]    (12hr clock, hh = (0)0-23, mm = (0)0-59, with or without space between time and am/pm)
-				- hh:mm:ss [am|pm] (12hr clock, hh = (0)1-12, mm = (0)0-59, with or without space between time and am/pm)
-		- $returnonfail : string to return if conversion fails
-			- provide string 'source' to return the untouched datetime value
-				- IMPORTANT: if this is used you MUST validate the datetime later on before using it (preferably on server-side)
-			- provide string 'empty' to return an empty string
-		OUTPUT:
-		- MySQL formatted date and/or time
-		- or empty string if the values are empty
-		- or if conversion fails and $returnonfail is set, it's value is returned
-		*/
 		if ($datetime) {
 			$output = [];
 			$datetime = trim($datetime);
@@ -379,132 +211,27 @@ class datetime {
 	}
 
 	/**
-	 * Add or subtract a specified period from a date
+	 * Textually write how long time ago a given timestamp was
 	 *
-	 * This is better than just multiplying the timestamp because this takes daylight savings time into consideration
+	 * Very similar to [time_period_single_unit()] but always subtracts the timestamp from current time.
 	 *
-	 * @param integer $time : UNIX timestamp
-	 * @param integer $adjust_by : The number, positive to add or negative to subtract, you want to adjust the time with
-	 * @param string $interval : the unit for the $adjust_by number. Possible values are: `hour`, `minute`, `second`, `day`, `month`, `year`
-	 * @return integer : UNIX timestamp
+	 * @param string|integer $mysql_or_unix_timestamp : MySQL timestamp or Unix timestamp
+	 *   - a MySQL timestamp is assumed to be in UTC unless otherwise specified like this: `2017-03-21 14:24:03 Europe/Copenhagen`
+	 * @param array $options : Associative array with any of these options:
+	 *   - `unit_names` : default `short`
+	 *   - `decimals` : default 0
+	 *   - `include_weeks` : default false
+	 *   - `smart_general_guide` : for the general guide use expressions like `today` and `yesterday` instead of hours/days
+	 *     - also adds the word `ago` after the units or `in` before if time is in the future
+	 *   - `output_timezone` : time zone to use for determining `today` and `yesterday` when smart_general_guide is enabled
+	 *   - `input_timezone` : time zone a MySQL timestamp in $mysql_or_unix_timestamp is in
+	 *   - `hour_adjustment` : hours to add to MySQL date-only timestamps for making a general guide that feels more correct. Default is 12 (= make it noon)
+	 *     - set to false to not apply any adjustment
+	 *
+	 * @return array : Identical to time_period_single_unit() or empty array if timestamp was empty/null/false
+	 *   - if option smart_general_guide=true an additional key `relative_guide` is added
 	 */
-	public static function time_add($time, $adjust_by, $interval) {
-		switch ($interval) {
-		case 'hour':
-		case 'hours':
-		case 'hr':
-		case 'hrs':
-			$newtime = mktime(date("G",$time) + $adjust_by, date("i",$time), date("s",$time), date("m",$time), date("d",$time), date("Y",$time));
-			break;
-		case 'minute':
-		case 'minutes':
-		case 'min':
-		case 'mins':
-			$newtime = mktime(date("G",$time), date("i",$time) + $adjust_by, date("s",$time), date("m",$time), date("d",$time), date("Y",$time));
-			break;
-		case 'second':
-		case 'seconds':
-		case 'sec':
-		case 'secs':
-			$newtime = mktime(date("G",$time), date("i",$time), date("s",$time) + $adjust_by, date("m",$time), date("d",$time), date("Y",$time));
-			break;
-		case 'day':
-		case 'days':
-			$newtime = mktime(date("G",$time), date("i",$time), date("s",$time), date("m",$time), date("d",$time) + $adjust_by, date("Y",$time));
-			break;
-		case 'month':
-		case 'months':
-			$newtime = mktime(date("G",$time), date("i",$time), date("s",$time), date("m",$time) + $adjust_by, date("d",$time), date("Y",$time));
-			break;
-		case 'year':
-		case 'years':
-		case 'yr':
-		case 'yrs':
-			$newtime = mktime(date("G",$time), date("i",$time), date("s",$time), date("m",$time), date("d",$time), date("Y",$time) + $adjust_by);
-			break;
-		default:
-			core::system_error('Configuration error. Interval not defined.', ['Function' => 'time_add()', 'Interval' => $interval]);
-		}
-		return $newtime;
-	}
-
-	/**
-	 * Get the difference between two times expressed in a certain interval
-	 *
-	 * @param integer $time1 : first time in UNIX timestamp (beginning time)
-	 * @param integer $time1 : second time in UNIX timestamp (ending time)
-	 * @param string $interval : calculate the difference as months, weeks, days, hours, minutes, or seconds (see below for valid values)
-	 *   - note that a month is calculated as 30 days
-	 * @param boolean $return_absolute : return the absolute value? This means the order of times doesn't matter and result is always positive.
-	 * @return number : Possibly with decimals
-	 */
-	public static function time_diff($time1, $time2, $interval = 'days', $return_absolute = false) {
-		$difference_seconds = $time2 - $time1;
-		if ($return_absolute) {
-			$difference_seconds = abs($difference_seconds);
-		}
-		switch (strtolower($interval)) {
-		case 'month':
-		case 'months':
-			$diff_target = $difference_seconds / 60 / 60 / 24 / 30;
-			break;
-		case 'week':
-		case 'weeks':
-		case 'wk':
-		case 'wks':
-			$diff_target = $difference_seconds / 60 / 60 / 24 / 7;
-			break;
-		case 'day':
-		case 'days':
-			$diff_target = $difference_seconds / 60 / 60 / 24;
-			break;
-		case 'hour':
-		case 'hours':
-		case 'hr':
-		case 'hrs':
-			$diff_target = $difference_seconds / 60 / 60;
-			break;
-		case 'minute':
-		case 'minutes':
-		case 'min':
-		case 'mins':
-			$diff_target = $difference_seconds / 60;
-			break;
-		case 'second':
-		case 'seconds':
-		case 'sec':
-		case 'secs':
-			$diff_target = $difference_seconds;
-			break;
-		default:
-			core::system_error('Interval has not been defined for calculating time differences.');
-		}
-		return $diff_target;
-	}
-
 	public static function time_ago($mysql_or_unix_timestamp, $options = []) {
-		/*
-		DESCRIPTION:
-		- textually write how long time ago a given timestamp was
-		- very similar to time_period_single_unit() but always subtracts the timestamp from current time
-		INPUT:
-		- $mysql_or_unix_timestamp : a MySQL timestamp or Unix timestamp
-			- a MySQL timestamp is assumed to be in UTC unless otherwise specified like this: '2017-03-21 14:24:03 Europe/Copenhagen'
-		- $options (array) : associative array with any of these options:
-			- 'unit_names' : default 'short'
-			- 'decimals' : default 0
-			- 'include_weeks' : default false
-			- 'smart_general_guide' : for the general guide use expressions like 'today' and 'yesterday' instead of hours/days
-				- also adds the word 'ago' after the units or 'in' before if time is in the future
-			- 'output_timezone' : time zone to use for determining 'today' and 'yesterday' when smart_general_guide is enabled
-			- 'input_timezone' : time zone a MySQL timestamp in $mysql_or_unix_timestamp is in
-			- 'hour_adjustment' : hours to add to MySQL date-only timestamps for making a general guide that feels more correct. Default is 12 (= make it noon)
-				- set to false to not apply any adjustment
-		OUTPUT:
-		- identical to time_period_single_unit() or empty array if timestamp was empty/null/false
-		- if smart_general_guide=true an additional key 'relative_guide' is added
-		*/
-
 		$unit_names = 'short'; $decimals = 0; $include_weeks = false;
 		if ($options['unit_names']) {
 			$unit_names = $options['unit_names'];
@@ -561,18 +288,18 @@ class datetime {
 		}
 	}
 
+	/**
+	 * Textually write a time period/duration, like in a countdown or "time since". Days, hours, minutes, and seconds
+	 *
+	 * This differs from time_period_single_unit() in that it outputs ALL units (eg. hours, minutes, and seconds) instead of only one unit (eg. minutes).
+	 * This divides the duration up into eg. hours, minutes and seconds whereas time_period_single_unit() determines the whole period/duration in EITHER days, hours, minutes etc.
+	 *
+	 * @param integer $time : Duration/length in seconds (like unix timestamp)
+	 * @param boolean $include_zeros : Whether or not values of null should be included in the `fulltext` output
+	 *
+	 * @return array : Associated array with days (`days`), hours (`hours`), minutes (`mins`), seconds (`secs`), and full textual representation (`fulltext`)
+	 */
 	public static function time_period_all_units($time, $include_zeros = false) {
-		/*
-		DESCRIPTION:
-		- textually write a time period/duration, like in a countdown or "time since". Days, hours, minutes, and seconds
-		- this differs from time_period_single_unit() in that it outputs ALL units (eg. hours, minutes, and seconds) instead of only one unit (eg. minutes)
-			- this divides the duration up into eg. hours, minutes and seconds whereas time_period_single_unit() determines the whole period/duration in EITHER days, hours, minutes etc.
-		INPUT:
-		- $time : duration/length in seconds (like unix timestamp)
-		- $include_zeros = true|false : whether or not values of null should be included in the "fulltext"
-		OUTPUT:
-		- associated array with days ('days'), hours ('hours'), minutes ('mins'), seconds ('secs'), and full textual representation ('fulltext')
-		*/
 		//calculate the different valus
 		$days = ($time - ($time % 86400)) / 86400;
 		$time = $time - ($days * 86400);
@@ -605,25 +332,26 @@ class datetime {
 		];
 	}
 
+	/**
+	 * Textually write a time period/duration with a single unit, either days, hours, minutes, seconds - depending on how long the duration is
+	 *
+	 * The method also returns a value ('general_guide') where the appropriate unit is automatically determined, based on what is meaningful for the reader to know (this will of course not be the exact time, but only a general guide).
+	 *
+	 * This differs from [time_period_all_units()] in that this only returns a single unit, [time_period_all_units()] returns ALL units.
+	 * See [time_period_all_units()] for further explanation.
+	 *
+	 * Maybe it would be useful even to make one a function returning two units - for better precision when you want it!
+	 *
+	 * @param integer $time : Duration/length in seconds (like unix timestamp)
+	 * @param string $unit_names : Whether `short` (= abbreviated) or `long` unit names should be used in the `general_guide`
+	 * @param integer $decimals : Number of decimals to use in the `general_guide` number
+	 *   - can be used to obtain much greater precision
+	 * @param boolean $include_weeks : Whether or not to use the time in weeks for the `general_guide`
+	 *   - most often you would probably want to use the days up until you have one month
+	 *
+	 * @return array : Associative array. The unit for the `general_guide` is specified in `appropriate_unit`
+	 */
 	public static function time_period_single_unit($time, $unit_names = 'short', $decimals = 0, $include_weeks = false) {
-		/*
-		DESCRIPTION:
-		- textually write a time period/duration with a single unit, either days, hours, minutes, seconds - depending on how long the duration is
-		- the function also returns a value ('general_guide') where the appropriate unit is automatically determined, based on what is meaningful for the reader to know (this will of course not be the exact time, but only a general guide)
-		- this differs from time_period_all_units() in that this only returns a single unit, time_period_all_units() returns ALL units
-			- see time_period_all_units() for further explanation
-		- maybe it would be useful even to make one a function returning two units - for better precision when you want it!
-		INPUT:
-		- $time : duration/length in seconds (like unix timestamp)
-		- $unit_names ('short'|'long') : whether short (= abbreviated) or long unit names should be unised in the 'general_guide'
-		- $decimals : number of decimals to use in the 'general_guide' number
-			- can be used to obtain much greater precision
-		- $include_weeks (true|false) : whether or not to use the time in weeks for the 'general_guide'
-			- most often you would probably want to use the days up until you have one month
-		OUTPUT:
-		- associative array: see below
-		- the unit for the 'general_guide' is specified in 'appropriate_unit'
-		*/
 		//determine unit names
 		switch ($unit_names) {
 		case 'ultrashort':
@@ -699,19 +427,17 @@ class datetime {
 		return $times;
 	}
 
+	/**
+	 * Textually write a time period/duration with a custom defined number of units
+	 *
+	 * @param integer $time : Duration/length in seconds (like unix timestamp)
+	 * @param string $unit_names : Whether `short` (= abbreviated) or `long` unit names should be used in the `general_guide`
+	 *   - OBS!! CURRENTLY THIS HAS NO EFFECT AS time_period_all_units() FIRST NEEDS TO HAVE THIS FEATURE IMPLEMENTED TOO
+	 * @param integer $no_of_units : Number of units you want, the more units the more precise the presentation will be
+	 *
+	 * @return string : Eg. `2 days, 17 hours`, `15 minutes, 14 seconds`, `4 days, 6 hrs, 38 min.`
+	 */
 	public static function time_period_custom_units($time, $unit_names = 'short', $no_of_units = 2) {
-		/*
-		DESCRIPTION:
-		- textually write a time period/duration with a custom defined number of units
-		INPUT:
-		- $time : duration/length in seconds (like unix timestamp)
-		- $unit_names ('short'|'long') : whether short (= abbreviated) or long unit names should be unised in the 'general_guide'
-			- OBS!! CURRENTLY THIS HAS NO EFFECT AS time_period_all_units() FIRST NEEDS TO HAVE THIS FEATURE IMPLEMENTED TOO
-		- $no_of_units : number of units you want, the more units the more precise the presentation will be
-		OUTPUT:
-		- string
-		- examples: 2 days, 17 hours  -or-  15 minutes, 14 seconds  -or--  4 days, 6 hrs, 38 min.
-		*/
 		if (!is_numeric($no_of_units)) {
 			core::system_error('Invalid number of units for writing a time period.');
 		}
@@ -728,8 +454,8 @@ class datetime {
 	/**
 	 * Formats a time period nicely
 	 *
-	 * @param integer|string $fromdate : Date in Unix or MySQL format
-	 * @param integer|string $todate   : Date in Unix or MySQL format
+	 * @param integer|string $from_date : Date in Unix or MySQL format
+	 * @param integer|string $to_date   : Date in Unix or MySQL format
 	 * @param array $options : Associative array with any combination of these keys:
 	 *   - `2digit_year` : set true to only show 2 digits in the year(s)
 	 *   - `no_year` : set true to don't show year at all
@@ -739,9 +465,10 @@ class datetime {
 	 *   - `input_timezone` : timezone of input when it is in MySQL format and it is not UTC
 	 *   - `output_timezone` : timezone to use for the output. Defaults to system timezone.
 	 *   - `short_months` : provide array with month numbers of month names that in the given locale (= language) are already short and do not need to be abbreviated unless specifically requested. Default is `[3, 4, 5, 6, 7]`.
+	 *
 	 * @return string : Eg. `Dec. 3-5, 2010` or `Nov. 30 - Dec. 4, 2010` or `Dec. 27, 2010 - Jan. 2, 2011`
 	 */
-	public static function format_timeperiod($fromdate, $todate, $options = []) {
+	public static function format_timeperiod($from_date, $to_date, $options = []) {
 		// Backward compatibility to when $options could be a string
 		if (is_string($options)) {
 			$newoptions = [];
@@ -767,42 +494,42 @@ class datetime {
 		}
 
 		// Streamline input into DateTime objects
-		if (!is_numeric($fromdate)) {
+		if (!is_numeric($from_date)) {
 			if ($options['input_timezone']) {
-				$fromdate = new \DateTime($fromdate, new \DateTimeZone($options['input_timezone']));
+				$from_date = new \DateTime($from_date, new \DateTimeZone($options['input_timezone']));
 			} else {
-				$fromdate = new \DateTime($fromdate, new \DateTimeZone('UTC'));
+				$from_date = new \DateTime($from_date, new \DateTimeZone('UTC'));
 			}
 		} else {
-			$fromdate = new \DateTime($fromdate);
+			$from_date = new \DateTime($from_date);
 		}
-		if (!is_numeric($todate)) {
+		if (!is_numeric($to_date)) {
 			if ($options['input_timezone']) {
-				$todate = new \DateTime($todate, new \DateTimeZone($options['input_timezone']));
+				$to_date = new \DateTime($to_date, new \DateTimeZone($options['input_timezone']));
 			} else {
-				$todate = new \DateTime($todate, new \DateTimeZone('UTC'));
+				$to_date = new \DateTime($to_date, new \DateTimeZone('UTC'));
 			}
 		} else {
-			$todate = new \DateTime($todate);
+			$to_date = new \DateTime($to_date);
 		}
 
 		// Handle timezone options
 		if ($options['output_timezone']) {
 			$timezone = new \DateTimeZone($options['output_timezone']);
-			$fromdate->setTimezone($timezone);
-			$todate->setTimezone($timezone);
+			$from_date->setTimezone($timezone);
+			$to_date->setTimezone($timezone);
 			if ($locale) {
 				$formatter->setTimeZone($timezone);
 			}
 		} else {
 			// in this case only mess with timezone if an *input* timezone was specified, otherwise leave everything in the same timezone to "ignore" timezone handling
 			if ($options['input_timezone']) {
-				$fromdate->setTimezone(new \DateTimeZone(date_default_timezone_get()));
-				$todate->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+				$from_date->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+				$to_date->setTimezone(new \DateTimeZone(date_default_timezone_get()));
 			}
 		}
 
-		$yrmode = ($options['2digit_year'] ? '2dig' : ($options['no_year'] ? 'noyr' : '4dig'));
+		$yr_mode = ($options['2digit_year'] ? '2dig' : ($options['no_year'] ? 'noyr' : '4dig'));
 		$monthdot = ($options['no_dot_after_month'] ? '' : '.');
 
 		$conditional_comma = function($string) {
@@ -818,88 +545,88 @@ class datetime {
 		if ($options['never_abbrev_months']) {
 			if ($locale) {
 				$formatter->setPattern('MMMM');
-				$frommonth = $formatter->format($fromdate);
-				$tomonth   = $formatter->format($todate);
+				$from_month = $formatter->format($from_date);
+				$to_month   = $formatter->format($to_date);
 			} else {
-				$frommonth = $fromdate->format('F');
-				$tomonth   = $todate->format('F');
+				$from_month = $from_date->format('F');
+				$to_month   = $to_date->format('F');
 			}
 		} elseif (!$options['always_abbrev_months']) {
-			$shortmonths = (is_array($options['short_months']) ? $options['short_months'] : [3, 4, 5, 6, 7]);
-			if (in_array($fromdate->format('n'), $shortmonths)) {
+			$short_months = (is_array($options['short_months']) ? $options['short_months'] : [3, 4, 5, 6, 7]);
+			if (in_array($from_date->format('n'), $short_months)) {
 				if ($locale) {
 					$formatter->setPattern('MMMM');
-					$frommonth = $formatter->format($fromdate);
+					$from_month = $formatter->format($from_date);
 				} else {
-					$frommonth = $fromdate->format('F');
+					$from_month = $from_date->format('F');
 				}
 			} else {
 				if ($locale) {
 					$formatter->setPattern('MMM');  //the formatter automatically adds month dot if needed, so no need to use $monthdot
-					$frommonth = $formatter->format($fromdate);
+					$from_month = $formatter->format($from_date);
 					if ($options['no_dot_after_month']) {  //remove what formatter automatically might have added
-						$frommonth = rtrim($frommonth, '.');
+						$from_month = rtrim($from_month, '.');
 					}
 				} else {
-					$frommonth = $fromdate->format('M'. $monthdot);
+					$from_month = $from_date->format('M'. $monthdot);
 				}
 			}
-			if (in_array($todate->format('n'), $shortmonths)) {
+			if (in_array($to_date->format('n'), $short_months)) {
 				if ($locale) {
 					$formatter->setPattern('MMMM');
-					$tomonth = $formatter->format($todate);
+					$to_month = $formatter->format($to_date);
 				} else {
-					$tomonth = $todate->format('F');
+					$to_month = $to_date->format('F');
 				}
 			} else {
 				if ($locale) {
 					$formatter->setPattern('MMM');  //the formatter automatically adds month dot if needed, so no need to use $monthdot
-					$tomonth = $formatter->format($todate);
+					$to_month = $formatter->format($to_date);
 					if ($options['no_dot_after_month']) {  //remove what formatter automatically might have added
-						$tomonth = rtrim($tomonth, '.');
+						$to_month = rtrim($to_month, '.');
 					}
 				} else {
-					$tomonth = $todate->format('M'. $monthdot);
+					$to_month = $to_date->format('M'. $monthdot);
 				}
 			}
 		} else {
 			// always_abbrev_months = true
 			if ($locale) {
 				$formatter->setPattern('MMM');
-				$frommonth = $formatter->format($fromdate);
-				$tomonth   = $formatter->format($todate);
+				$from_month = $formatter->format($from_date);
+				$to_month   = $formatter->format($to_date);
 				if ($options['no_dot_after_month']) {  //remove what formatter automatically might have added
-					$frommonth = rtrim($frommonth, '.');
-					$tomonth = rtrim($tomonth, '.');
+					$from_month = rtrim($from_month, '.');
+					$to_month = rtrim($to_month, '.');
 				}
 			} else {
-				$frommonth = $fromdate->format('M'. $monthdot);
-				$tomonth = $todate->format('M'. $monthdot);
+				$from_month = $from_date->format('M'. $monthdot);
+				$to_month = $to_date->format('M'. $monthdot);
 			}
 		}
 
-		if ($yrmode !== 'noyr') {
-			$fromyear = $fromdate->format('Y');
-			$toyear = $todate->format('Y');
+		if ($yr_mode !== 'noyr') {
+			$from_year = $from_date->format('Y');
+			$to_year = $to_date->format('Y');
 		} else {
-			$fromyear = $toyear = '';
+			$from_year = $to_year = '';
 		}
 
 		// Build the "from" part, eg. "Oct. 18", or "18" if month comes after date
 		$from_month_cond = null;
 		if (!$locale) {
-			$output = $frommonth .' '. $fromdate->format('j');
+			$output = $from_month .' '. $from_date->format('j');
 		} else {
 			$formatter->setPattern('d');
 			if ($month_before_date) {
-				$output = $frommonth .' '. $formatter->format($fromdate);
+				$output = $from_month .' '. $formatter->format($from_date);
 			} else {
-				$output = $formatter->format($fromdate);
-				$from_month_cond = $frommonth;  //must be added AFTER the ending date has been added below
+				$output = $formatter->format($from_date);
+				$from_month_cond = $from_month;  //must be added AFTER the ending date has been added below
 			}
 		}
 
-		if ($fromdate->format('Y-m-d') == $todate->format('Y-m-d')) {
+		if ($from_date->format('Y-m-d') == $to_date->format('Y-m-d')) {
 			// Only one day, don't write ending date, eg. "Oct. 18, 2020" or "18. okt. 2020"
 			if ($locale && $from_month_cond) {
 				if ($dot_after_date) {
@@ -908,9 +635,9 @@ class datetime {
 				$output .= ' '. $from_month_cond;
 			}
 		} else {
-			if ($frommonth == $tomonth && $fromyear == $toyear) {
+			if ($from_month == $to_month && $from_year == $to_year) {
 				// Month and year are the same, eg. "Oct. 18-22, 2020" or "18-22. okt. 2020"
-				$output .= '-'. $todate->format('j');
+				$output .= '-'. $to_date->format('j');
 				if ($locale && $from_month_cond) {
 					if ($dot_after_date) {
 						$output .= '.';
@@ -920,17 +647,17 @@ class datetime {
 			} else {
 				// build "to" month and date when are the same for the remaining two scenarios below
 				if (!$locale) {
-					$to_month_and_date = $tomonth .' '. $todate->format('j');
+					$to_month_and_date = $to_month .' '. $to_date->format('j');
 				} else {
 					$formatter->setPattern('d');
 					if ($month_before_date) {
-						$to_month_and_date = $tomonth .' '. $formatter->format($todate);
+						$to_month_and_date = $to_month .' '. $formatter->format($to_date);
 					} else {
-						$to_month_and_date = $formatter->format($todate);
+						$to_month_and_date = $formatter->format($to_date);
 						if ($dot_after_date) {
 							$to_month_and_date .= '.';
 						}
-						$to_month_and_date .= ' '. $tomonth;
+						$to_month_and_date .= ' '. $to_month;
 					}
 				}
 
@@ -943,18 +670,18 @@ class datetime {
 				}
 
 				// Remaining two possible scenarios...
-				if ($fromyear == $toyear) {
+				if ($from_year == $to_year) {
 					// Months are not the same, eg. "Oct. 18 - Nov. 22, 2020" or "18. okt. - 22. nov. 2020"
 					$output .= ' - '. $to_month_and_date;
 				} else {
 					// Years are not the same, eg. "June 18, 2020 - Nov. 22, 2021" or "18. juni 2020 - 22. nov. 2021"
-					$output .= $conditional_comma($output) .' '. ($yrmode == '2dig' ? "'". substr($fromyear, 2) : $fromyear) .' - '. $to_month_and_date;
+					$output .= $conditional_comma($output) .' '. ($yr_mode == '2dig' ? "'". substr($from_year, 2) : $from_year) .' - '. $to_month_and_date;
 				}
 			}
 		}
 		// Add "to" year
-		if ($yrmode != 'noyr') {
-			$output .= $conditional_comma($output) .' '. ($yrmode == '2dig' ? "'". substr($toyear, 2) : $toyear);
+		if ($yr_mode != 'noyr') {
+			$output .= $conditional_comma($output) .' '. ($yr_mode == '2dig' ? "'". substr($to_year, 2) : $to_year);
 		}
 
 		return $output;
@@ -966,9 +693,9 @@ class datetime {
 	 * @param array $options : Same as for `format_timeperiod()` plus these:
 	 *   - `country` : ISO-3166 alpha-2 country code which will in some cases help with determining formatting, eg. whether dot should be used after the date
 	 */
-	public static function format_timeperiod_local($fromdate, $todate, $locale = null, $options = []) {
+	public static function format_timeperiod_local($from_date, $to_date, $locale = null, $options = []) {
 		$options['_locale'] = $locale;
-		return static::format_timeperiod($fromdate, $todate, $options);
+		return static::format_timeperiod($from_date, $to_date, $options);
 	}
 
 	/**
@@ -979,6 +706,7 @@ class datetime {
 	 * @param string $curr_timezone : The current timezone of the timestamp, according to http://php.net/manual/en/timezones.php
 	 * @param string $new_timezone : The timezone to convert the timestamp to, according to http://php.net/manual/en/timezones.php
 	 * @param string $format : (opt.) Date format to return according to DateTime->format()
+	 *
 	 * @return string : MySQL formatted timestamp or according to $format if specified
 	 */
 	public static function change_timestamp_timezone($datetime, $curr_timezone, $new_timezone, $format = false) {
@@ -994,21 +722,20 @@ class datetime {
 		}
 	}
 
+	/**
+	 * Determine a person's age at a given date, when knowing their birth year and month
+	 *
+	 * @param string|integer $at_date : Date for which to calculate the person's age, MySQL format or Unix timestamp or anything that strtotime() parses
+	 * @param string|integer $birthyear : Year person was born
+	 *   - can also be set to a complete MySQL date (yyyy-mm-dd) or a Unix timestamp. Then set month and day to blank values ('', false or null)
+	 * @param string|integer $birthmonth : Month person was born (numeric)
+	 * @param string|integer $birthday : Day of month person was born, or one of these strings if unknown:
+	 *   - `chance_of_being_older`   : results in a chance people being actually older   than calculated here
+	 *   - `chance_of_being_younger` : results in a chance people being actually younger than calculated here
+	 *
+	 * @return integer : Age
+	 */
 	public static function calculate_age($at_date, $birthyear, $birthmonth, $birthday) {
-		/*
-		DESCRIPTION:
-		- determine a person's age at a given date, when knowing their birth year and month
-		INPUT:
-		- $at_date : date for which to calculate the person's age, MySQL format or Unix timestamp or anything that strtotime() parses
-		- $birthyear (req.) : year person was born
-			- can also be set to a complete MySQL date (yyyy-mm-dd) or a Unix timestamp. Then set mont and day to blank values ('', false or null)
-		- $birthmonth (req.) : month person was born
-		- $birthday (req.) : day of month person was born, or one of these strings if unknown:
-			- 'chance_of_being_older'   : results in a chance people being actually older   than calculated here
-			- 'chance_of_being_younger' : results in a chance people being actually younger than calculated here
-		OUTPUT:
-		- age (integer)
-		*/
 		if ($birthday && !is_numeric($birthday) && $birthday != 'chance_of_being_older' && $birthday != 'chance_of_being_younger') {
 			core::system_error('Invalid day of month for calculating age.');
 		}
@@ -1111,5 +838,288 @@ class datetime {
 		self::$scripttimer_meantimecount = false;  //clear it
 		self::$scripttimer_lastmeantime = false;  //clear it
 		return $duration;
+	}
+
+
+	/**
+	 * Set default locale
+	 *
+	 * Uses the Intl extension.
+	 *
+	 * Works together with [format_local()]
+	 *
+	 * @param string $locale : ICU locale. Eg. `en_US`, `da_DK` or `nb_NO`
+	 */
+	public static function set_default_locale($locale) {
+		static::$_defaultLocale = $locale;
+		if (!array_key_exists($locale, static::$_formatters)) {
+			static::$_formatters[$locale] = new \IntlDateFormatter($locale, \IntlDateFormatter::SHORT, \IntlDateFormatter::SHORT);
+		}
+	}
+
+	/**
+	 * Method used internally to determine the locale to work with
+	 */
+	public static function determine_locale($locale = null) {
+		if ($locale) {
+			// do nothing
+		} elseif (static::$_defaultLocale) {
+			$locale = static::$_defaultLocale;
+		} else {
+			$locale = setlocale(LC_TIME, 0);
+		}
+
+		$locale = static::clean_locale($locale);
+
+		if (!array_key_exists($locale, static::$_formatters)) {
+			static::$_formatters[$locale] = new \IntlDateFormatter($locale, \IntlDateFormatter::SHORT, \IntlDateFormatter::SHORT);
+		}
+		return $locale;
+	}
+
+	/**
+	 * Clean locale by converting eg. `en-US` to `en_US`
+	 */
+	public static function clean_locale($locale) {
+		return str_replace('-', '_', $locale);
+	}
+
+	/**
+	 * List of locales/countries that use a dot after the date, eg. `21. oktober`
+	 *
+	 * Deduced from Windows region formats.
+	 *
+	 * @return array : List of ICU locale and ISO-3166 alpha-2 countries
+	 */
+	public static function uses_dot_after_date() {
+		return [
+			'da_DK', 'da_GL', 'de_AT', 'de_BE', 'de_CH', 'cs-CZ', 'de_DE', 'de_IT', 'de_LI', 'de_LU', 'lb_LU', 'et_EE', 'fi_FI', 'fo_DK', 'fo_FO', 'hr_HR', 'hu_HU', 'is_IS', 'lv_LV', 'nb_NO', 'nn_NO', 'sk_SK', 'sl_SI',
+			'CZ', 'DK', 'GL', 'AT', 'BA', 'DE', 'LI', 'EE', 'FO', 'HR', 'HU', 'IS', 'LV', 'NO', 'SK', 'SI', 'ME', 'RS', 'XK',   //when the whole (or all locales in the country) uses it they can be listed here as well
+		];
+	}
+
+	/**
+	 * Get the local format of writing day and month
+	 *
+	 * Wikipedia article about date formatting in different countries: https://en.wikipedia.org/wiki/Date_format_by_country
+	 *
+	 * @param string $locale : ICU locale. Eg. `en_US`, `en-US`, `da_DK` or `nb_NO`
+	 * @param string $options : Available options:
+	 *   - `short_month` : use abbreviated month name instead of fully spelled out (Intl extension automatically determines if dot should be added)  (the alternative `short_month_no_dot` is just for internal use through format_local() )
+	 *   - `return_boolean` : return a boolean indicating whether month comes before the date
+	 *
+	 * @return string : Format that can be used with [format_local()] according to https://www.php.net/manual/en/intldateformatter.setpattern.php. Eg. `d. MMMM`
+	 */
+	public static function day_month_local_format($locale = null, $options = []) {
+		if (!$locale) {
+			$locale = static::$_defaultLocale;
+		}
+
+		if ($locale === 'en_US' || $locale === 'en-US') {
+			if ($options['return_boolean']) {
+				return true;
+			} elseif ($options['short_month'] || $options['short_month_no_dot']) {
+				return 'MMM d';
+			} else {
+				return 'MMMM d';
+			}
+		} else {
+			if ($options['return_boolean']) {
+				return false;
+			} elseif ($options['short_month'] || $options['short_month_no_dot']) {
+				return 'd. MMM';
+			} else {
+				return 'd. MMMM';
+			}
+		}
+	}
+
+	/**
+	 * Get the local format of writing a time (24-hour or 12-hour format)
+	 *
+	 * Wikipedia article about countries using 12-hour clock: https://en.wikipedia.org/wiki/12-hour_clock
+	 *
+	 * @param string $locale : ICU locale. Eg. `en_US`, `en-US`, `da_DK` or `nb_NO`
+	 * @param string $options : Available options:
+	 *   - `country` : provide country (ISO-3166 alpha-2) to correctly determine when to use 12-hour clock when the locale is not specific enough. To only consider country set $locale to "DONTUSE"
+	 *
+	 * @return array : Array with `hour` and `ampm` designators that can be used with [format_local()] according to https://www.php.net/manual/en/intldateformatter.setpattern.php
+	 */
+	public static function time_local_format($locale = null, $options = []) {
+		if (!$locale) {
+			$locale = static::$_defaultLocale;
+		}
+
+		$locale = str_replace('-', '_', $locale);
+		if (in_array($locale, ['en_US', 'en_GB', 'en_AU', 'hi_IN']) || ($options['country'] && in_array(strtoupper($options['country']), ['US', 'GB', 'AU', 'IN', 'IE', 'CA', 'NZ', 'PK', 'BD', 'MY', 'MT']))) {
+			$hour_symbol = ($options['twodigit_hour'] ? 'hh' : 'h');
+			return ['hour' => $hour_symbol, 'ampm' => 'a', '12hour' => true];
+		} else {
+			$hour_symbol = ($options['twodigit_hour'] ? 'HH' : 'H');
+			return ['hour' => $hour_symbol, 'ampm' => '', '12hour' => false];
+		}
+	}
+
+	/**
+	 * Format dates and/or times according to locale settings
+	 *
+	 * @deprecated Use [format_local()] instead
+	 *
+	 * Based on strftime() but adjusted to work correctly
+	 *
+	 * @param string $format : According to strftime(), plus the following:  (literal % cannot be used)
+	 *   - ¤A : weekday name with abbreviated to 3 characters
+	 * @param integer $date_unix : UNIX timestamp of the date/time to be formatted
+	 *
+	 * @return string
+	 */
+	public static function format_datetime_local($format, $date_unix) {
+		trigger_error('format_datetime_local() has been deprecated. You should use format_local() instead - it uses the Intl extension.', E_USER_DEPRECATED);
+
+		$output = $format;
+		$working = ['a', 'A', 'B', 'c', 'C', 'd', 'D', 'g', 'h', 'H', 'I', 'j', 'm', 'n', 'p', 'r', 'R', 'S', 't', 'T', 'u', 'U', 'V', 'W', 'w', 'x', 'X', 'y', 'Y', 'Z'];
+		// Do all the working values
+		foreach ($working as $c) {
+			$output = str_replace('%'.$c, strftime('%'.$c, $date_unix), $output);
+		}
+		// Make 3-letter weekday name
+		if (strpos($output, '¤A') !== false) {
+			$value = strftime('%A', $date_unix);
+			$value = mb_substr($value, 0, 3);
+			$output = str_replace('¤A', $value, $output);
+		}
+		// Fix non-working %b (some servers added "." after abbreviated month names (eg. domeneshop.no))
+		if (strpos($output, '%b') !== false) {
+			$value = rtrim(strftime('%b', $date_unix), '.');
+			$output = str_replace('%b', $value, $output);
+		}
+		// Fix non-working %e (do not have space in front of single digits, even though specification says it should have - and it didn't work at all on my local dev machine)
+		if (strpos($output, '%e') !== false) {
+			$value = date('j', $date_unix);
+			$output = str_replace('%e', $value, $output);
+		}
+		// Fix non-working %G (4-digit year doesn't work)
+		if (strpos($output, '%G') !== false) {
+			$value = date('Y', $date_unix);
+			$output = str_replace('%G', $value, $output);
+		}
+		// Fix non-working %M (minute doesn't work at all)
+		if (strpos($output, '%M') !== false) {
+			$value = date('i', $date_unix);
+			$output = str_replace('%M', $value, $output);
+		}
+		return $output;
+	}
+
+	/**
+	 * Add or subtract a specified period from a date
+	 *
+	 * @deprecated Use PHP's native [[DateTime->add()]] instead
+	 *
+	 * This is better than just multiplying the timestamp because this takes daylight savings time into consideration
+	 *
+	 * @param integer $time : UNIX timestamp
+	 * @param integer $adjust_by : The number, positive to add or negative to subtract, you want to adjust the time with
+	 * @param string $interval : the unit for the $adjust_by number. Possible values are: `hour`, `minute`, `second`, `day`, `month`, `year`
+	 * @return integer : UNIX timestamp
+	 */
+	public static function time_add($time, $adjust_by, $interval) {
+		trigger_error('time_add() has been deprecated. Use PHP native DateTime->add() instead.', E_USER_DEPRECATED);
+
+		switch ($interval) {
+		case 'hour':
+		case 'hours':
+		case 'hr':
+		case 'hrs':
+			$newtime = mktime(date("G",$time) + $adjust_by, date("i",$time), date("s",$time), date("m",$time), date("d",$time), date("Y",$time));
+			break;
+		case 'minute':
+		case 'minutes':
+		case 'min':
+		case 'mins':
+			$newtime = mktime(date("G",$time), date("i",$time) + $adjust_by, date("s",$time), date("m",$time), date("d",$time), date("Y",$time));
+			break;
+		case 'second':
+		case 'seconds':
+		case 'sec':
+		case 'secs':
+			$newtime = mktime(date("G",$time), date("i",$time), date("s",$time) + $adjust_by, date("m",$time), date("d",$time), date("Y",$time));
+			break;
+		case 'day':
+		case 'days':
+			$newtime = mktime(date("G",$time), date("i",$time), date("s",$time), date("m",$time), date("d",$time) + $adjust_by, date("Y",$time));
+			break;
+		case 'month':
+		case 'months':
+			$newtime = mktime(date("G",$time), date("i",$time), date("s",$time), date("m",$time) + $adjust_by, date("d",$time), date("Y",$time));
+			break;
+		case 'year':
+		case 'years':
+		case 'yr':
+		case 'yrs':
+			$newtime = mktime(date("G",$time), date("i",$time), date("s",$time), date("m",$time), date("d",$time), date("Y",$time) + $adjust_by);
+			break;
+		default:
+			core::system_error('Configuration error. Interval not defined.', ['Function' => 'time_add()', 'Interval' => $interval]);
+		}
+		return $newtime;
+	}
+
+	/**
+	 * Get the difference between two times expressed in a certain interval
+	 *
+	 * @deprecated Use PHP's native [[DateTime->diff()]] instead
+	 *
+	 * @param integer $time1 : first time in UNIX timestamp (beginning time)
+	 * @param integer $time1 : second time in UNIX timestamp (ending time)
+	 * @param string $interval : calculate the difference as months, weeks, days, hours, minutes, or seconds (see below for valid values)
+	 *   - note that a month is calculated as 30 days
+	 * @param boolean $return_absolute : return the absolute value? This means the order of times doesn't matter and result is always positive.
+	 * @return number : Possibly with decimals
+	 */
+	public static function time_diff($time1, $time2, $interval = 'days', $return_absolute = false) {
+		trigger_error('time_diff() has been deprecated. Use PHP native DateTime->diff() instead.', E_USER_DEPRECATED);
+
+		$difference_seconds = $time2 - $time1;
+		if ($return_absolute) {
+			$difference_seconds = abs($difference_seconds);
+		}
+		switch (strtolower($interval)) {
+		case 'month':
+		case 'months':
+			$diff_target = $difference_seconds / 60 / 60 / 24 / 30;
+			break;
+		case 'week':
+		case 'weeks':
+		case 'wk':
+		case 'wks':
+			$diff_target = $difference_seconds / 60 / 60 / 24 / 7;
+			break;
+		case 'day':
+		case 'days':
+			$diff_target = $difference_seconds / 60 / 60 / 24;
+			break;
+		case 'hour':
+		case 'hours':
+		case 'hr':
+		case 'hrs':
+			$diff_target = $difference_seconds / 60 / 60;
+			break;
+		case 'minute':
+		case 'minutes':
+		case 'min':
+		case 'mins':
+			$diff_target = $difference_seconds / 60;
+			break;
+		case 'second':
+		case 'seconds':
+		case 'sec':
+		case 'secs':
+			$diff_target = $difference_seconds;
+			break;
+		default:
+			core::system_error('Interval has not been defined for calculating time differences.');
+		}
+		return $diff_target;
 	}
 }
