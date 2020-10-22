@@ -469,7 +469,7 @@ class datetime {
 	 * @return string : Eg. `Dec. 3-5, 2010` or `Nov. 30 - Dec. 4, 2010` or `Dec. 27, 2010 - Jan. 2, 2011`
 	 */
 	public static function format_timeperiod($from_date, $to_date, $options = []) {
-		// Backward compatibility to when $options could be a string
+		// Backward compatibility to when $options could be a string or null
 		if (is_string($options)) {
 			$newoptions = [];
 			if (strpos($options, '2digit_year') !== false) $newoptions['2digit_year'] = true;
@@ -477,6 +477,8 @@ class datetime {
 			if (strpos($options, 'always_abbrev_months') !== false) $newoptions['always_abbrev_months'] = true;
 			if (strpos($options, 'never_abbrev_months') !== false) $newoptions['never_abbrev_months'] = true;
 			$options = $newoptions;
+		} elseif (!is_array($options)) {
+			$options = [];
 		}
 
 		// Prepare for using a specific locale
