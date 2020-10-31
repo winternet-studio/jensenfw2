@@ -152,4 +152,13 @@ final class datetimeTest extends TestCase {
 		$this->assertSame('17-21. okt. 2020', datetime::format_timeperiod_local('2020-10-18 05:00:00', '2020-10-22 05:00:00', 'da_DK', ['output_timezone' => 'America/Los_Angeles']));
 		$this->assertSame('19-23. okt. 2020', datetime::format_timeperiod_local('2020-10-18 15:00:00', '2020-10-22 15:00:00', 'da_DK', ['input_timezone' => 'America/Los_Angeles', 'output_timezone' => 'Australia/Brisbane']));
 	}
+
+	public function testPeriodToDatetime() {
+		$this->assertSame((new \DateTime('+6 hours'))->format('Y-m-d H:i'),                           (datetime::period_to_datetime('6h'))->format('Y-m-d H:i'));
+		$this->assertSame((new \DateTime('+6 hours', new \DateTimeZone('UTC')))->format('Y-m-d H:i'), (datetime::period_to_datetime('6h', ['timezone' => 'UTC']))->format('Y-m-d H:i'));
+		$this->assertSame((new \DateTime('+12 days'))->format('Y-m-d H:i'),                           (datetime::period_to_datetime('12d'))->format('Y-m-d H:i'));
+		$this->assertSame((new \DateTime('+12 days', new \DateTimeZone('UTC')))->format('Y-m-d H:i'), (datetime::period_to_datetime('12d', ['timezone' => 'UTC']))->format('Y-m-d H:i'));
+
+		$this->assertSame(null, (datetime::period_to_datetime('invalid value', ['null_on_fail' => true])));
+	}
 }

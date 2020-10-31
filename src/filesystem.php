@@ -382,6 +382,61 @@ class filesystem {
 	}
 
 	/**
+	 * Save a file that will be short-lived, ie. expire and be deleted after a given period of time
+	 *
+	 * Causes an extra file to be created having it's expiration date appended to the filename, eg. if original filename
+	 * is `processed-livestream-2020-10-31.json` the second file will be `processed-livestream-2020-10-31.EXPIRE20210301.json`
+	 *
+	 * Expired files will only be deleted as new files are written though as there of course is no separate continual process to delete them.
+	 * 
+	 * @param string $expiration : The expiration date (UTC) of this value in MySQL format (yyyy-mm-dd or yyyy-mm-dd hh:mm:ss)
+	 *   - or number of hours to expire (eg. 6 hours: `6h`)
+	 *   - or days to expire (eg. 14 days: `14d`)
+	 */
+	public static function save_shortlived_file($file, $content, $expiration_date = '7d') {
+		// First cleanup expired files from earlier runs
+		static::cleanup_shortlived_files($file);
+
+		// NOTE: we currently don't check that the file doesn't exist from before and has another "expire" meta file
+
+		$pathinfo = pathinfo($file);
+
+		$bytes = file_put_contents($file, $content);
+		if ($bytes === false) {
+			core::system_error('Failed to save short-lived file.', ['File' => $file]);
+		}
+
+		$metadata_file = $pathinfo['dirname'] .'/'. $pathinfo['filename'] .'.EXPIRE'. (datetime::period_to_datetime($expiration_date))->format('YmdHi') . ($pathinfo['extension'] ? '.' : '') . $pathinfo['extension'];
+		if (!file_put_contents($metadata_file, $bytes .'|'. date('Y-m-d H:i:s'))) {
+			core::system_error('Failed to save file with metadata for short-lived file.', ['File' => $metadata_file]);
+		}
+
+		return $output;
+	}
+
+	/**
+	 * Delete expired files in the same folder
+	 *
+	 * This method works on the premises of [save_shortlived_file()].
+	 *
+	 * @param string $folder_or_file : Folder (or file in whos folder) we'll deleted expired files
+	 */
+	public static function cleanup_shortlived_files($folder_or_file) {
+		$folder = pathinfo($folder_or_file, PATHINFO_DIRNAME);
+		$files = static::get_files($folder);
+		foreach ($files as $meta_file) {
+			if (preg_match("/(\\.EXPIRE(\\d{4})(\\d{2})(\\d{2})(\\d{2})(\\d{2}))(\\.|$)/", $meta_file, $match)) {
+				$original_file = str_replace($match[1], '', $meta_file);
+				$timestamp = $match[2] .'-'. $match[3] .'-'. $match[4] .' '. $match[5] .':'. $match[6];
+				if (time() > strtotime($timestamp)) {
+					@unlink($original_file);
+					@unlink($meta_file);
+				}
+			}
+		}
+	}
+
+	/**
 	 * Delete all files and folders within a given folder recursively
 	 *
 	 * Use delete_folder_tree() instead to also delete the folder itself.

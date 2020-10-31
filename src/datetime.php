@@ -790,6 +790,36 @@ class datetime {
 		return $age;
 	}
 
+	/**
+	 * @param string $period : eg. `6h` or `14d`
+	 * @param array $options : Available options:
+	 *   - `timezone` : set timezone, eg. `Europe/Copenhagen`. Defaults to system timezone.
+	 *   - `null_on_fail` : set true to return null if `$period` doesn't hold the right format
+	 */
+	public static function period_to_datetime($period, $options = []) {
+		if (preg_match('/^(\\d+)(h|d)$/i', $period, $match)) {
+			if ($options['timezone']) {
+				$options['timezone'] = new \DateTimeZone($options['timezone']);
+			}
+			switch ($match[2]) {
+			case 'h':
+				return new \DateTime('+'. $match[1] .' hours', $options['timezone']);
+				break;
+			case 'd':
+				return new \DateTime('+'. $match[1] .' days', $options['timezone']);
+				break;
+			default:
+				core::system_error('Undefined unit for converting period to date/time.', ['Unit' => $unit]);
+			}
+		} else {
+			if ($options['null_on_fail']) {
+				return null;
+			} else {
+				core::system_error('Incorrect format for converting period to date/time.', ['Period' => $period]);
+			}
+		}
+	}
+
 	public static function scripttimer_start() {
 		self::$scripttimer_start = microtime(true);
 		return self::$scripttimer_start;

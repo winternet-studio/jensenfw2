@@ -80,17 +80,8 @@ class system {
 		if ($expiration) {
 			if (preg_match('|^\\d{2,4}-\\d{1,2}-\\d{1,2}$|', $expiration) || preg_match('|^\\d{2,4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}$|', $expiration)) {
 				//do nothing, use raw value
-			} elseif (preg_match('/^(\\d+)(h|d)$/', $expiration, $match)) {
-				switch ($match[2]) {
-				case 'h':
-					$expiration = gmdate('Y-m-d H:i:s', time() + $match[1]*60*60);
-					break;
-				case 'd':
-					$expiration = gmdate('Y-m-d H:i:s', time() + $match[1]*24*60*60);
-					break;
-				default:
-					core::system_error('Undefined unit for expiration date for setting a buffer value.', ['Unit' => $unit]);
-				}
+			} elseif ($expiration = datetime::period_to_datetime($expiration, ['timezone' => 'UTC', 'null_on_fail' => true])) {
+				$expiration = $expiration->format('Y-m-d H:i:s');
 			} elseif ($expiration == 'NOW') {
 				$expiration = '2000-01-01 00:00:00';
 			} else {
