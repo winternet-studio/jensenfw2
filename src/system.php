@@ -80,12 +80,12 @@ class system {
 		if ($expiration) {
 			if (preg_match('|^\\d{2,4}-\\d{1,2}-\\d{1,2}$|', $expiration) || preg_match('|^\\d{2,4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}$|', $expiration)) {
 				//do nothing, use raw value
-			} elseif ($expiration = datetime::period_to_datetime($expiration, ['timezone' => 'UTC', 'null_on_fail' => true])) {
-				$expiration = $expiration->format('Y-m-d H:i:s');
+			} elseif ($expire_datetime = datetime::period_to_datetime($expiration, ['timezone' => 'UTC', 'null_on_fail' => true])) {
+				$expiration = $expire_datetime->format('Y-m-d H:i:s');
 			} elseif ($expiration == 'NOW') {
 				$expiration = '2000-01-01 00:00:00';
 			} else {
-				core::system_error('Invalid expiration date for setting a value in temporary buffer table.');
+				core::system_error('Invalid expiration date for setting a value in temporary buffer table.', ['Expiration' => $expiration]);
 			}
 			$sql .= ", tmpd_date_expire = '". $expiration ."'";
 		}
