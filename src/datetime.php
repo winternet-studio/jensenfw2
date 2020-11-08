@@ -1023,8 +1023,6 @@ class datetime {
 	 * @return string
 	 */
 	public static function format_datetime_local($format, $date_unix) {
-		trigger_error('format_datetime_local() has been deprecated. You should use format_local() instead - it uses the Intl extension.', E_USER_DEPRECATED);
-
 		$output = $format;
 		$working = ['a', 'A', 'B', 'c', 'C', 'd', 'D', 'g', 'h', 'H', 'I', 'j', 'm', 'n', 'p', 'r', 'R', 'S', 't', 'T', 'u', 'U', 'V', 'W', 'w', 'x', 'X', 'y', 'Y', 'Z'];
 		// Do all the working values
@@ -1073,8 +1071,6 @@ class datetime {
 	 * @return integer : UNIX timestamp
 	 */
 	public static function time_add($time, $adjust_by, $interval) {
-		trigger_error('time_add() has been deprecated. Use PHP native DateTime->add() instead.', E_USER_DEPRECATED);
-
 		switch ($interval) {
 		case 'hour':
 		case 'hours':
@@ -1127,8 +1123,6 @@ class datetime {
 	 * @return number : Possibly with decimals
 	 */
 	public static function time_diff($time1, $time2, $interval = 'days', $return_absolute = false) {
-		trigger_error('time_diff() has been deprecated. Use PHP native DateTime->diff() instead.', E_USER_DEPRECATED);
-
 		$difference_seconds = $time2 - $time1;
 		if ($return_absolute) {
 			$difference_seconds = abs($difference_seconds);
