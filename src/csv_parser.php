@@ -1,16 +1,16 @@
 <?php
-/*
-This file contains functions related to the parsing CSV (Comma-Separated Values) data format
-*/
 namespace winternet\jensenfw2;
 
+/**
+ * This file contains functions related to the parsing CSV (Comma-Separated Values) data format
+ */
 class csv_parser {
 	// Configuration
 	public $delimiter = ',';
 	public $enclosure = '"';
 	public $escape = "\\";
 	public $first_line_is_header = true;  // Does the first line contain a header (column names)? If so, these will be used as the array key names in the output
-	public $replace_tab_with_comma = true;
+	public $replace_tab_with_comma = false;
 	public $trim_values = true;
 	public $max_line_length = 4096;
 
@@ -31,11 +31,10 @@ class csv_parser {
 	/**
 	 * Parse CSV data given in a string into an array
 	 *
-	 * - requires minimum PHP 5.1.0 (otherwise it can only read from files or URLs, but would have to be adjusted for that)
-	 * - in future PHP is probably coming with a function to also parse strings directly (str_getcsv() )
+	 * PHP now has a native function {@link https://www.php.net/str_getcsv str_getcsv()} that can parse strings directly.
 	 *
 	 * @param string $csv_data : string with CSV data
-	 * @return array|boolean : Mumeric array (first column has index no. 1), or associative array if header with field names is available,
+	 * @return array|boolean : Numeric array (first column has index no. 1), or associative array if header with field names is available,
 	 *     or returns false if fgetcsv() fails.
 	 *     If not all rows have the same field count the property fieldcount_differs will have been set to true.
 	 */
