@@ -9,6 +9,13 @@ namespace winternet\jensenfw2;
 class csv {
 
 	/**
+	 * Generate CSV data
+	 *
+	 * Official standard: https://tools.ietf.org/html/rfc4180
+	 *
+	 * MIME Content-Type is `text/csv`. A parameter can specify whether a header is present, eg. `text/csv; header=present` or `text/csv; header=absent`.
+	 * Unofficially it could be useful to append a parameter like this: `; delimiter=comma` or `; delimiter=tab`.
+	 *
 	 * @param array $array_of_arrays
 	 * @param array $options
 	 * @return string
