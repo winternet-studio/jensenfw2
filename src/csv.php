@@ -20,6 +20,10 @@ class csv {
 		];
 		$options = array_merge($defaults, $options);
 
+		if (empty($array_of_arrays)) {
+			return '';
+		}
+
 		ob_start();
 		$out = fopen('php://output', 'w');
 		if ($options['header']) {
