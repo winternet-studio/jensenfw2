@@ -100,4 +100,24 @@ final class csv_parserTest extends TestCase {
     }
 ]'), json_encode($output, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES));
 	}
+
+    public function testSpecialCharacters() {
+        $parser = new csv_parser();
+        $output = $parser->parse_csv(file_get_contents(__DIR__ .'/fixtures/csv_parser/special-characters.csv'));  //this intentionally has Windows line-breaks to show that they are retained as-is within values
+        // var_export($output);
+        // file_put_contents('dump.txt', json_encode($output, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES));
+
+        $this->assertEquals(str_replace("\r", '', '[
+    {
+        "firstname": "John II",
+        "lastname": "Doe",
+        "address": "1 Street\tNew York"
+    },
+    {
+        "firstname": "Mary",
+        "lastname": "Smith",
+        "address": "1 Street\r\nNew York"
+    }
+]'), json_encode($output, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES));
+    }
 }
