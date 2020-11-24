@@ -1057,7 +1057,7 @@ class core {
 						}
 					}
 				}
-				$b = explode('=', $str[0]);  //fallback to first language
+				$b = explode('=', $str[0], 2);  //fallback to first language
 				return trim($b[1]);
 			} else {
 				return $str;
