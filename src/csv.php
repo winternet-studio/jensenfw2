@@ -1,11 +1,12 @@
 <?php
-namespace winternet\jensenfw2;
-
 /**
- * This file contains functions related to the dealing with CSV (Comma-Separated Values) data format
+ * Functions related to the dealing with CSV (Comma-Separated Values) data format
  *
  * A separate class `csv_parser` exists for parsing CSV data.
  */
+
+namespace winternet\jensenfw2;
+
 class csv {
 
 	/**

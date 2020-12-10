@@ -1,7 +1,8 @@
 <?php
-/*
-This file contains functions related to date and time handling
-*/
+/**
+ * Functions related to date and time handling
+ */
+
 namespace winternet\jensenfw2;
 
 class datetime {

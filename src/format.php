@@ -1,7 +1,8 @@
 <?php
-/*
-This file contains functions related to misc formatting issues
-*/
+/**
+ * Functions related to misc formatting issues
+ */
+
 namespace winternet\jensenfw2;
 
 class format {

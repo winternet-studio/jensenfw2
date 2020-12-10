@@ -1,4 +1,8 @@
 <?php
+/**
+ * Functions related to AWS Beanstalk (Amazon Web Services)
+ */
+
 namespace winternet\jensenfw2;
 
 class aws_beanstalk {

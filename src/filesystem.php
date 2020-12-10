@@ -1,7 +1,8 @@
 <?php
-/*
-This file contains functions related to file system handling and manipulation
-*/
+/**
+ * Functions related to file system handling and manipulation
+ */
+
 namespace winternet\jensenfw2;
 
 class filesystem {

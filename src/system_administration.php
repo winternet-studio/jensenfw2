@@ -1,7 +1,8 @@
 <?php
-/*
-This file contains functions related to system/server administration
-*/
+/**
+ * Functions related to system/server administration
+ */
+
 namespace winternet\jensenfw2;
 
 class system_administration {

@@ -1,7 +1,8 @@
 <?php
-/*
-This file contains functions related to system/programming/PHP
-*/
+/**
+ * Functions related to system/programming/PHP
+ */
+
 namespace winternet\jensenfw2;
 
 class system {

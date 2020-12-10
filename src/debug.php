@@ -1,7 +1,8 @@
 <?php
-/*
-This file contains functions related to dumping the content of variables for debugging
-*/
+/**
+ * Functions related to dumping the content of variables for debugging
+ */
+
 namespace winternet\jensenfw2;
 
 class debug {

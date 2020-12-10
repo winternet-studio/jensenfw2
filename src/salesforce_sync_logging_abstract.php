@@ -1,7 +1,7 @@
 <?php
-/*
-This file contains functions related to logging of data sync between Salesforce.com and another database
-*/
+/**
+ * Functions related to logging of data sync between Salesforce.com and another database
+ */
 
 namespace winternet\jensenfw2;
 

@@ -1,4 +1,8 @@
 <?php
+/**
+ * Functions related to HTML and CSS
+ */
+
 namespace winternet\jensenfw2;
 
 class html {

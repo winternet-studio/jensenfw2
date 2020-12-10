@@ -1,7 +1,8 @@
 <?php
-/*
-This file contains functions related to geocoding
-*/
+/**
+ * Functions related to geocoding
+ */
+
 namespace winternet\jensenfw2;
 
 class geocoding {

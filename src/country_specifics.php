@@ -1,15 +1,13 @@
 <?php
-namespace winternet\jensenfw2;
-
 /**
  * Class related to information that is specific to a country, eg. address formatting, use of state and postal code fields etc.
  *
  * This should match the code in https://github.com/winternet-studio/jensen-js-libs/blob/master/src/CountrySpecifics.js
+ *
+ * See also: http://stackoverflow.com/questions/13438461/formatting-a-shipping-address-by-country-in-php-or-perl
  */
 
-// See also: http://stackoverflow.com/questions/13438461/formatting-a-shipping-address-by-country-in-php-or-perl
-
-
+namespace winternet\jensenfw2;
 
 class country_specifics {
 	public static function address_field_order($country) {

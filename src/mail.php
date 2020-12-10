@@ -1,7 +1,8 @@
 <?php
-/*
-This file contains functions related to sending mail (email)
-*/
+/**
+ * Functions related to sending email
+ */
+
 namespace winternet\jensenfw2;
 
 class mail {
@@ -55,55 +56,54 @@ class mail {
 		return $cfg;
 	}
 
+	/**
+	 * Send emails
+	 *
+	 * INPUT:
+	 * @param string $fromemail : Sender address
+	 * @param string $fromname  : Sender name
+	 * @param string|array $to : Recipient. Can either be a:
+	 *   - string with recipient email address
+	 *       OR
+	 *   - array where 1st element is recipient name and 2nd is recipient email address
+	 *       OR
+	 *   - array with a key named `multiple`, where the value is an array with subarrays with keys `email` and optionally `name`
+	 *     - eg.: `$recips['multiple'] = [['name' => $nameA, 'email' => $emailA], ['name' => $nameB, 'email' => $emailB]]`
+	 * @param string $fsubj : Mail subject
+	 * @param string $femailbody : Mail body in plain text. For the bodies you can make line-breaks (by using \r\n - \n only won't work)
+	 *   before text you don't want to be broken by chunk_split(). This could be concerning text that you want to be able to search for
+	 *   in the raw message. The text can normally be maximum 76 characters though (that's the line length chunk_split() uses).
+	 * @param string $htmlbody : Mail body in HTML format (opt.)
+	 * @param array $options : Associative array with different options and flags (opt.). Available options:
+	 *   - `cc`  : array like this:
+	 *         [
+	 *           'person1@example.org',
+	 *           'person2@otherdomain.org' => 'Person 2 Name',
+	 *           'person3@example.org',
+	 *           'person4@example.org' => 'Person 4 Name',
+	 *         ]
+	 *      - DEPRECATED: or a string with comma-separated list of addresses only, who receive copies of the email
+	 *   - `bcc` : array like this:
+	 *         [
+	 *           'person1@example.org',
+	 *           'person2@otherdomain.org' => 'Person 2 Name',
+	 *           'person3@example.org',
+	 *           'person4@example.org' => 'Person 4 Name',
+	 *         ]
+	 *      - DEPRECATED: or a string with comma-separated list of addresses only, invisible to regular recipients, to receive copies of email (Blind Carbon Copy)
+	 *   - `attach_files` : array with complete path to files or content of file to attach to the email
+	 *      - to specify file content instead of a file reference make an entry an associative array instead, with these keys:
+	 *         - `filename` : file name that should be shown in the email
+	 *         - `content` : the content of the file
+	 *   - `reply_to` : email address to set as Reply-To adress
+	 *   - `extra_headers` : array with extra headers to put into the email (eg. with tracking information)
+	 *      - keys are the names of the header items, and values are the corresponding header item value
+	 *   - `bounce_to_sender` : set value to 1 to have bounces go to sender address (Return-Path) instead of one common system-defined address
+	 *      - use string `SKIP` to not set a bounce address at all
+	 *      - if PHP runs in safe mode, this option is ignored for mail() method
+	 *   - `enable_debugging` : set to true to echo debugging info
+	 */
 	public static function send_email($fromemail, $fromname, $to, $fsubj, $femailbody, $htmlbody = false, $options = []) {
-		/*
-		DESCRIPTION:
-		- send emails, including file attachments
-		REQUIREMENTS:
-		- several global variables
-		INPUT:
-		- $fromemail (req.) : sender address
-		- $fromname  (req.) : sender name
-		- $to (req.) : recipient. Can either be a:
-			- string with recipient email address
-				OR
-			- array where 1st element is recipient name and 2nd is recipient email address
-				OR
-			- array with a key named 'multiple', where the value is an array with subarrays with keys 'email' and optionally 'name'
-				- eg: $recips['multiple'] = array(array('name' => $nameA, 'email' => $emailA), array('name' => $nameB, 'email' => $emailB))
-		- $fsubj (req.) : mail subject
-		- $femailbody (req.) : mail body in plain text
-			- for the bodies you can make line-breaks (by using \r\n - \n only won't work) before text you don't want to be broken by chunk_split(). This could be concerning text that you want to be able to search for in the raw message. The text can normally be maximum 76 characters though (that's the line length chunk_split() uses).
-		- $htmlbody (opt.) : mail body in HTML format
-		- $options (opt.) : associative array with different options and flags. Keys available:
-			- 'cc'  : array like this:
-					array(
-					  'person1@example.org',
-					  'person2@otherdomain.org' => 'Person 2 Name',
-					  'person3@example.org',
-					  'person4@example.org' => 'Person 4 Name'
-					)
-				- DEPRECATED: or a string with comma-separated list of addresses only, who receive copies of the email
-			- 'bcc' : array like this:
-					array(
-					  'person1@example.org',
-					  'person2@otherdomain.org' => 'Person 2 Name',
-					  'person3@example.org',
-					  'person4@example.org' => 'Person 4 Name'
-					)
-				- DEPRECATED: or a string with comma-separated list of addresses only, invisible to regular recipients, to receive copies of email (Blind Carbon Copy)
-			- 'attach_files' : array with complete path to files or content of file to attach to the email
-				- to specify file content instead of a file reference make an entry an associative array instead, with these keys:
-					- 'filename' : file name that should be shown in the email
-					- 'content' : the content of the file
-			- 'reply_to' : email address to set as Reply-To adress
-			- 'extra_headers' : array with extra headers to put into the email (eg. with tracking information)
-				- keys are the names of the header items, and values are the corresponding header item value
-			- 'bounce_to_sender' : set value to 1 to have bounces go to sender address (Return-Path) instead of one common system-defined address
-				- use string 'SKIP' to not set a bounce address at all
-				- if PHP runs in safe mode, this option is ignored for mail() method
-			- 'enable_debugging' : set to true to echo debugging info
-		*/
 		// Check arguments
 		if (empty($options)) $options = [];
 		if (!is_array($options)) {
@@ -852,21 +852,19 @@ class mail {
 		return $result;
 	}
 
+	/**
+	 * Load a mail template and replace the dynamic tags with real values
+	 *
+	 * @param string $templatefile : File name of mail template (incl. path, relative to file or absolute)
+	 * @param array $mailtags : Associative array where the keys are the tag names and the values the information to replace the tags with
+	 * @param boolean $templatefile_var_is_the_content : Set to true if $templatefile is the mail template itself
+	 *
+	 * @return array : Numeric array:
+	 *   - first item  : subject of the mail
+	 *   - second item : body of the mail
+	 * - you can use `list($mailsubj, $mailbody) = prepare_mail...` to easily fetch the two
+	 */
 	public static function prepare_mail_template($templatefile, $mailtags, $templatefile_var_is_the_content = false, $tag_format = '%%') {
-		/*
-		DESCRIPTION:
-		- load a mail template and replace the dynamic tags with real values
-		INPUT:
-		- $templatefile : file name of mail template (incl. path, relative to file or absolute)
-		- $mailtags : associative array where the keys are the tag names and the values the information to replace the tags with
-		- $templatefile_var_is_the_content (true|false) : Set to true if $templatefile is the mail template itself
-		OUTPUT:
-		- numeric array:
-			- first item  : subject of the mail
-			- second item : body of the mail
-		- you can use "list($mailsubj, $mailbody) = prepare_mail..." to easily fetch the two
-		*/
-
 		if ($tag_format == '%%') {
 			$tag_start = $tag_end = '%%';
 		} elseif ($tag_format == '{}') {
@@ -930,19 +928,20 @@ class mail {
 		return [$subject, $body];
 	}
 
+	/**
+	 * Parse a list of comma- or semicolon-separated email addresses (the format "X X" <a@a.xx> is allowed)
+	 *
+	 * Test string (valid): '"John Doe" <kjule42@hotmail.slkdj.com>; ptokan@yesville.org, l-s.k_df@sdl-fkj.com  '
+	 *
+	 * @param string $string : String of email addresses
+	 * @param boolean $fail_on_invalid : Return false when at least one invalid address is found
+	 *
+	 * @return array|boolean|string : One of these:
+	 *   - if valid : array with addresses with subarrays of 'name' and 'email' (empty array if none found unless $fail_on_invalid=true)
+	 *   - if invalid : false (only if $fail_on_invalid=true)
+	 *   - empty string always causes an empty array returned
+	 */
 	public static function parse_list_of_emails($string, $fail_on_invalid = false) {
-		/*
-		DESCRIPTION:
-		- parse a list of comma- or semicolon-separated email addresses (the format "X X" <a@a.xx> is allowed)
-		- test string (valid): '"John Doe" <kjule42@hotmail.slkdj.com>; ptokan@yesville.org, l-s.k_df@sdl-fkj.com  '
-		INPUT:
-		- $string : string of email addresses
-		- $fail_on_invalid : return false when at least one invalid address is found
-		OUTPUT:
-		- if valid : array with addresses with subarrays of 'name' and 'email' (empty array if none found unless $fail_on_invalid=true)
-		- if invalid : false (only if $fail_on_invalid=true)
-		- empty string always causes an empty array returned
-		*/
 		$arr_addresses = [];
 		$string = trim(str_replace(';', ',', $string));
 		if (!$string) return $arr_addresses;
@@ -983,23 +982,21 @@ class mail {
 		}
 	}
 
+	/**
+	 * Scrample email addresses to protect against email harvesting by spammers
+	 *
+	 * @param string $email : Email address to scrample
+	 * @param array $options : Associative array with any of the following keys:
+	 *   - `mode` : specify scrampling mode. Available options are:
+	 * 		- `plaintext` : will scrample it to eg.: johndoe at yahoo dot com
+	 * 		- `nolink` : only show email address as text, don't make active link
+	 *   - `text` : text to show as the link, instead of the email address itself
+	 *   - `params` : associative array with any of the following keys:
+	 * 		- `subject` : encode a predefined subject line into the link
+	 * 		- `body` : encode a predefined body text into the link
+	 * @return string : Javascript block to put in HTML code, OR according to scrample mode
+	 */
 	public static function scrample_email_addressHTML($email, $options = []) {
-		/*
-		DESCRIPTION:
-		- scrample email addresses to protect against email harvesting by spammers
-		INPUT:
-		- $email (req.) : email address to scrample
-		- $options (opt.) : associative array with any of the following keys:
-			- 'mode' : specify scrampling mode. Available options are:
-				- 'plaintext' : will scrample it to eg.: johndoe at yahoo dot com
-				- 'nolink' : only show email address as text, don't make active link
-			- 'text' : text to show as the link, instead of the email address itself
-			- 'params' : associative array with any of the following keys:
-				- 'subject' : encode a predefined subject line into the link
-				- 'body' : encode a predefined body text into the link
-		OUTPUT:
-		- a Javascript block to put in HTML code, OR according to scrample mode
-		*/
 		switch ($options['mode']) {
 		case 'plaintext':
 			return str_replace(['@', '.'], [' at ', ' dot '], $email);

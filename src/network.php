@@ -1,7 +1,8 @@
 <?php
-/*
-This file contains functions related to general network processes ( Internet / HTTP / TCP/IP etc. - but not FTP (they are in seperate file) )
-*/
+/**
+ * Functions related to general network processes ( Internet / HTTP / TCP/IP etc. - but not FTP (they are in seperate file) )
+ */
+
 namespace winternet\jensenfw2;
 
 class network {

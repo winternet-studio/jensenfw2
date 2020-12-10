@@ -1,7 +1,8 @@
 <?php
-/*
-This file contains general Javascript formatting functions
-*/
+/**
+ * Javascript formatting functions
+ */
+
 namespace winternet\jensenfw2;
 
 class js {

@@ -1,7 +1,8 @@
 <?php
-/*
-This file contains methods related to security
-*/
+/**
+ * Functions related to security
+ */
+
 namespace winternet\jensenfw2;
 
 class security {

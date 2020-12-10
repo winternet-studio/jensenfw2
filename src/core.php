@@ -1,4 +1,8 @@
 <?php
+/**
+ * Core functions used through the library
+ */
+
 namespace winternet\jensenfw2;
 
 class core {

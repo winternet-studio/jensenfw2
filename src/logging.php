@@ -1,7 +1,8 @@
 <?php
-/*
-This file contains functions related to logging
-*/
+/**
+ * Methods related to logging
+ */
+
 namespace winternet\jensenfw2;
 
 class logging {

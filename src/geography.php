@@ -1,6 +1,4 @@
 <?php
-namespace winternet\jensenfw2;
-
 /**
  * Methods related to geography
  *
@@ -23,6 +21,8 @@ namespace winternet\jensenfw2;
  * }
  * ```
  */
+
+namespace winternet\jensenfw2;
 
 class geography {
 	/**

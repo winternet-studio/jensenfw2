@@ -1,9 +1,10 @@
 <?php
+/**
+ * Functions related to the parsing CSV (Comma-Separated Values) data format
+ */
+
 namespace winternet\jensenfw2;
 
-/**
- * This file contains functions related to the parsing CSV (Comma-Separated Values) data format
- */
 class csv_parser {
 	// Configuration
 	public $delimiter = ',';

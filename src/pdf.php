@@ -1,4 +1,8 @@
 <?php
+/**
+ * Class for dealing with PDF files
+ */
+
 namespace winternet\jensenfw2;
 
 class pdf {

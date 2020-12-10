@@ -1,4 +1,8 @@
 <?php
+/**
+ * Functions for dealing with images
+ */
+
 namespace winternet\jensenfw2;
 
 use \Imagick;

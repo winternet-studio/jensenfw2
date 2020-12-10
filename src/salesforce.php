@@ -1,7 +1,8 @@
 <?php
-/*
-This file contains functions related to Salesforce.com via REST API
-*/
+/**
+ * Class for synchronizing with Salesforce.com via REST API
+ */
+
 namespace winternet\jensenfw2;
 
 class salesforce {

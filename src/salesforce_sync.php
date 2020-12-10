@@ -1,13 +1,15 @@
 <?php
-/*
-This file contains functions related to syncing data between Salesforce.com and another database
-NOTE: the term "our" refers to our own data and database whereas "their" or "sf" refers to Salesforce data and objects
+/**
+ * Functions related to syncing data between Salesforce.com and another database
+ *
+ * NOTE: the term "our" refers to our own data and database whereas "their" or "sf" refers to Salesforce data and objects.
+ *
+ * Main methods to use are:
+ * - send_to_salesforce()
+ * - receive_from_salesforce()
+ * - sync_entire_table_to_salesforce()
+ */
 
-Main methods to use are:
-	- send_to_salesforce()
-	- receive_from_salesforce()
-	- sync_entire_table_to_salesforce()
-*/
 namespace winternet\jensenfw2;
 
 use winternet\jensenfw2\core;
@@ -34,17 +36,12 @@ class salesforce_sync {
 	var $exec_curl_log_callback = null;
 	var $cached_existing_records = [];
 
+	/**
+	 * @param string $token_storage_instance : Class with these methods:
+	 *   - `saveToken($access_token, $instance_url)` which returns nothing
+	 *   - `getToken()` which returns eg. `['access_token' => 'rELHinuBmp9i98HBV4h7mMWVh', 'instance_url' => 'https://na30.salesforce.com']`
+	 */
 	public function __construct($client_id, $client_secret, $username, $password, $security_token, $login_uri, $api_version, $enterprise_wsdl_path, $token_storage_instance = null) {
-		/*
-		DESCRIPTION:
-		-
-		INPUT:
-		- $token_storage_instance : class with these methods:
-			- saveToken($access_token, $instance_url) which returns nothing
-			- getToken() which returns eg. array('access_token' => 'rELHinuBmp9i98HBV4h7mMWVh', 'instance_url' => 'https://na30.salesforce.com')
-		OUTPUT:
-		-
-		*/
 		$this->client_id = $client_id;
 		$this->client_secret = $client_secret;
 		$this->username = $username;
@@ -117,30 +114,26 @@ class salesforce_sync {
 		return $this->soap_connection;
 	}
 
+	/**
+	 * Send a single record to Salesforce to be added/updated/deleted there
+	 *
+	 *
+	 * !!! IMPORTANT NOTE !!!
+	 * Do not terminate script when using system_error() but make sure notification is sent to developer instead AND exit the function so that the rest of the code is not executed
+	 * Since this is never a critical issue for our site, we don't want to terminate other actions following the call to this function
+	 *
+	 *
+	 * @param string $action : Type of operation: `insert`, `update`, `delete` or `replace`. Replace will insert if record doesn't already exist, otherwise update.
+	 * @param string $our_table : Full database table name (in our database) of record(s) to send to Salesforce
+	 * @param integer $our_id : Our primary key value for the given record to send
+	 * @param array $previous_values : Associative array with the previous record values, keys being our table column names and the values being their value
+	 *   - set to null if the previous values are not known
+	 *   - not necessary when action=delete
+	 * @param array $new_values : Associative array with the new record values, keys being our table column names and the values being their value
+	 *   - if $previous_values was provided only changed fields will be sent to salesforce
+	 *   - not necessary when action=delete
+	 */
 	public function send_to_salesforce($config_instance, $action, $our_table, $our_id, $previous_values = [], $new_values = []) {
-		/*
-		DESCRIPTION:
-		- send a single record to Salesforce to be added/updated/deleted there
-		INPUT:
-		- $action ('insert'|'update'|'delete'|'replace') : type of operation. Replace will insert if record doesn't already exist, otherwise update.
-		- $our_table : full database table name (in our database) of record(s) to send to Salesforce
-		- $our_id : our primary key value for the given record to send
-		- $previous_values : associative array with the previous record values, keys being our table column names and the values being their value
-			- set to null if the previous values are not known
-			- not necessary when action=delete
-		- $new_values : associative array with the new record values, keys being our table column names and the values being their value
-			- if $previous_values was provided only changed fields will be sent to salesforce
-			- not necessary when action=delete
-		OUTPUT:
-		-
-		*/
-
-
-		// !!! IMPORTANT NOTE !!!
-		// Do not terminate script when using system_error() but make sure notification is sent to developer instead AND exit the function so that the rest of the code is not executed
-		// Since this is never a critical issue for our site, we don't want to terminate other actions following the call to this function
-
-
 		if (!in_array($action, ['insert', 'update', 'delete', 'replace'], true)) {
 			core::system_error('Invalid action for sending data to Salesforce.', false, ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
 			return;
@@ -285,39 +278,30 @@ class salesforce_sync {
 				return;
 			}
 		} catch (\Exception $e) {
-			system_error('Failed to send record to Salesforce.', ['Salesforce fields' => $sf_fields, 'Exception' => $e], ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
+			core::system_error('Failed to send record to Salesforce.', ['Salesforce fields' => $sf_fields, 'Exception' => $e], ['xsilent' => true, 'xterminate' => false, 'xnotify' => 'developer', 'xsevere' => 'WARNING']);
 			return;
 		}
 	}
 
+	/**
+	 * Receive a single record from Salesforce to be added/updated/deleted here
+	 */
 	public function receive_from_salesforce() {
-		/*
-		DESCRIPTION:
-		- receive a single record from Salesforce to be added/updated/deleted here
-		INPUT:
-		-
-		OUTPUT:
-		-
-		*/
-
-
-
+		core::system_error('METHOD NOT YET IMPLEMENTED');
 	}
 
+	/**
+	 * Synchronize an entire table of ours to Salesforce
+	 *
+	 * Must be run in CLI mode.
+	 *
+	 * @param string $our_table : Name of our database table in our database (req.)
+	 * @param string $sf_object : Name of Salesforce object (req.)
+	 * @param string $our_primkey : Name of our primary key field in our database (req.)
+	 * @param array $field_map : Array where the values contain an associative array according to the argument $field_cfg of the function convert_value_to_salesforce() (req.)
+	 * @param array $existing_records : Output from get_existing_records() (req.)
+	 */
 	public function sync_entire_table_to_salesforce($config_instance, $our_table, $field_map, $existing_records) {
-		/*
-		DESCRIPTION:
-		- synchronize an entire table of ours to Salesforce
-		- must be run in CLI mode
-		INPUT:
-		- $our_table (req.) : name of our database table in our database
-		- $sf_object (req.) : name of Salesforce object
-		- $our_primkey (req.) : name of our primary key field in our database
-		- $field_map (req.) : array where the values contain an associative array according to the argument $field_cfg of the function convert_value_to_salesforce()
-		- $existing_records (req.) : output from get_existing_records()
-		OUTPUT:
-		-
-		*/
 		if (PHP_SAPI !== 'cli') {
 			core::system_error('Salesforce table sync must be done from command line.');
 		}
@@ -564,18 +548,15 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		}
 	}
 
+	/**
+	 * Get existing records from Salesforce for a given object (= database table)
+	 *
+	 * @param string $sf_object : Salesforce object to retrieve existing records from
+	 * @param string $sf_primkey : Salesforce field name holding the value of our own primary key (eg. `MyPhpSystem_Person_ID__c`)
+	 * @param string $sf_lastmodified : Salesforce field name holding the value of our last modified timestamp (eg. `MyPhpSystem_LastModified__c`)
+	 * @param string $our_timestamp_timezone : If our data is not in UTC provide the PHP timezone string that must be applied to convert the timestamps to UTC (otherwise set null or false)
+	 */
 	public function get_existing_records($sf_object, $sf_primkey, $sf_lastmodified, $our_timestamp_timezone, $onlyIDs = null) {
-		/*
-		DESCRIPTION:
-		- get existing records from Salesforce for a given object (= database table)
-		INPUT:
-		- $sf_object : Salesforce object to retrieve existing records from
-		- $sf_primkey : Salesforce field name holding the value of our own primary key (eg. MyPhpSystem_Person_ID__c)
-		- $sf_lastmodified : Salesforce field name holding the value of our last modified timestamp (eg. MyPhpSystem_LastModified__c)
-		- $our_timestamp_timezone : if our data is not in UTC provide the PHP timezone string that must be applied to convert the timestamps to UTC (otherwise set null or false)
-		OUTPUT:
-		-
-		*/
 		// Field list is found in WSDL (or standard fields: https://na14.salesforce.com/p/setup/layout/LayoutFieldList?type=Contact&setupid=ContactFields&retURL=%2Fui%2Fsetup%2FSetup%3Fsetupid%3DContact)
 		// REMEMBER! New custom fields must be added to the WSDL (= regenerated) before they are visible here!
 		$query  = "SELECT Id, ". $sf_primkey;
@@ -662,17 +643,13 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		return $changes;
 	}
 
-
+	/**
+	 * Find the Salesforce ID of a given record from a list of existing records
+	 *
+	 * @param array $existing_records : Output from get_existing_records()
+	 * @param integer|string $our_ID : ID from our database that we need to find the Salesforce ID of
+	 */
 	public function get_salesforce_record_id($existing_records, $our_ID, $skip_if_not_found = false) {
-		/*
-		DESCRIPTION:
-		- find the Salesforce ID of a given record from a list of existing records
-		INPUT:
-		- $existing_records : output from get_existing_records()
-		- $our_ID : ID from our database that we need to find the Salesforce ID of
-		OUTPUT:
-		-
-		*/
 		if (empty($our_ID)) {
 			core::system_error('Missing our ID for finding Salesforce ID.'. json_encode($existing_records[0]));
 		}
@@ -690,33 +667,32 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 		}
 	}
 
+	/**
+	 * Convert a given field value of ours to SalesForce's field value
+	 *
+	 * @param string $action : `insert` or `update` or `delete`
+	 * @param array $field_cfg : Array where the values contain an associative array with keys:
+	 *   - `trigger_field` (req.) : name of our field that was changed and causes this Salesforce field to be updated
+	 *     - set to `*insert` to always set this value when inserting a record
+	 *     - set to `*update` to always set this value when updating a record
+	 *     - set to `*` to always set this value when inserting or updating a record
+	 *   - `sf_field` (req.) : name of field in Salesforce
+	 *   - `our_field` (req.) : name of field in our database (can actually be left out if 'conversion' is a callback function or 'fixed_value' is set)
+	 *     - if the same as trigger_field field it can be set to `>trigger`
+	 *   - `fixed_value` (opt.) : a fixed value to be set
+	 *   - `conversion` (opt.) : method of how to convert our value to a Salesforce valid value. Possible options:
+	 *     - `null_if_empty_string` : convert empty string ("") to NULL, otherwise return original value
+	 *     - `date_to_checkbox` : convert a timestamp to a checkbox value in Salesforce
+	 *     - `date_to_iso8601` : convert timestamp field from our timezone to UTC ('timezone' must then be set)
+	 *     - a callback function that receives one argument with the record in question and returns the value to be set in Salesforce
+	 *         - to skip the record entirely return the string `__dont_sync_to_salesforce`
+	 *   - `timezone` : PHP timezone value of this field or `system` to use server timezone (used by conversion=date_to_iso8601)
+	 *   - `no_update` : set this on fields that are foreign keys to not update it's value and cause an error in Salesforce
+	 * @param array $db_record : Associative array with our record, eg.: `['legal_firstname' => 'Allan', 'legal_lastname' => 'Jensen']`
+	 *
+	 * @return string : The new value OR string `__skip_field` OR string `__skip_record` which then needs to be processed appropriately
+	 */
 	public function convert_value_to_salesforce($action, $field_cfg, $db_record) {
-		/*
-		DESCRIPTION:
-		- convert a given field value of ours to SalesForce's field value
-		INPUT:
-		- $action ('insert'|'update'|'delete')
-		- $field_cfg (req.) : array where the values contain an associative array with keys:
-			- 'trigger_field' (req.) : name of our field that was changed and causes this Salesforce field to be updated
-				- set to '*insert' to always set this value when inserting a record
-				- set to '*update' to always set this value when updating a record
-				- set to '*' to always set this value when inserting or updating a record
-			- 'sf_field' (req.) : name of field in Salesforce
-			- 'our_field' (req.) : name of field in our database (can actually be left out if 'conversion' is a callback function or 'fixed_value' is set)
-				- if the same as trigger_field field it can be set to '>trigger'
-			- 'fixed_value' (opt.) : a fixed value to be set
-			- 'conversion' (opt.) : method of how to convert our value to a Salesforce valid value. Possible options:
-				- 'null_if_empty_string' : convert empty string ("") to NULL, otherwise return original value
-				- 'date_to_checkbox' : convert a timestamp to a checkbox value in Salesforce
-				- 'date_to_iso8601' : convert timestamp field from our timezone to UTC ('timezone' must then be set)
-				- a callback function that receives one argument with the record in question and returns the value to be set in Salesforce
-					- to skip the record entirely return the string '__dont_sync_to_salesforce'
-			- 'timezone' : PHP timezone value of this field or 'system' to use server timezone (used by conversion=date_to_iso8601)
-			- 'no_update' : set this on fields that are foreign keys to not update it's value and cause an error in Salesforce
-		- $db_record : associative array with our record, eg.: array('legal_firstname' => 'Allan', 'legal_lastname' => 'Jensen')
-		OUTPUT:
-		- the new value OR string '__skip_field' OR string '__skip_record' which then needs to be processed appropriately
-		*/
 		if ($action == 'update' && $field_cfg['no_update']) {
 			return '__skip_field';
 		}
