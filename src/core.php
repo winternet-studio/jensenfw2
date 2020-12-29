@@ -932,9 +932,9 @@ class core {
 		$body .= "==============================================================================\r\n\r\n";
 		$body .= $message ."\r\n\r\n";
 		$body .= "==============================================================================\r\n";
-		$body .= "Source: ". basename($bt[0]['file']) ." line ". $bt[0]['line'];
-		if ($bt[1]['function']) {
-			$body .= " - in ". $bt[1]['function'] ."()";
+		$body .= "Stack Trace:\r\n";
+		foreach ($bt as $bt_key => $bt_value) {
+			$body .= $bt_key .') '. basename($bt[$bt_key]['file']) . ($bt[$bt_key]['line'] ? ':'. $bt[$bt_key]['line'] : '') . ($bt[$bt_key+1]['function'] ? ' - in '. $bt[$bt_key+1]['class'] . $bt[$bt_key+1]['type'] . $bt[$bt_key+1]['function'] .'()' : '') ."\r\n";
 		}
 		$body .= "\r\nURI: ". $_SERVER['REQUEST_URI'];  // $bt[0]['file'] is the lowest in the stack and this is the highest
 		if ($reference) {
