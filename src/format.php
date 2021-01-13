@@ -33,6 +33,81 @@ class format {
 	}
 
 	/**
+	 * Convert a two-dimensional array to a basic HTML table
+	 *
+	 * @param array $array
+	 * @return string : HTML
+	 */
+	public static function array_to_table($array, $options = []) {
+		ob_start();
+
+		if (empty($array)) {
+			return '<div class="no-data">No data in table</div>';
+		}
+
+		if (!is_array($options['skip_columns'])) {
+			$options['skip_columns'] = [];
+		}
+
+?>
+		<table class="table <?= $options['table_classes'] ?>">
+		<tr>
+<?php
+		foreach (array_keys($array[0]) as $name) {
+			if (in_array($name, $options['skip_columns'])) continue;
+
+			if (is_callable($options['th_callback'])) {
+				$name = $options['th_callback']($name);
+			}
+?>
+			<th><?= htmlentities($name) ?></th>
+<?php
+		}
+		if (is_array($options['extra_columns'])) {
+			foreach ($options['extra_columns'] as $extra_column_name => $extra_column_callback) {
+?>
+			<th><?= $extra_column_name ?></th>
+<?php
+			}
+		}
+?>
+		</tr>
+<?php
+		foreach ($array as $row_index => $row) {
+?>
+		<tr>
+<?php
+			foreach ($row as $name => $value) {
+				if (in_array($name, $options['skip_columns'])) continue;
+
+				if (is_callable($options['td_callback'])) {
+					$value = $options['td_callback']($row, $name, $value);
+				}
+				if (empty($options['skip_html_encoding']) || (is_array($options['skip_html_encoding']) && !in_array($name, $options['skip_html_encoding']))) {
+					$value = nl2br(htmlentities($value));
+				}
+?>
+				<td><?= $value ?></td>
+<?php
+			}
+			if (is_array($options['extra_columns'])) {
+				foreach ($options['extra_columns'] as $extra_column) {
+?>
+				<td><?= $extra_column($row, $row_index) ?></td>
+<?php
+				}
+			}
+?>
+		</tr>
+<?php
+		}
+?>
+		</table>
+<?php
+		return ob_get_clean();
+	}
+
+	/**
 	 * Resolve to using the correct singular or plural form of a noun in a sentence
 	 *
 	 * Eg. "1 person" or "2 people"
