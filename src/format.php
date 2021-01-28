@@ -35,7 +35,7 @@ class format {
 	/**
 	 * Convert a two-dimensional array to a basic HTML table
 	 *
-	 * @param array $array
+	 * @param array $array : Array of arrays, or array of objects
 	 * @return string : HTML
 	 */
 	public static function array_to_table($array, $options = []) {
@@ -43,6 +43,17 @@ class format {
 
 		if (empty($array)) {
 			return '<div class="no-data">No data in table</div>';
+		}
+
+		// Convert array of objects to array of arrays
+		if (!is_array($array[0])) {
+			foreach ($array as $key => $entry) {
+				if ($entry instanceof \yii\base\Model) {
+					$array[$key] = $entry->toArray();
+				} else {
+					$array[$key] = json_decode(json_encode($entry));
+				}
+			}
 		}
 
 		if (!is_array($options['skip_columns'])) {
