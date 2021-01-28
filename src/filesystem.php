@@ -412,7 +412,7 @@ class filesystem {
 			core::system_error('Failed to save file with metadata for short-lived file.', ['File' => $metadata_file]);
 		}
 
-		return $output;
+		return $bytes;
 	}
 
 	/**
