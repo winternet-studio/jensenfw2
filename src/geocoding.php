@@ -207,6 +207,44 @@ class geocoding {
 	}
 
 	/**
+	 * Get location from latitude/longitude using Google geolocation API
+	 *
+	 * Documentation: https://developers.google.com/maps/documentation/geocoding/overview#ReverseGeocoding
+	 *
+	 * Decimal precision: https://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude
+	 *
+	 * Probably the same request quota as for regular geocoding.
+	 *
+	 * @return object
+	 */
+	public static function google_reverse_geocoding($latitude, $longitude, $options = []) {
+		// Handle parameters
+		$options = (array) $options;
+		$default_options = [
+			'google_api_key' => '',
+		];
+		$options = array_merge($default_options, $options);
+
+		// Handle throttling
+		$min_time_between = 0.5;  //seconds
+		$now = microtime(true);
+		if (static::$google_maps_api_last_req) {
+			$diff = $now - static::$google_maps_api_last_req;
+			if ($diff < $min_time_between) {  //sleep a little bit if requests are too close together (Google is throttling the usage)
+				if ($GLOBALS['cli']) {
+					echo ' PAUSE-'. ($min_time_between - $diff) .'  ';
+				}
+				usleep($min_time_between - $diff);
+			}
+		}
+		static::$google_maps_api_last_req = microtime(true);
+
+		$url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng='. urlencode($latitude) .','. urlencode($longitude) .'&key='. urlencode($options['google_api_key']);
+		$response = file_get_contents($url);
+		return json_decode($response);
+	}
+
+	/**
 	 * Lookup country from IP address via MaxMind GeoIP2 Precision web service
 	 *
 	 * IMPORTANT! Remember to exclude robot from accessing the page calling this, otherwise your credits might be depleted faster than desired (instructions: http://en.wikipedia.org/wiki/Robots_exclusion_standard)
