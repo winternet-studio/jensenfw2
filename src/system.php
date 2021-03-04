@@ -244,6 +244,57 @@ THIS DOESN'T WORK YET. IT EXECUTES BUT NOT IN THE BACKGROUND. USING output_file 
 	}
 
 	/**
+	 * Execute a shell command and return the standard output and error output separtely
+	 *
+	 * Similar to shell_command() but uses proc_open() instead of exec(), which allows us to get StdOut and StdErr separately
+	 *
+	 * Should maybe eventually be merged into shell_command()
+	 *
+	 * @return array : Associative array with keys `stdout`, `stderr`, and `status` which is an array, eg. `["command" => "myprogram filetobeprocessed.json", "pid" => 10430, "running" => false, "signaled" => false, "stopped" => false, "exitcode" => 0, "termsig" => 0, "stopsig" => 0]`
+	 */
+	public function shell_command_proc($cmd, $options = []) {
+		$defaults = [
+			'status_interval' => 5000,  //microseconds
+			'status_retries' => 2000,  //microseconds  (5000 * 2000 = 10 000 000 = 10 secs)
+		];
+		$options = array_merge($defaults, $options);
+
+		$descriptorspec = [
+			0 => ['pipe', 'r'],  // stdin
+			1 => ['pipe', 'w'],  // stdout
+			2 => ['pipe', 'w'],  // stderr
+		];
+		$pipes = null;
+		$process = proc_open($cmd, $descriptorspec, $pipes);
+
+		$status = proc_get_status($process);  //sources: https://stackoverflow.com/questions/7645499/getting-the-real-exit-code-after-proc-open , https://stackoverflow.com/questions/2320608/php-stderr-after-exec
+		$checkCounter = 0;
+		while ($status['running']) {
+			$checkCounter++;
+			if ($checkCounter > $options['status_retries']) {
+				$status['exitcode'] = 998;  //"timed out" getting the status
+				break;
+			}
+			usleep($options['status_interval']);
+			$status = proc_get_status($process);
+		}
+
+		$stdout = stream_get_contents($pipes[1]);
+		fclose($pipes[1]);
+
+		$stderr = stream_get_contents($pipes[2]);
+		fclose($pipes[2]);
+
+		proc_close($process);
+
+		return [
+			'stdout' => $stdout,
+			'stderr' => $stderr,
+			'status' => $status,
+		];
+	}
+
+	/**
 	 * Check if a given process is running
 	 *
 	 * @param string $process_pattern : The name or pattern of the process to check
