@@ -16,8 +16,72 @@ class network {
 		return $cfg;
 	}
 
+
+	/**
+	 * Perform an HTTP request
+	 */
+	public function http_request($method, $url, $data = [], $options = []) {
+		global $ch;
+		if (!$ch) {
+			$ch = curl_init();
+		}
+		if (!is_array($data) && !$data) $data = [];
+		if (!is_array($data)) throw new \Exception('Data argument is not an array.');
+
+		if ($method == 'POST') {
+			curl_setopt($ch, CURLOPT_POST, 1);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+			// curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode());  //then Content-Type: application/json must be set
+		} else {
+			curl_setopt($ch, CURLOPT_POST, 0);
+			if (!empty($data)) {
+				$url .= '?'. http_build_query($data);
+			}
+		}
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		// curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		// curl_setopt($ch, CURLOPT_TIMEOUT, 7);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+		if (is_array($options['curl_options'])) {
+			foreach ($options['curl_options'] as $curlopt => $value) {
+				curl_setopt($ch, $curlopt, $value);
+			}
+		}
+		if ($options['debug']) {
+			curl_setopt($ch, CURLINFO_HEADER_OUT, true);  //request headers
+			curl_setopt($ch, CURLOPT_HEADER, true);  //response headers
+		}
+		$rsp = curl_exec($ch);
+		$transfer_info = curl_getinfo($ch);
+		if ($options['debug']) {
+			$requestHeaders = curl_getinfo($ch, CURLINFO_HEADER_OUT);
+			$headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+			$responseHeaders = substr($rsp, 0, $headerSize);
+			$rsp = substr($rsp, $headerSize);
+			file_put_contents(__DIR__ .'/last-curl-request.log', '--------'. gmdate('Y-m-d H:i:s') .' UTC ** '. $method .' '. $url . PHP_EOL . PHP_EOL .'REQUEST HEADERS:'. PHP_EOL . $requestHeaders . PHP_EOL . PHP_EOL .'REQUEST BODY:'. PHP_EOL . json_encode($data, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES) . PHP_EOL . PHP_EOL .'RESPONSE HEADERS:'. PHP_EOL . $responseHeaders . PHP_EOL . PHP_EOL .'RESPONSE BODY:'. PHP_EOL . $rsp . PHP_EOL);
+		}
+		if (curl_errno($ch) || $transfer_info['http_code'] >= 400) {
+			throw new \Exception('Request for fetching URL failed: '. curl_error($ch) .'<br><pre>'. htmlentities(trim($rsp)) .'<br><br><span style="color:#aaaaaa">'. var_export($transfer_info, true) .'</span>');
+			// system_error('Request for fetching URL failed.', array('Req.info' => print_r($transfer_info, true), 'cURL error' => curl_error($ch), 'cURL error no.' => curl_errno($ch), 'Response body' => $rsp) );
+		}
+
+		// Parse returned JSON string
+		if ($options['parse_json']) {
+			$response = json_decode($rsp, ($options['parse_json'] === 'object' ? false : true));
+			if ($response === null) {
+				throw new \Exception('Failed to parse response: '. $rsp);
+			}
+			return $response;
+		} else {
+			return $rsp;
+		}
+	}
+
 	/**
 	 * Get content of a URL when at the same time posting data to it
+	 *
+	 * @deprecated Use http_request() instead
 	 *
 	 * Can also be used for "plain" requests using querystring - instead of using file_get_contents() (second argument just need to be false or empty array then).
 	 *
