@@ -219,13 +219,22 @@ class debug {
 
 	/**
 	 * Visualize normally invisible characters
+	 *
+	 * @param array $options : Available options:
+	 *   - `html` : set true to HTML for nicer visualization
 	 */
-	public static function visualize_characters($string) {
+	public static function visualize_characters($string, $options = []) {
 		if ((int) static::$visualize_chars === 2) {
 			// TODO: visualize all non-normal characters
 			throw new \Exception('visualize_chars=2 is not yet implemented');
 		} else {
-			return str_replace([' ', "\r", "\n", "\t"], ['·', '\r', '\n', '\t'], $string);
+			if ($options['html']) {
+				$b = $char_begin_html = '<span style="display:inline-block;border:1px solid #dbdbdb;border-radius:3px;margin:0 1px;padding:0 2px;background-color:#f2f2f2;color:#df7e00;font-weight:bold">';
+				$e = $char_en_html = '</span>';
+				return str_replace([' ', "\r", "\n", "\t"], [$b .'·'. $e, $b .'\r'. $e, $b .'\n'. $e .'<br>', $b .'\t'. $e], $string);
+			} else {
+				return str_replace([' ', "\r", "\n", "\t"], ['·', '\r', "\\n\n", '\t'], $string);
+			}
 		}
 	}
 }
