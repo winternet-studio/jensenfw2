@@ -15,6 +15,7 @@ class odoo {
 	var $server_username;
 	var $server_password;
 	var $server_database;
+	var $odoo_major_version;
 	var $options;
 
 	var $common_client;
@@ -213,10 +214,10 @@ class odoo {
 	/**
 	 * Get Odoo version
 	 *
-	 * @param string $flag : `majorVersion` to only retrieve major version number (integer), or `base` to retrieve version of the base module, or `modules` to retrieve versions of all modules (usually only admin is allowed to do these two last ones)
+	 * @param string $flag : `major` to only retrieve major version number (integer), or `base` to retrieve version of the base module, or `modules` to retrieve versions of all modules (usually only admin is allowed to do these two last ones)
 	 * @return mixed : Examples:
 	 *   - if no flag : array. Example: `['server_serie' => '10.0', 'server_version_info' => [10, 0, 0, 'final', 0, ''), 'server_version' => '10.0', 'protocol_version' => 1]`
-	 *   - if flag `majorVersion` : `10`
+	 *   - if flag `major` : `10`
 	 *   - if flag `base` : `10.0.1.3`
 	 *   - if flag `modules` : array
 	 */
@@ -231,8 +232,11 @@ class odoo {
 			}
 		} else {
 			$this->require_common_client();
-			if ($flag === 'majorVersion') {
-				return (int) $this->common_client->version()['server_version_info'][0];
+			if ($flag === 'major' || $flag === 'majorVersion' /*deprecated*/) {
+				if (!$this->odoo_major_version) {
+					$this->odoo_major_version = (int) $this->common_client->version()['server_version_info'][0];
+				}
+				return $this->odoo_major_version;
 			} else {
 				return $this->common_client->version();
 			}
@@ -399,6 +403,7 @@ class odoo {
 	 * @param array $meta_options : Associative array passed on to get_invoices(). The following keys are specific to this method:
 	 *   - `retrieve_pdf` : set to true to also retrieve the PDF invoice (included in output as base64 in the key `pdf_invoice`)
 	 *   - `custom_pdf_report` : to use the non-standard PDF report specify the report Template Name (find it at Settings > Technical > Actions > Reports)
+	 *   - `incl_lines` : set to true to also include the invoice lines (automatically included when PDF is generated)
 	 */
 	public function get_invoice($filters = [], $options = [], $meta_options = []) {
 		$this->authenticate();
@@ -430,14 +435,43 @@ class odoo {
 	/**
 	 * Get a list of invoices
 	 *
-	 * @param array $filters : For example `array(array('partner_id', '=', 42), array('date_invoice', '=', '2015-12-01'))`
+	 * @param array $filters : For example `array(array('partner_id', '=', 42), array('invoice_date', '=', '2015-12-01'))`
+	 * @param array $meta_options : Associative array passed on to get_invoices(). The following keys are specific to this method:
+	 *   - `incl_lines` : set to true to also include the invoice lines (automatically included when PDF is generated)
 	 */
 	public function get_invoices($filters = [], $options = [], $meta_options = []) {
 		$this->authenticate();
 		$this->require_object_client();
 
-		$result = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, 'account.invoice', ($meta_options['search_only'] ? 'search' : 'search_read'), [$filters], $options);
+		if (!is_array($options)) $options = [];
+
+		if ($this->get_version() >= 13) {
+			$model = 'account.move';
+			$filters[] = ['move_type', '=', 'out_invoice'];
+			foreach ($filters as $filter) {
+				if ($filter[0] === 'date_invoice') {  //for backward compatibility
+					$filter[0] = 'invoice_date';  //name of field has been changed
+				}
+				if ($filter[0] === 'number') {  //for backward compatibility
+					$filter[0] = 'sequence_number';  //name of field has been changed
+				}
+			}
+		} else {
+			$model = 'account.invoice';
+		}
+
+		$result = $this->object_client->execute_kw($this->server_database, $this->authenticated_uid, $this->server_password, $model, ($meta_options['search_only'] ? 'search' : 'search_read'), [$filters], $options);
 		$this->handle_exception($result, 'Failed to get invoices.');
+
+		if ($meta_options['incl_lines'] && !$meta_options['search_only']) {
+			foreach ($result as &$invoice) {
+				if ($this->get_version() >= 13) {
+					$invoice['_invoice_line_items'] = $this->search_read('account.move.line', [[['move_id', '=', $invoice['id']], ['exclude_from_invoice_tab', '=', false]]]);
+				} else {
+					$invoice['_invoice_line_items'] = $this->search_read('account.invoice.line', [[['invoice_id', '=', $invoice['id']]]]);
+				}
+			}
+		}
 
 		return $result;
 	}
