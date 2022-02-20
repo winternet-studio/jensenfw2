@@ -3,6 +3,8 @@
  * Class for accessing the accounting software Odoo
  *
  * Dependent on https://github.com/DarkaOnLine/Ripcord
+ *
+ * Arguments and options examples: https://github.com/Seravo/odoo-xmr-rpc-example/blob/master/php-ripcord.md
  */
 
 namespace winternet\jensenfw2;
@@ -130,10 +132,10 @@ class odoo {
 	 * @param string $model : Example: `account.invoices`
 	 * @param array $args : Example: `[[['name', '=', 'base'], ['date', '>', '2019-01-01']]]`
 	 */
-	public function search_read($model, $args) {
+	public function search_read($model, $args, $options = null) {
 		$this->authenticate();
 		$this->require_object_client();
-		return $this->execute_kw($model, 'search_read', $args);
+		return $this->execute_kw($model, 'search_read', $args, $options);
 	}
 
 	/**
