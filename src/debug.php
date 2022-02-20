@@ -1,6 +1,8 @@
 <?php
 /**
  * Functions related to dumping the content of variables for debugging
+ *
+ * We have a more fancy (= prettier) method of dumping variables in the dump class.
  */
 
 namespace winternet\jensenfw2;
