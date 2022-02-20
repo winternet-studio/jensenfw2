@@ -131,6 +131,7 @@ class odoo {
 	 *
 	 * @param string $model : Example: `account.invoices`
 	 * @param array $args : Example: `[[['name', '=', 'base'], ['date', '>', '2019-01-01']]]`
+	 * @param array $options : Example: `['fields' => ['id', 'name']]`
 	 */
 	public function search_read($model, $args, $options = null) {
 		$this->authenticate();
