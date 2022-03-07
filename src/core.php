@@ -276,9 +276,10 @@ class core {
 	 * @param array $parms : Instead of providing everything in $array you can also provide the base SQL in $array as a string and
 	 *	           provide all the data in $parms as an associative array (using numeric keys has not been tested).
 	 *	           This is an alternative format that matches Yii2.
+	 * @param string $prefix : Can be set to ':' instead of '?' if needed
 	 * @return string : The final SQL statement
 	 */
-	public static function prepare_sql($array, $parms = null) {
+	public static function prepare_sql($array, $parms = null, $prefix = '?') {
 		if ($parms === null) {
 			$data = array_slice($array, 1);
 			$sql = $array[0];
@@ -309,10 +310,18 @@ class core {
 					$valueSQL = "'". self::sql_esc($value) ."'";
 				}
 			}
-			if (!is_numeric($key)) {
-				$sql = preg_replace("|\\?". $key ."\\b|".(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), $valueSQL, $sql);
+			if ($prefix === ':') {
+				if (!is_numeric($key)) {
+					$sql = preg_replace("|:". $key ."\\b|".(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), $valueSQL, $sql);
+				} else {
+					$sql = preg_replace("|:(?!\\w)|".(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), $valueSQL, $sql, 1);
+				}
 			} else {
-				$sql = preg_replace("|\\?(?!\\w)|".(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), $valueSQL, $sql, 1);
+				if (!is_numeric($key)) {
+					$sql = preg_replace("|\\?". $key ."\\b|".(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), $valueSQL, $sql);
+				} else {
+					$sql = preg_replace("|\\?(?!\\w)|".(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), $valueSQL, $sql, 1);
+				}
 			}
 		}
 		return $sql;

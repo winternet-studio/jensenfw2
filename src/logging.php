@@ -130,10 +130,100 @@ class logging {
 			// Not using Yii framework
 			core::require_database($cfg['db_server_id']);
 			$logSQL = preg_replace("/ = :\\b/", ' = ?', $logSQL);
-			$logSQL = core::prepare_sql($logSQL, $logSQL_vars);
+			$logSQL = core::prepare_sql($logSQL, $logSQL_vars, ':');
 			$new_operationID = core::database_result(['server_id' => $cfg['db_server_id'], $logSQL], false, 'Database query failed for making a log entry.');
 		}
 
 		return $new_operationID;
 	}
+
+	/**
+	 * Log data to a database table, automatically table and required columns for each of the 1st level array keys
+	 *
+	 * You may create columns manually beforehand or you can let it auto-create them and if necessary adjust their types afterwards.
+	 */
+	public static function into_table($table_name, $array, $options = []) {
+		$cfg = core::get_class_defaults(__CLASS__);
+
+		if (is_object($array)) {
+			$array = (array) $array;
+		}
+
+		$fields = array_keys($array);
+
+		$table_name = str_replace('`', '', $table_name);
+
+		if (false && @constant('YII_BEGIN_TIME')) {
+			throw new \Exception('The Yii method has not yet been implemented.');
+			// // Using Yii framework
+			// \Yii::$app->db->createCommand($logSQL, $logSQL_vars)->execute();
+			// $new_operationID = \Yii::$app->db->getLastInsertID();
+		} else {
+			// Not using Yii framework
+			core::require_database($cfg['db_server_id']);
+
+			$tables = core::database_result(['server_id' => $cfg['db_server_id'], "SHOW FULL TABLES WHERE Table_Type LIKE 'BASE TABLE';"], 'onecolumn', 'Database query failed for getting list of tables.');
+			$table_found = false;
+			foreach ($tables as $table) {
+				if (strtolower($table) == strtolower($table_name)) {
+					$table_found = true;
+					break;
+				}
+			}
+			if (!$table_found) {
+				$create_tableSQL = "CREATE TABLE `". $table_name ."` (
+					`logID` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+					`date_added` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+					PRIMARY KEY (`logID`)
+				)";
+				core::database_result(['server_id' => $cfg['db_server_id'], $create_tableSQL], false, 'Database query failed for creating logging table.');
+			}
+
+			$table_fieldsSQL = "SHOW COLUMNS FROM `". $table_name ."`";
+			$existing_fields = core::database_result(['server_id' => $cfg['db_server_id'], $table_fieldsSQL], false, 'Database query failed for showing table columns.');
+			$fields_to_add = [];
+			foreach ($fields as $field) {
+				$field_found = false;
+				foreach ($existing_fields as $existing_field) {
+					if (strtolower($existing_field['Field']) == strtolower($field)) {
+						$field_found = true;
+						break;
+					}
+				}
+				if (!$field_found) {
+					$fields_to_add[] = $field;
+				}
+			}
+
+			if (!empty($fields_to_add)) {
+				$addfieldsSQL = "ALTER TABLE `". $table_name ."`";
+				foreach ($fields_to_add as $fld) {
+					$addfieldsSQL .= " ADD COLUMN `". strtolower($fld) ."` TEXT NULL,";
+				}
+				$addfieldsSQL = substr($addfieldsSQL, 0, -1);
+				core::database_result(['server_id' => $cfg['db_server_id'], $addfieldsSQL], false, 'Database query failed for adding logging table fields.');
+			}
+
+			$insertSQL = "INSERT INTO `". $table_name ."` SET ";
+			if (!@$options['use_db_timezone']) {
+				$insertSQL .= "date_added = UTC_TIMESTAMP(), ";
+			}
+			$insert_params = [];
+			$counter = 0;
+			foreach ($array as $field => $value) {
+				$counter++;
+				$insertSQL .= "`". strtolower($field) ."` = :value". $counter .", ";
+				if (is_array($value) || is_object($value)) {
+					$value = json_encode($value, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);
+				} elseif (is_bool($value)) {
+					$value = ($value ? '1' : '0');
+				}
+				$insert_params['value'. $counter] = $value;
+			}
+			$insertSQL = substr($insertSQL, 0, -2);
+			$insertSQL = core::prepare_sql($insertSQL, $insert_params, ':');
+			return core::database_result(['server_id' => $cfg['db_server_id'], $insertSQL], false, 'Database query failed for inserting logging record.');
+		}
+	}
+
 }
