@@ -52,29 +52,41 @@ class dump {
 	----------------------------------------------------------------------*/
 
 	public static function var($input, $return = false) {
-		if (static::dump_cli($input) === '') return;
+		if (($output = static::dump_cli($input)) !== false) return $output;
 		$dump = new static();
 		return $dump->dump($input, $return);
 	}
 
 	public static function simple($input, $return = false) {
-		if (static::dump_cli($input) === '') return;
+		if (($output = static::dump_cli($input)) !== false) return $output;
 		$dump = new static();
 		return $dump->dumps($input, $return);
 	}
 
 	public static function sql($input, $return = false, $expandFunctions = false) {
-		if (static::dump_cli($input) === '') return;
+		if (($output = static::dump_cli($input)) !== false) return $output;
 		$dump = new static();
 		return $dump->dumpq($input, $return, $expandFunctions);
 	}
 
 	public static function dump_cli($input) {
 		if (PHP_SAPI == 'cli') {
-			echo "\033[93m-----------------------------------------------------------------------------------------------\033[0m". PHP_EOL;
+			$header = "\033[93m-----------------------------------------------------------------------------------------------\033[0m". PHP_EOL;
+			ob_start();
 			var_dump($input);
-			echo "\033[93m-----------------------------------------------------------------------------------------------\033[0m". PHP_EOL;
-			return '';
+			$dump = ob_get_clean();
+			$indent = '        ';
+			$dump = preg_replace("/\[\"(.*)\"\]=>/", "\033[96m$1\033[0m:", $dump);  //array keys
+			$dump = preg_replace("/array\\(/", "\033[95marray\033[0m(", $dump);
+			$dump = preg_replace("/object\\((.*)\\)/U", "\033[35mobject\033[0m(\033[97m$1\033[0m)", $dump);
+			$dump = preg_replace("/NULL/", $indent ."\033[93mnull\033[0m", $dump);
+			$dump = preg_replace("/int\\((\\-?\\d+)\\)/", $indent ."\033[94m$1\033[0m", $dump);
+			$dump = preg_replace("/float\\((.*)\\)/", $indent ."\033[94m$1\033[0m \033[90mfloat\033[0m", $dump);
+			$dump = preg_replace("/bool\\((true|false)\\)/", $indent ."\033[91m$1\033[0m", $dump);
+			$dump = preg_replace("/string(\\(0\\) )\"\"/", $indent ."\033[92m\"\"\033[0m", $dump);
+			$dump = preg_replace("/string\\((\\d+)\\) (\")(.*)(\")/", $indent ."$2\033[92m$3\033[0m$4 \033[90m$1\033[0m", $dump);
+			$footer = "\033[93m-----------------------------------------------------------------------------------------------\033[0m". PHP_EOL;
+			return $header . $dump . $footer;
 		}
 		return false;
 	}
