@@ -52,18 +52,31 @@ class dump {
 	----------------------------------------------------------------------*/
 
 	public static function var($input, $return = false) {
+		if (static::dump_cli($input) === '') return;
 		$dump = new static();
 		return $dump->dump($input, $return);
 	}
 
 	public static function simple($input, $return = false) {
+		if (static::dump_cli($input) === '') return;
 		$dump = new static();
 		return $dump->dumps($input, $return);
 	}
 
 	public static function sql($input, $return = false, $expandFunctions = false) {
+		if (static::dump_cli($input) === '') return;
 		$dump = new static();
 		return $dump->dumpq($input, $return, $expandFunctions);
+	}
+
+	public static function dump_cli($input) {
+		if (PHP_SAPI == 'cli') {
+			echo "\033[93m-----------------------------------------------------------------------------------------------\033[0m". PHP_EOL;
+			var_dump($input);
+			echo "\033[93m-----------------------------------------------------------------------------------------------\033[0m". PHP_EOL;
+			return '';
+		}
+		return false;
 	}
 
 
