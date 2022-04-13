@@ -76,7 +76,7 @@ class dump {
 			var_dump($input);
 			$dump = ob_get_clean();
 			$indent = '        ';
-			$dump = preg_replace("/\[\"(.*)\"\]=>/", "\033[96m$1\033[0m:", $dump);  //array keys
+			$dump = preg_replace("/\[\"(.*)\"(:protected|:private)?\]=>/U", "\033[96m$1\033[0m\033[90m$2\033[0m:", $dump);  //array keys and object properties
 			$dump = preg_replace("/array\\(/", "\033[95marray\033[0m(", $dump);
 			$dump = preg_replace("/object\\((.*)\\)/U", "\033[35mobject\033[0m(\033[97m$1\033[0m)", $dump);
 			$dump = preg_replace("/NULL/", $indent ."\033[93mnull\033[0m", $dump);
