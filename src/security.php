@@ -35,4 +35,39 @@ class security {
 		}
 		return implode('', $pieces);
 	}
+
+	/**
+	 * Anonymize a scalar value
+	 *
+	 * @param string|number $value : The value to be anonymized
+	 * @param string $hash_salt : A long secret salt for hashing the value
+	 * @param array $options : Available options:
+	 *   - `prefix` : set a fixed prefix for the anonymized value so that you know it has been anonymized. Defaults to `DEL!` if option is not set.
+	 *   - `max_length` : set a max length for the returned value
+	 *   - `is_email` : value is an email address
+	 *   - `is_ip` : value is an IP address
+	 */
+	static public function anonymize_value($value, $hash_salt, $options = []) {
+		if (!empty($value) && !is_numeric($value)) {
+			if (!array_key_exists('prefix', $options)) {
+				$options['prefix'] = 'DEL!';
+			}
+			if (@$options['is_ip']) {
+				$value = preg_replace("/(\\d+\\.\\d+)\\.\\d+\\.\\d+/", "$1.00.00", $value);
+			} else {
+				$value = strtolower((string) $value);
+				$value = md5($hash_salt . $value);
+				if (@$options['is_email']) {
+					$value = $value .'@anonymized.com';
+				} elseif (@$options['max_length'] && strlen($value) > $options['max_length']) {
+					$value = substr($value, 0, $options['max_length']);
+				}
+
+				if (!@$options['is_email']) {
+					$value = $options['prefix'] . $value;
+				}
+			}
+		}
+		return $value;
+	}
 }
