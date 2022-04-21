@@ -46,24 +46,43 @@ class security {
 	 *   - `max_length` : set a max length for the returned value
 	 *   - `is_email` : value is an email address
 	 *   - `is_ip` : value is an IP address
+	 *   - `replace_digits` : replace any digits with a given digit instead of hashing (good for anonymizing phone numbers) (only works on strings)
 	 */
 	static public function anonymize_value($value, $hash_salt, $options = []) {
-		if (!empty($value) && !is_numeric($value)) {
+		if (!empty($value) || is_numeric($value)) {
 			if (!array_key_exists('prefix', $options)) {
 				$options['prefix'] = 'DEL!';
 			}
+			$options['prefix'] = (string) $options['prefix'];
+
+			// Check if already anonymized
+			if (@$options['is_email'] && strpos($value, '@anonymized.com') !== false) {
+				return $value;
+			} elseif (@$options['is_ip'] && preg_match("/\\d+\\.\\d+\\.00\\.00/", $value)) {
+				return $value;
+			} elseif (strtoupper(substr($value, 0, strlen($options['prefix']))) == strtoupper($options['prefix'])) {
+				return $value;
+			}
+
+			// Anonymize value
 			if (@$options['is_ip']) {
 				$value = preg_replace("/(\\d+\\.\\d+)\\.\\d+\\.\\d+/", "$1.00.00", $value);
 			} else {
-				$value = strtolower((string) $value);
-				$value = md5($hash_salt . $value);
+				$replace_digits = (@$options['replace_digits'] || is_numeric(@$options['replace_digits']) ? true : false);
+				if ($replace_digits && is_string($value)) {
+					$value = preg_replace("/\\d/", $options['replace_digits'], $value);
+				} else {
+					$value = strtolower((string) $value);
+					$value = md5($hash_salt . $value);
+				}
+
 				if (@$options['is_email']) {
 					$value = $value .'@anonymized.com';
 				} elseif (@$options['max_length'] && strlen($value) > $options['max_length']) {
 					$value = substr($value, 0, $options['max_length']);
 				}
 
-				if (!@$options['is_email']) {
+				if (!@$options['is_email'] && !$replace_digits) {
 					$value = $options['prefix'] . $value;
 				}
 			}
