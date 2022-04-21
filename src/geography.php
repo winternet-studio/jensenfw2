@@ -228,12 +228,12 @@ class geography {
 	 * @param float $degrees
 	 * @param float $minutes
 	 * @param float $seconds
-	 * @param string $direction : Possible values: `N`, `S`, `E`, `W` (is case-insensitive)
+	 * @param string $cardinal_direction : Possible values: `N`, `S`, `E`, `W` (case-insensitive)
 	 *
 	 * @return float : The decimal degrees
 	 */
-	public static function convert_coordinate_dms_to_decimal($degrees, $minutes, $seconds, $direction) {
-		$d = strtoupper($direction);
+	public static function convert_coordinate_dms_to_decimal($degrees, $minutes, $seconds, $cardinal_direction) {
+		$d = strtoupper($cardinal_direction);
 		$ok = ['N', 'S', 'E', 'W'];
 
 		//degrees must be integer between 0 and 180
@@ -274,13 +274,13 @@ class geography {
 		}
 
 		if ($type == 'lat' && $decimal < 0) {
-			$direction = 'S';
+			$cardinal_direction = 'S';
 		} elseif ($type == 'lng' && $decimal < 0) {
-			$direction = 'W';
+			$cardinal_direction = 'W';
 		} elseif ($type == 'lng') {
-			$direction = 'E';
+			$cardinal_direction = 'E';
 		} else {
-			$direction = 'N';
+			$cardinal_direction = 'N';
 		}
 
 		//get absolute value of decimal
@@ -302,7 +302,8 @@ class geography {
 			'degrees' => $degrees,
 			'minutes' => $minutes,
 			'seconds' => $seconds,
-			'direction' => $direction,
+			'direction' => $cardinal_direction,
+			'textual' => $cardinal_direction .' '. $degrees .'° '. $minutes ."' ". $seconds +'"',
 		];
 	}
 
