@@ -51,28 +51,27 @@ class dump {
 		object for you.
 	----------------------------------------------------------------------*/
 
-	public static function var($input, $return = false) {
+	public static function var($input, $return = true) {
 		if (($output = static::dump_cli($input)) !== false) return $output;
 		$dump = new static();
-		return $dump->dump($input, $return);
+		return static::get_code_reference(true, $return) . $dump->dump($input, $return);
 	}
 
-	public static function simple($input, $return = false) {
+	public static function simple($input, $return = true) {
 		if (($output = static::dump_cli($input)) !== false) return $output;
 		$dump = new static();
-		return $dump->dumps($input, $return);
+		return static::get_code_reference(true, $return) . $dump->dumps($input, $return);
 	}
 
-	public static function sql($input, $return = false, $expandFunctions = false) {
+	public static function sql($input, $return = true, $expandFunctions = false) {
 		if (($output = static::dump_cli($input)) !== false) return $output;
 		$dump = new static();
-		return $dump->dumpq($input, $return, $expandFunctions);
+		return static::get_code_reference(true, $return) . $dump->dumpq($input, $return, $expandFunctions);
 	}
 
 	public static function dump_cli($input) {
 		if (PHP_SAPI == 'cli') {
-			$bcktr = debug_backtrace();
-			$header = "\033[93m------------------------------------------------- \033[90m". str_pad(basename($bcktr[1]['file']) .':'. $bcktr[1]['line'] ."\033[93m --- \033[90m". gmdate('H:i:s') ."z \033[93m", 38+15 /*add 15 because of color codes*/, '-') ."-------\033[0m". PHP_EOL;
+			$header = "\033[93m------------------------------------------------- \033[90m". str_pad(static::get_code_reference(false) ."\033[93m --- \033[90m". gmdate('H:i:s') ."z \033[93m", 38+15 /*add 15 because of color codes*/, '-') ."-------\033[0m". PHP_EOL;
 			ob_start();
 			var_dump($input);
 			$dump = ob_get_clean();
@@ -90,6 +89,23 @@ class dump {
 			return $header . $dump . $footer;
 		}
 		return false;
+	}
+
+	public static function get_code_reference($html = true, $return = true) {
+		$bt = debug_backtrace();
+		if ($html) {
+			if ($return) {
+				return '<div class="phpdump-code-ref-container"><div class="code-ref">'. basename($bt[1]['file']) .':<strong>'. $bt[1]['line'] .'</strong></div></div>';
+			} else {
+				echo '<div class="phpdump-code-ref-container"><div class="code-ref">'. basename($bt[1]['file']) .':<strong>'. $bt[1]['line'] .'</strong></div></div>';
+			}
+		} else {
+			if ($return) {
+				return basename($bt[1]['file']) .':'. $bt[1]['line'];
+			} else {
+				echo basename($bt[1]['file']) .':'. $bt[1]['line'];
+			}
+		}
 	}
 
 
@@ -1082,6 +1098,17 @@ class dump {
 					color: #CC0000;
 				}
 
+				/* Other Formatting */
+
+				.code-ref {
+					display: inline-block;
+					color: #747474;
+					background-color: #dfdfdf;
+					font-size: 11px;
+					margin-left: 5px;
+					padding: 0px 5px;
+					border-radius: 4px;
+				}
 			</style>		
 		';
 
