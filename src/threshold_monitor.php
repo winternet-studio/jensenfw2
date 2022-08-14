@@ -3,6 +3,13 @@
  * Monitor when reoccurring incidents surpass a given threshold
  *
  * Good for ignoring intermittent errors
+ *
+ * TODO:
+ * - look into using shared memory as storage instead:
+ *   - https://www.php.net/manual/en/function.shm-attach.php
+ *   - https://www.php.net/manual/en/ref.shmop.php
+ *   - https://softwareengineering.stackexchange.com/questions/276759/how-to-store-data-in-memoryram-using-php-without-using-memcache-redis-or-any-o
+ *   - https://eddmann.com/posts/storing-php-sessions-file-caches-in-memory-using-tmpfs/
  */
 class threshold_monitor {
 
