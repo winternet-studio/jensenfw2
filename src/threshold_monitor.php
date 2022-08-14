@@ -1,4 +1,6 @@
 <?php
+namespace winternet\jensenfw2;
+
 /**
  * Monitor when reoccurring incidents surpass a given threshold
  *
