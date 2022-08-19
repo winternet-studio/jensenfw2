@@ -18,24 +18,17 @@ Improvements added by WinterNet Studio (from http://www.reallyshiny.com/articles
 	can be used during debugging to quickly output and display many data
 	types, including multi-dimensional arrays and MySQL result sets.
 
-	Normal usage is to use dump() for CSS formatted output, or dumps()
+	Normal usage is to use Dump::var() for CSS formatted output, or Dump::simple()
 	for simple HTML formatted output. e.g:
 
-		dump(input, return);
-		dumps(input, return);
-		dumpq(input, return, expandFunctions);
+		Dump::var(input, return);
+		Dump::simple(input, return);
+		Dump::sql(input, return, expandFunctions);
 
-	The dumpq() function will force sql query output. The expandFunctions
+	The Dump::sql() function will force SQL query output. The expandFunctions
 	argument will open up and indent all function brackets, when set to
 	true. The tabSize argument will change the number of spaces that make
 	up a tab (default is 4).
-
-	To maintain compatibility with previous versions of this script (as
-	well as providing you with shorter alternative functions) you can
-	also use the following to perform the same functions.
-
-		out(input);
-		outs(input);
 
 	Version 1.56
 	Copyright Jack Sleight - www.reallyshiny.com
@@ -54,19 +47,19 @@ class dump {
 	public static function var($input, $return = true) {
 		if (($output = static::dump_cli($input)) !== false) return $output;
 		$dump = new static();
-		return static::get_code_reference(true, $return) . $dump->dump($input, $return);
+		return $dump->dumpInternal($input, $return);
 	}
 
 	public static function simple($input, $return = true) {
 		if (($output = static::dump_cli($input)) !== false) return $output;
 		$dump = new static();
-		return static::get_code_reference(true, $return) . $dump->dumps($input, $return);
+		return $dump->dumps($input, $return);
 	}
 
 	public static function sql($input, $return = true, $expandFunctions = false) {
 		if (($output = static::dump_cli($input)) !== false) return $output;
 		$dump = new static();
-		return static::get_code_reference(true, $return) . $dump->dumpq($input, $return, $expandFunctions);
+		return $dump->dumpq($input, $return, $expandFunctions);
 	}
 
 	public static function dump_cli($input) {
@@ -91,19 +84,19 @@ class dump {
 		return false;
 	}
 
-	public static function get_code_reference($html = true, $return = true) {
+	public static function get_code_reference($html = true, $return = true, $level = 1) {
 		$bt = debug_backtrace();
 		if ($html) {
 			if ($return) {
-				return '<div class="phpdump-code-ref-container"><div class="code-ref">'. basename($bt[1]['file']) .':<strong>'. $bt[1]['line'] .'</strong></div></div>';
+				return '<div class="phpdump-code-ref-container"><div class="code-ref">'. basename($bt[$level]['file']) .':<strong>'. $bt[$level]['line'] .'</strong></div></div>';
 			} else {
-				echo '<div class="phpdump-code-ref-container"><div class="code-ref">'. basename($bt[1]['file']) .':<strong>'. $bt[1]['line'] .'</strong></div></div>';
+				echo '<div class="phpdump-code-ref-container"><div class="code-ref">'. basename($bt[$level]['file']) .':<strong>'. $bt[$level]['line'] .'</strong></div></div>';
 			}
 		} else {
 			if ($return) {
-				return basename($bt[1]['file']) .':'. $bt[1]['line'];
+				return basename($bt[$level]['file']) .':'. $bt[$level]['line'];
 			} else {
-				echo basename($bt[1]['file']) .':'. $bt[1]['line'];
+				echo basename($bt[$level]['file']) .':'. $bt[$level]['line'];
 			}
 		}
 	}
@@ -130,7 +123,7 @@ class dump {
 		Root function to output result with CSS formatting.
 	----------------------------------------------------------------------*/
 
-	function dump($input, $return = false) {
+	function dumpInternal($input, $return = false) {
 
 		global $phpDumpCSS;
 
@@ -141,7 +134,7 @@ class dump {
 			$phpDumpCSS = true;
 		}
 
-		$output .= '<div id="phpdump">'.$this->getDump($input).'</div><div style="clear: both;"></div>';
+		$output .= '<div id="phpdump">'. static::get_code_reference(true, $return, 2) . $this->getDump($input) .'</div><div style="clear: both;"></div>';
 
 		if($return)
 			return $output;
@@ -158,7 +151,7 @@ class dump {
 
 	function dumps($input, $return = false) {
 
-		$output = $this->getDump($input);
+		$output = static::get_code_reference(true, $return, 2) . $this->getDump($input);
 
 		if($return)
 			return $output;
@@ -178,7 +171,7 @@ class dump {
 
 		$output = $this->css();
 
-		$output .= '<div id="phpdump">'.$this->getDump($input, 'query').'</div><div style="clear: both;"></div>';
+		$output .= '<div id="phpdump">'. static::get_code_reference(true, $return, 2) . $this->getDump($input, 'query') .'</div><div style="clear: both;"></div>';
 
 		if($return)
 			return $output;
@@ -752,7 +745,7 @@ class dump {
 			$output['data'] = '<a href="'.$input.'" target="_blank" rel="noopener noreferrer">'.$input.'</a>';
 		}
 		else if(strlen($input) <= 100) {
-			$output['data'] = str_replace(' ', '&nbsp;', $input);
+			$output['data'] = str_replace(' ', '&nbsp;', htmlentities($input));
 		}
 		else {
 			$output['data'] = '<pre>'.htmlentities($input).'</pre>';
@@ -1101,12 +1094,12 @@ class dump {
 				/* Other Formatting */
 
 				.code-ref {
+					font-family: Verdana, Arial, Helvetica, sans-serif;
 					display: inline-block;
 					color: #747474;
 					background-color: #dfdfdf;
 					font-size: 11px;
-					margin-left: 5px;
-					padding: 0px 5px;
+					padding: 0px 3px;
 					border-radius: 4px;
 				}
 			</style>		
