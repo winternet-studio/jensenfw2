@@ -49,10 +49,11 @@ class threshold_monitor {
 		$data = $this->get_data();
 
 		$period = $this->get_period_identifier();
-		if (!isset($data[$this->name][$period])) {
-			// Clear old data
-			$data[$this->name] = [];
-		}
+		// TODO: WE WANT TO RETAIN IT FOR A WHILE SO JUST DISABLE FOR NOW SINCE IT'S ONLY WRITTEN TEMP FOLDER SO FAR
+		// if (!isset($data[$this->name][$period])) {
+		// 	// Clear old data
+		// 	$data[$this->name] = [];
+		// }
 		$data[$this->name][$period]++;
 
 		$this->set_data($data);
