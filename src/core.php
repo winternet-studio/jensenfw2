@@ -1227,9 +1227,16 @@ class core {
 		}
 
 		if ($options['querystring_only']) {
-			return http_build_query($qs);
+			if (empty($qs)) {
+				return '';
+			} else {
+				return http_build_query($qs);
+			}
 		} else {
 			$uri = $_SERVER['REQUEST_URI'];
+			if (empty($qs)) {
+				return $uri;
+			}
 			$quest_pos = strpos($uri, '?');
 			if ($quest_pos) {
 				$url = substr($uri, 0, $quest_pos+1);
