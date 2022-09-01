@@ -445,7 +445,7 @@ class datetime {
 			core::system_error('Invalid number of units for writing a time period.');
 		}
 		$output = [];
-		$allunits = time_period_all_units($time, false);
+		$allunits = static::time_period_all_units($time, false);
 		$textparts = explode(',', $allunits['fulltext']);
 		$textparts_count = count($textparts);
 		for ($i = 1; $i <= $no_of_units && $i <= $textparts_count; $i++) {
