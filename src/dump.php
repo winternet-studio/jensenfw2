@@ -57,9 +57,16 @@ class dump {
 	}
 
 	public static function sql($input, $return = true, $expandFunctions = false) {
+		if ($return === null) $return = true;  //use default when set to null
 		if (($output = static::dump_cli($input)) !== false) return $output;
 		$dump = new static();
 		return $dump->dumpq($input, $return, $expandFunctions);
+	}
+
+	public static function table($input, $return = true, $options = []) {
+		if ($return === null) $return = true;  //use default when set to null
+		$dump = new static();
+		return $dump->dumpTable($input, $return, $options);
 	}
 
 	public static function dump_cli($input) {
@@ -178,6 +185,66 @@ class dump {
 		else
 			echo $output;
 
+	}
+
+	function dumpTable($input, $return = false, $options = []) {
+
+		$output  = '<div id="phpdump">';
+		$output .= static::get_code_reference(true, $return, 2);
+
+		if (is_array($input) && is_array(current($input))) {
+			$skipColumns = [];
+			if (!empty($options['skipColumns']) && is_array($options['skipColumns'])) {
+				$skipColumns = $options['skipColumns'];
+			}
+
+			ob_start();
+?>
+<table>
+<tr class="names">
+<?php
+			$columnNames = [];
+			foreach ($input as $row) {
+				foreach ($row as $key => $value) {
+					if (!in_array($key, $columnNames) && !in_array($key, $skipColumns)) {
+?>
+	<th><?= htmlentities($key) ?></th>
+<?php
+						$columnNames[] = $key;
+					}
+				}
+			}
+?>
+</tr>
+<?php
+			foreach ($input as $values) {
+?>
+<tr>
+<?php
+				foreach ($columnNames as $columnName) {
+					if (in_array($columnName, $skipColumns)) continue;
+?>
+	<td<?= (array_key_exists($columnName, $values) && is_numeric($values[$columnName]) && stripos($columnName, 'amount') !== false ? ' class="is-amount-column"' : '') ?>><?= (array_key_exists($columnName, $values) ? $this->getDump($values[$columnName]) : '') ?></td>
+<?php
+				}
+?>
+</tr>
+<?php
+			}
+?>
+</table>
+<?php
+			$output .= ob_get_clean();
+		} else {
+			$output .= 'NOT AN ARRAY - CANNOT MAKE TABLE';
+		}
+		$output .= '</div><div style="clear: both;"></div>';
+
+		if ($return) {
+			return $output;
+		} else {
+			echo $output;
+		}
 	}
 
 	/*
@@ -941,6 +1008,10 @@ class dump {
 
 				div#phpdump td.box {
 					padding: 5px;
+				}
+
+				div#phpdump td.is-amount-column {
+					text-align: right;
 				}
 
 				div#phpdump table td table {
