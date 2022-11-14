@@ -758,7 +758,7 @@ class dump {
 				break;
 
 			case 'null';
-				$input = 'Null';
+				$input = 'null';
 				break;
 
 			case 'other';
@@ -801,7 +801,7 @@ class dump {
 		//MODIFICATION 1 BEGIN ** was before: if(!$input) {
 		if($input == '') {
 		//MODIFICATION 1 END
-			$output['data'] = 'Empty&nbsp;String';
+			$output['data'] = 'empty string';
 			$output['class'] = 'empty';
 			$output['title'] = 'Empty';
 		}
@@ -1155,7 +1155,6 @@ class dump {
 
 				div#phpdump span.null, div#phpdump span.empty {
 					color: #bbbbbb;
-					font-weight: bold;
 				}
 
 				div#phpdump span.error {
