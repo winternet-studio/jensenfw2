@@ -527,7 +527,7 @@ class dump {
 
 			foreach( (array) $input as $key => $value) {  // Source: https://stackoverflow.com/a/65226236/2404541
 				if (preg_match("/^\\x00(.*)\\x00(.*)/", $key, $match)) {
-					$output .= $this->row('<span title="'. ($match[1] == '*' ? 'protected' : 'private') .'">'. $this->spacesToNbsp(($match[1] == '*' ? '*' : '! ') . $match[2]) .'</span>', $value, null, ['skipNbsp' => true]);
+					$output .= $this->row('<span title="'. ($match[1] == '*' ? 'protected' : 'private') .'"><span class="object-visibility">'. ($match[1] == '*' ? '*' : '!&nbsp;') .'</span>'. $this->spacesToNbsp($match[2]) .'</span>', $value, null, ['skipNbsp' => true]);
 				} else {
 					$output .= $this->row($key, $value);
 				}
@@ -1100,6 +1100,10 @@ class dump {
 
 				div#phpdump table.object tr.object {
 					background-color: #FF6600;
+				}
+
+				div#phpdump table.object .object-visibility {
+					color: #B5B5B5;
 				}
 
 				/* Stream Formatting */
