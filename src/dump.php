@@ -525,8 +525,12 @@ class dump {
 		$output .= '</thead>';
 		$output .= '<tbody>';
 
-			foreach($input as $key => $value) {
-				$output .= $this->row($key, $value);
+			foreach( (array) $input as $key => $value) {  // Source: https://stackoverflow.com/a/65226236/2404541
+				if (preg_match("/^\\x00(.*)\\x00(.*)/", $key, $match)) {
+					$output .= $this->row('<span title="'. ($match[1] == '*' ? 'protected' : 'private') .'">'. $this->spacesToNbsp(($match[1] == '*' ? '*' : '! ') . $match[2]) .'</span>', $value, null, ['skipNbsp' => true]);
+				} else {
+					$output .= $this->row($key, $value);
+				}
 			}
 
 		$output .= '</tbody>';
@@ -892,12 +896,18 @@ class dump {
 		row(key, value) : Create a table row
 	----------------------------------------------------------------------*/
 
-	function row($key, $value, $dimension = NULL) {
+	/**
+	 * @param array $options : Available options:
+	 *   - `skipNbsp` : set true to skip replacing spaces with &nbsp;
+	 */
+	function row($key, $value, $dimension = null, $options = []) {
 
 		$output = '<tr>';
 
 			$output .= '<td '.$this->tdAtts.' class="id">';
-				$key = str_replace(' ', '&nbsp;', $key);
+				if (empty($options['skipNbsp'])) {
+					$key = $this->spacesToNbsp($key);
+				}
 				$output .= $key;
 			$output .= '</td>';
 
@@ -923,7 +933,11 @@ class dump {
 
 		return $output;
 
-	}	
+	}
+
+	function spacesToNbsp($string) {
+		return str_replace(' ', '&nbsp;', $string);
+	}
 
 	/*----------------------------------------------------------------------
 		title(title) : Create string for 'title' span attribute
