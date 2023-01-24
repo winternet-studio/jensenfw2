@@ -138,7 +138,7 @@ class logging {
 	}
 
 	/**
-	 * Log data to a database table, automatically table and required columns for each of the 1st level array keys
+	 * Log data to a database table, automatically create table and required columns for each of the 1st level array keys
 	 *
 	 * You may create columns manually beforehand or you can let it auto-create them and if necessary adjust their types afterwards.
 	 */
