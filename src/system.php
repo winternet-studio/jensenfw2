@@ -118,6 +118,42 @@ class system {
 	}
 
 	/**
+	 * Run a function but only if the minimum time since call time it was called has passed
+	 *
+	 * @param string $condition : The minimum time between the execution of the function expressed as either...
+	 *   - number of hours (eg. 6 hours: `6h`)
+	 *   - days (eg. 14 days: `14d`)
+	 * @param string|integer $key : A string or number identifying this specific action. Must be safe for use in a file name.
+	 * @param callable $callback : Function that is to be run. Anything it returns will be stored in the file keeping track of the time.
+	 * @param string $path : Path to where the temporary file for keeping track of time can be created. Defaults to folder of the file calling this function (or runtime folder if Yii2 is used)
+	 *
+	 * @return boolean : Whether the function was executed or not
+	 */
+	public static function minimum_time_between($condition, $key, $callback, $path = null) {
+		if ($path === null) {
+			// Defaults if nothing specified
+			if (false && @constant('YII_BEGIN_TIME')) {
+				$path = \Yii::getAlias('@runtime/');
+				$preferred_path = $path .'min_time_betwn_storage/';
+				if ((is_dir($preferred_path) && is_writable($preferred_path)) || mkdir($preferred_path)) {
+					$path = $preferred_path;
+				}
+			} else {
+				$parent_info = debug_backtrace();
+				$path = dirname($parent_info[0]['file']) .'/';
+			}
+		}
+		$filepath = $path . $key .'.log';
+		filesystem::cleanup_shortlived_files($filepath);
+		if (!file_exists($filepath)) {
+			$data = $callback();
+			filesystem::save_shortlived_file($filepath, date('Y-m-d H:i:sO') ."\n". (is_string($data) ? $data : json_encode($data)), $condition);
+			return true;
+		}
+		return false;
+	}
+
+	/**
 	 * Execute a shell command and return the output
 	 *
 	 * OBS! For some reason you cannot call php.exe using this without looping the output several times...
