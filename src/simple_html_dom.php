@@ -2,6 +2,10 @@
 namespace winternet\jensenfw2;
 
 /**
+ * @deprecated Should use https://github.com/ThomasWeinert/FluentDOM instead
+ */
+
+/**
  * Website: http://sourceforge.net/projects/simplehtmldom/
  * Acknowledge: Jose Solorzano (https://sourceforge.net/projects/php-html/)
  * Contributions by:
