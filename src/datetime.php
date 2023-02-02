@@ -302,7 +302,43 @@ class datetime {
 	 *
 	 * @return array : Associated array with days (`days`), hours (`hours`), minutes (`mins`), seconds (`secs`), and full textual representation (`fulltext`)
 	 */
-	public static function time_period_all_units($time, $include_zeros = false) {
+	public static function time_period_all_units($time, $include_zeros = false, $unit_names = 'long') {
+		//determine unit names
+		switch ($unit_names) {
+		case 'ultrashort':
+			$lbl_secs_one = 's'; $lbl_secs_more = 's';
+			$lbl_mins_one = 'm'; $lbl_mins_more = 'm';
+			$lbl_hours_one = 'h'; $lbl_hours_more = 'h';
+			$lbl_days_one = 'd'; $lbl_days_more = 'd';
+			$lbl_weeks_one = 'w'; $lbl_weeks_more = 'w';
+			$lbl_mnths_one = 'mo'; $lbl_mnths_more = 'mos';
+			$lbl_years_one = 'y'; $lbl_years_more = 'y';
+			$spacing = '';
+			break;
+		case 'short':
+			$lbl_secs_one = core::txt('second_short', 'sec.', '#'); $lbl_secs_more = core::txt('seconds_short', 'sec.', '#');
+			$lbl_mins_one = core::txt('minute_short', 'min.', '#'); $lbl_mins_more = core::txt('minutes_short', 'min.', '#');
+			$lbl_hours_one = core::txt('hour_short', 'hr', '#'); $lbl_hours_more = core::txt('hours_short', 'hrs', '#');
+			$lbl_days_one = core::txt('day_short', 'day', '#'); $lbl_days_more = core::txt('days_short', 'days', '#');
+			$lbl_weeks_one = core::txt('week_short', 'week', '#'); $lbl_weeks_more = core::txt('weeks_short', 'weeks', '#');
+			$lbl_mnths_one = core::txt('month_short', 'month', '#'); $lbl_mnths_more = core::txt('months_short', 'months', '#');
+			$lbl_years_one = core::txt('year_short', 'year', '#'); $lbl_years_more = core::txt('years_short', 'yrs', '#');
+			$spacing = ' ';
+			break;
+		case 'long':
+			$lbl_secs_one = core::txt('second', 'second', '#'); $lbl_secs_more = core::txt('seconds', 'seconds', '#');
+			$lbl_mins_one = core::txt('minute', 'minute', '#'); $lbl_mins_more = core::txt('minutes', 'minutes', '#');
+			$lbl_hours_one = core::txt('hour', 'hour', '#'); $lbl_hours_more = core::txt('hours', 'hours', '#');
+			$lbl_days_one = core::txt('day', 'day', '#'); $lbl_days_more = core::txt('days', 'days', '#');
+			$lbl_weeks_one = core::txt('week', 'week', '#'); $lbl_weeks_more = core::txt('weeks', 'weeks', '#');
+			$lbl_mnths_one = core::txt('month', 'month', '#'); $lbl_mnths_more = core::txt('months', 'months', '#');
+			$lbl_years_one = core::txt('year', 'year', '#'); $lbl_years_more = core::txt('years', 'years', '#');
+			$spacing = ' ';
+			break;
+		default:
+			core::system_error('Configuration error. Unit format not defined.', ['Unit name' => $unit_names]);
+		}
+
 		//calculate the different valus
 		$days = ($time - ($time % 86400)) / 86400;
 		$time = $time - ($days * 86400);
@@ -313,16 +349,16 @@ class datetime {
 		$secs = $time;
 		//make the "fulltext" - a complete textual representation
 		if ($include_zeros || (!$include_zeros && $days != 0)) {
-			$fulltext  = ($days == 1) ? "1 day, " : $days ." days, ";
+			$fulltext  = ($days == 1) ? "1 ". $lbl_days_one .", " : $days ." ". $lbl_days_more .", ";
 		}
 		if ($include_zeros || (!$include_zeros && $hours != 0)) {
-			$fulltext .= ($hours == 1) ? "1 hour, " : $hours ." hours, ";
+			$fulltext .= ($hours == 1) ? "1 ". $lbl_hours_one .", " : $hours ." ". $lbl_hours_more .", ";
 		}
 		if ($include_zeros || (!$include_zeros && $mins != 0)) {
-			$fulltext .= ($mins == 1) ? "1 minute, " : $mins ." minutes, ";
+			$fulltext .= ($mins == 1) ? "1 ". $lbl_mins_one .", " : $mins ." ". $lbl_mins_more .", ";
 		}
 		if ($include_zeros || (!$include_zeros && $secs != 0)) {
-			$fulltext .= ($secs == 1) ? "1 second" : $secs ." seconds";
+			$fulltext .= ($secs == 1) ? "1 ". $lbl_secs_one : $secs ." ". $lbl_secs_more;
 		}
 		if (substr($fulltext, strlen($fulltext)-2, 2) == ', ') $fulltext = substr($fulltext, 0, strlen($fulltext)-2);  //remove trailing comma and space if exists
 		$fulltext = trim($fulltext);
@@ -445,7 +481,7 @@ class datetime {
 			core::system_error('Invalid number of units for writing a time period.');
 		}
 		$output = [];
-		$allunits = static::time_period_all_units($time, false);
+		$allunits = static::time_period_all_units($time, false, 'short');
 		$textparts = explode(',', $allunits['fulltext']);
 		$textparts_count = count($textparts);
 		for ($i = 1; $i <= $no_of_units && $i <= $textparts_count; $i++) {
