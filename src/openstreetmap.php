@@ -32,7 +32,7 @@ class openstreetmap {
 	 * @return mixed : By default returns the raw response string, but if it is detected the query asks for JSON it automatically decodes it and returns an object
 	 */
 	public function overpass_query($query) {
-		return network::http_request('POST', 'https://overpass-api.de/api/interpreter', ['data' => $query], ['parse_json' => (strpos($query, 'out:json') !== false ? true : false)]);
+		return network::http_request('POST', 'https://overpass-api.de/api/interpreter', ['data' => $query], ['parse_json' => (strpos($query, 'out:json') !== false ? 'object' : false)]);
 	}
 
 	/**
