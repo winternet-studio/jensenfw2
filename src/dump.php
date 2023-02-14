@@ -93,19 +93,27 @@ class dump {
 
 	public static function get_code_reference($html = true, $return = true, $level = 1) {
 		$bt = debug_backtrace();
+
+		$source = static::line_from_file($bt[$level]['file'], $bt[$level]['line']);
+		$source = preg_replace("/^.*?dump::[a-z]+\\((.*)\\);.*$/", '$1', $source);  //remove the call to this class
 		if ($html) {
 			if ($return) {
-				return '<div class="phpdump-code-ref-container"><div class="code-ref">'. basename($bt[$level]['file']) .':<strong>'. $bt[$level]['line'] .'</strong></div></div>';
+				return '<div class="phpdump-code-ref-container"><div class="code-ref">'. basename($bt[$level]['file']) .':<strong>'. $bt[$level]['line'] .'</strong> <span class="code-excerpt">'. htmlentities($source) .'</span></div></div>';
 			} else {
-				echo '<div class="phpdump-code-ref-container"><div class="code-ref">'. basename($bt[$level]['file']) .':<strong>'. $bt[$level]['line'] .'</strong></div></div>';
+				echo '<div class="phpdump-code-ref-container"><div class="code-ref">'. basename($bt[$level]['file']) .':<strong>'. $bt[$level]['line'] .'</strong> <span class="code-excerpt">'. htmlentities($source) .'</span></div></div>';
 			}
 		} else {
 			if ($return) {
-				return basename($bt[$level]['file']) .':'. $bt[$level]['line'];
+				return basename($bt[$level]['file']) .':'. $bt[$level]['line'] .'   '. $source;
 			} else {
-				echo basename($bt[$level]['file']) .':'. $bt[$level]['line'];
+				echo basename($bt[$level]['file']) .':'. $bt[$level]['line'] .'   '. $source;
 			}
 		}
+	}
+
+	public static function line_from_file($file, $line) {
+		$lines = file($file);
+		return $lines[$line - 1];
 	}
 
 
@@ -1189,6 +1197,11 @@ class dump {
 					font-size: 11px;
 					padding: 0px 3px;
 					border-radius: 4px;
+				}
+				.code-excerpt {
+					font-family: monospace;
+					color: #2d845f;
+					padding-left: 5px;
 				}
 			</style>		
 		';
