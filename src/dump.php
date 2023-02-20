@@ -707,7 +707,7 @@ class dump {
 					if($levelResetBefore)	$level = 0;
 					if($levelUpBefore)		$level++;
 					if($levelDownBefore)	$level--;
-					if($newLineBefore)		$code.= '<br/>'.str_repeat("\t", $level);
+					if($newLineBefore && $level >= 0)		$code.= '<br/>'.str_repeat("\t", $level);  //for some reason $level can be negative, so I had to add the extra condition
 					if($spaceBefore)		$code.= ' ';
 
 					if($thisType) $value = '<span class="'.$thisType.'">'.$value.'</span>';
@@ -717,7 +717,7 @@ class dump {
 					if($levelResetAfter)	$level = 0;
 					if($levelUpAfter)		$level++;
 					if($levelDownAfter)		$level--;
-					if($newLineAfter)		$code.= '<br/>'.str_repeat("\t", $level);
+					if($newLineAfter && $level >= 0)		$code.= '<br/>'.str_repeat("\t", $level);  //for some reason $level can be negative, so I had to add the extra condition
 
 					$lastType = $thisType;
 
