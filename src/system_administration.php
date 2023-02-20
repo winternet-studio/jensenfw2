@@ -388,6 +388,113 @@ class system_administration {
 	}
 
 	/**
+	 * Import/restore a MySQL database from a backup/dump file
+	 *
+	 * @param string $mysql_file : MySQL dump file to import
+	 * @param string|array $tables : String '*' to import all tables (default), or array with specific tables to import, or array with key='skip' and values being an array with tables to *not* import
+	 * @param array $options : Available options:
+	 *   - `query_callback` : Callback to use for each query we find, instead of just executing it against the database. Receive two arguments: array with query details, and string with actual query
+	 *   - database connection parameters like in download_production_database() if queries are to be executed against a database
+	 */
+	public function import_mysql($mysql_file, $tables = '*', $options = []) {
+		if (!file_exists($mysql_file)) {
+			core::system_error('File to import MySQL database from does not exist.', ['File' => $mysql_file]);
+		}
+
+		$handle = fopen($mysql_file, 'r');
+		if ($handle) {
+			$processed_tables = [];
+
+			if (!is_callable($options['query_callback'])) {
+				$link = $this->connect_database($options);
+			}
+
+			$sql_buffer = '';
+			$queries = 0;
+			while (($line = fgets($handle)) !== false) {
+				if ($line === '' || substr($line, 0, 2) === '--' || substr($line,0,2) === '/*') {  //inspired by https://stackoverflow.com/questions/19751354/how-do-i-import-a-sql-file-in-mysql-database-using-php
+					continue;
+				} else {
+					$sql_buffer .= $line;
+				}
+
+				if (substr(trim($line), -1) == ';') {
+					$queries++;
+					$sql_buffer = trim($sql_buffer);
+
+					$table_enabled = true;
+					if ($tables !== '*') {
+						$query_details = $this->get_query_details($sql_buffer);
+						$table = $query_details['table_name'];
+						if (isset($tables['skip'])) {
+							if (in_array($table, $tables['skip'])) {
+								$table_enabled = false;
+							}
+						} else {
+							if (!in_array($table, $tables)) {
+								$table_enabled = false;
+							}
+						}
+					}
+
+					if ($table_enabled) {
+						if (is_callable($options['query_callback'])) {
+							if ($options['query_callback']($query_details, $sql_buffer) === false) {
+								break;
+							}
+						} else {
+							if (mysqli_query($link, $curr_part)) {
+								while ($link->more_results()) {
+									$counter++;
+									$result = $link->next_result();
+									if (!$result) {
+										$errors = true;
+										echo '<br>Part #'. $partcounter .', query #'. $counter .': ';
+										echo $link->error;
+									}
+								}
+
+							} else {
+								core::system_error('Failed to execute SQL query while importing MySQL dump.', ['SQL' => $sql_buffer]);
+								echo '<div class="alert alert-danger">Error: '. mysqli_error($link) .'</div>';
+							}
+							mysql_query($templine) or print('Error performing query \'<strong>' . $templine . '\': ' . mysql_error() . '<br /><br />');
+						}
+
+						if (!in_array($table, $processed_tables)) {
+							$processed_tables[] = $table;
+						}
+					}
+
+					$sql_buffer = '';
+				}
+			}
+
+			fclose($handle);
+		} else {
+			core::system_error('Failed to open dump file for importing MySQL database.', ['File' => $mysql_file]);
+		}
+
+		return $processed_tables;
+	}
+
+	/**
+	 * Get details about an SQL query
+	 *
+	 * @return array
+	 */
+	public function get_query_details(&$query) {
+		if (preg_match("/(DROP TABLE|CREATE TABLE|INSERT INTO|REPLACE INTO).*`(.+)`/U", $query, $match)) {
+			return [
+				'type' => $match[1],
+				'table_name' => $match[2],
+			];
+		} else {
+			core::system_error('Failed to determine table a given SQL query is for.', ['Query' => $query]);
+		}
+	}
+
+	/**
 	 * Dwnload production database to this machine
 	 *
 	 * IMPORTANT! For Yii2 this requires also $this->enableCsrfValidation = false in beforeAction() and preferably only allowing POST for action `send-production-database`
@@ -462,15 +569,7 @@ class system_administration {
 
 		curl_close($ch);
 
-		$link = mysqli_connect($options['database_host'], $options['database_username'], $options['database_password'], $options['database_name']);
-		if (mysqli_connect_errno()) {
-			core::system_error('Connect failed: '. mysqli_connect_error());
-		}
-		mysqli_set_charset($link, 'utf8');
-
-		// Disable foreign key check
-		// NOTE: this can potentially break foreign key integrity between tables that are imported and those that are not, but it is okay because only developers will be using this feature
-		$link->query("SET FOREIGN_KEY_CHECKS = 0");
+		$link = $this->connect_database($options);
 
 		echo '<div>Downloaded (compressed): '. number_format(strlen($dump)) .' bytes</div>';
 
@@ -653,6 +752,22 @@ class system_administration {
 
 
 	// ========== UTILITY METHODS ======================================================
+
+	protected function connect_database($options) {
+		$link = mysqli_connect($options['database_host'], $options['database_username'], $options['database_password'], $options['database_name']);
+		if (mysqli_connect_errno()) {
+			core::system_error('Connect failed: '. mysqli_connect_error());
+		}
+		mysqli_set_charset($link, 'utf8');
+
+		if (empty($options['skip_disabling_foreign_checks'])) {
+			// Disable foreign key check
+			// NOTE: this can potentially break foreign key integrity between tables that are imported and those that are not, but it is okay because only developers will be using this feature
+			$link->query("SET FOREIGN_KEY_CHECKS = 0");
+		}
+
+		return $link;
+	}
 
 	private function ln($line = false) {
 		echo PHP_EOL. $line;
