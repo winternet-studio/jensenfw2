@@ -493,6 +493,7 @@ class core {
 		// Protect against infinite loops (in case a function (eg. send_email() or require_database() ) is called within system_error() that again creates an error)
 		if (self::$system_error_in_process) {
 			@self::run_hooks('jfw.looped_system_error', ['msg' => $msg, 'bt' => debug_backtrace() ]);
+			error_log('JFW2: '. $msg);
 			die($msg .' Please report.');  //the original error is not echoed but only this "lowest level" error
 		}
 		self::$system_error_in_process = true;
@@ -746,7 +747,7 @@ class core {
 					  `expire_days` SMALLINT UNSIGNED NULL DEFAULT NULL,
 					  PRIMARY KEY (`errorID`)
 					)";
-					$db_createtbl = mysqli_query($GLOBALS['_jfw_db_connection'], $createtblSQL) or die('Database update for creating error logging table failed.'); //mysqli_error($GLOBALS['_jfw_db_connection'])
+					$db_createtbl = mysqli_query($GLOBALS['_jfw_db_connection'], $createtblSQL) or error_log('JFW2: Database update for creating error logging table failed while logging:'. PHP_EOL . $errordata) and die('Database update for creating error logging table failed.'); //mysqli_error($GLOBALS['_jfw_db_connection'])
 					$_SESSION['_jfw_error_table_created'] = true;
 				}
 				$sql = [];
@@ -769,7 +770,7 @@ class core {
 					$regerrSQL .= ", ". implode(',', $sql);
 				}
 				$regerrSQL = preg_replace('/[^\x20-\x7E]/', '?', $regerrSQL);  //convert non-ASCII characters in binary data that might have been passed as arguments to PHP functions
-				$db_regerr = mysqli_query($GLOBALS['_jfw_db_connection'], $regerrSQL) or die('Database update for registering error details failed.'); //mysqli_error($GLOBALS['_jfw_db_connection'])
+				$db_regerr = mysqli_query($GLOBALS['_jfw_db_connection'], $regerrSQL) or error_log('JFW2: Database update for registering error details failed while logging:'. PHP_EOL . $errordata) and  die('Database update for registering error details failed.'); //mysqli_error($GLOBALS['_jfw_db_connection'])
 			}
 		}
 
