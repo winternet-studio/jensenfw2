@@ -1234,16 +1234,15 @@ class core {
 				return http_build_query($qs);
 			}
 		} else {
-			$uri = $_SERVER['REQUEST_URI'];
-			if (empty($qs)) {
-				return $uri;
-			}
-			$quest_pos = strpos($uri, '?');
+			$url = $_SERVER['REQUEST_URI'];
+			$quest_pos = strpos($url, '?');
 			if ($quest_pos) {
-				$url = substr($uri, 0, $quest_pos+1);
-				return $url . http_build_query($qs);
+				$url = substr($url, 0, $quest_pos);
+			}
+			if (empty($qs)) {
+				return $url;
 			} else {
-				return $uri .'?'. http_build_query($qs);
+				return $url .'?'. http_build_query($qs);
 			}
 		}
 	}
