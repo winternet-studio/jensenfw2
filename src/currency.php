@@ -26,6 +26,10 @@ class currency {
 		$from_currency = strtoupper($from_currency);
 		$to_currency = strtoupper($to_currency);
 
+		if ($from_currency == $to_currency) {
+			return 1;
+		}
+
 		$storage = null;
 		$storage_key = 'exchRate_'. $from_currency .'_'. $to_currency;
 		if (@constant('YII_BEGIN_TIME')) {
