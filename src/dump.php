@@ -71,7 +71,7 @@ class dump {
 
 	public static function dump_cli($input) {
 		if (PHP_SAPI == 'cli') {
-			$header = "\033[93m------------------------------------------------- \033[90m". str_pad(static::get_code_reference(false) ."\033[93m --- \033[90m". gmdate('H:i:s') ."z \033[93m", 38+15 /*add 15 because of color codes*/, '-') ."-------\033[0m". PHP_EOL;
+			$header = "\033[93m------------------------------------------------- \033[90m". str_pad(static::get_code_reference(false, true, 2) ."\033[93m --- \033[90m". gmdate('H:i:s') ."z \033[93m", 38+15 /*add 15 because of color codes*/, '-') ."-------\033[0m". PHP_EOL;
 			ob_start();
 			var_dump($input);
 			$dump = ob_get_clean();
