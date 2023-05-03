@@ -173,6 +173,7 @@ class system_administration {
 					$fields['t_hash'] = hash('sha256', $fields['t'] .'FHeFzwCT8O96V4MpIjm');
 					curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
 					// NOT NEEDED. curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: multipart/form-data'));
+					curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0 JensenFW2');  // Some firewalls might block request without a user agent
 					curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 					curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
 					curl_setopt($ch, CURLOPT_TIMEOUT, 1800);
@@ -559,6 +560,7 @@ class system_administration {
 		curl_setopt($ch, CURLOPT_POST, 1);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postfields));
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+		curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0 JensenFW2');  // Some firewalls might block request without a user agent
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 		curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 		$dump = curl_exec($ch);
