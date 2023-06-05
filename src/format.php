@@ -337,6 +337,16 @@ class format {
 	}
 
 	/**
+	 * Unicode compatible version of the native PHP function ucfirst()
+	 */
+	public static function mb_ucfirst($string) {
+		if (!is_string($string)) {
+			return $string;
+		}
+		return mb_strtoupper(mb_substr($string, 0, 1)) . mb_substr($string, 1);
+	}
+
+	/**
 	 * Remove multiple spaces from a string
 	 *
 	 * @param string $text : String to clean up. Variable is passed by reference and is hence modified.
