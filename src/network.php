@@ -489,6 +489,39 @@ class network {
 	}
 
 	/**
+	 * @param string $single_value : Return only the value of this type instead of an array with all information. Available types:
+	 *   - `content_type`
+	 * @return array|string|null : If $single_value=false an array, otherwise string or null
+	 */
+	public static function get_request_info($single_value = false) {
+		// Currently only considering and returning Content-Type
+		$output = [];
+
+		if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+			if ($single_value) {
+				return null;
+			}
+			return $output;
+		}
+
+		if (!empty($_SERVER['CONTENT_TYPE'])) {
+			$output['content_type'] = $_SERVER['CONTENT_TYPE'];
+		} else {
+			foreach (getallheaders() as $name => $value) {
+				if (strtolower($name) == 'content-type') {
+					$output['content_type'] = $value;
+					break;
+				}
+			}
+		}
+
+		if ($single_value == 'content_type') {
+			return @$output['content_type'];
+		}
+		return $output;
+	}
+
+	/**
 	 * Get the host name of a certain IP address
 	 *
 	 * @param string $ip : IP address
