@@ -75,6 +75,8 @@ class session {
 		} else {
 			//no new value and no default value has been set, make no changes
 		}
+
+		return $_SESSION[$primary_name];
 	}
 
 }
