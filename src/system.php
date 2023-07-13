@@ -382,4 +382,53 @@ THIS DOESN'T WORK YET. IT EXECUTES BUT NOT IN THE BACKGROUND. USING output_file 
 			return false;
 		}
 	}
+
+	/**
+	 * Parse winternet.no's Git log
+	 *
+	 * The logs are generated on each push and are stored on the Git server
+	 */
+	public static function parse_winternet_git_log($string) {
+		$commits = explode(')=-=(', $string);
+		$parsedCommits = [];
+		foreach ($commits as $commit) {
+			$commit = trim($commit);
+			if ($commit) {
+				list($fields, $changes) = explode(']--[', $commit);
+
+				$fieldLines = explode("\n", $fields);
+				$parsedFields = [];
+				foreach ($fieldLines as $line) {
+					if (preg_match("/^(Hash|AuthorName|AuthorDate|AuthorDateRelative|Subject|Body):(.*)/", $line, $match)) {
+						$currentField = lcfirst($match[1]);
+					}
+					if ($currentField && trim($match[2])) {
+						if ($currentField === 'Body') {  //multiline field
+							$parsedFields[$currentField][] = trim($match[2]);
+						} else {
+							$parsedFields[$currentField] = trim($match[2]);
+						}
+					}
+				}
+
+				$parsedChanges = [];
+				foreach (explode("\n", $changes) as $change) {
+					$change = trim($change);
+					if ($change) {
+						list($addedLines, $deletedLines, $file) = explode("\t", $change);
+						$parsedChanges[] = [
+							'file' => $file,
+							'linesAdded' => $addedLines,
+							'linesDeleted' => $deletedLines,
+						];
+					}
+				}
+				$parsedFields['changes'] = $parsedChanges;
+
+				$parsedCommits[] = $parsedFields;
+			}
+		}
+
+		return $parsedCommits;
+	}
 }
