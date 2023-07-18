@@ -20,7 +20,7 @@ class network {
 	/**
 	 * Perform an HTTP request
 	 */
-	public function http_request($method, $url, $data = [], $options = []) {
+	public static function http_request($method, $url, $data = [], $options = []) {
 		global $ch;
 		if (!$ch) {
 			$ch = curl_init();
