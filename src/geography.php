@@ -303,7 +303,7 @@ class geography {
 			'minutes' => $minutes,
 			'seconds' => $seconds,
 			'direction' => $cardinal_direction,
-			'textual' => $cardinal_direction .' '. $degrees .'° '. $minutes ."' ". $seconds +'"',
+			'textual' => $cardinal_direction .' '. $degrees .'° '. $minutes ."' ". $seconds .'"',
 		];
 	}
 
