@@ -39,6 +39,7 @@ class network {
 			}
 		}
 		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_USERAGENT, 'JensenFW2 winternet.no');  //set a default one since many servers/firewalls now require a user agent
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		// curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 		// curl_setopt($ch, CURLOPT_TIMEOUT, 7);
@@ -121,6 +122,7 @@ class network {
 			curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: text/plain']);
 		}
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_USERAGENT, 'JensenFW2 winternet.no');  //set a default one since many servers/firewalls now require a user agent
 
 		// Set extra cURL options
 		if (is_array($options['set_curl_opt'])) {
