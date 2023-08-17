@@ -404,7 +404,7 @@ class dump {
 		$output .= '<thead>';
 			$output .= '<tr class="'.$class.' title">';
 
-				$output .= '<th colspan="2"><span>Array&nbsp;:&nbsp;Dimension&nbsp;'.$dimension.'</span></th>';
+				$output .= '<th colspan="2"><span>Array&nbsp;<span class="array-element-count" title="Number of elements">('. count($input) .')</span>&nbsp;:&nbsp;Dimension&nbsp;'.$dimension.'</span></th>';
 
 			$output .= '</tr>';		
 		$output .= '</thead>';
@@ -1009,7 +1009,7 @@ class dump {
 					width: 200px;
 				}
 
-				div#phpdump th span {
+				div#phpdump th span:not(.array-element-count) {
 					position: relative;
 					top: -1px;
 				}
@@ -1058,6 +1058,11 @@ class dump {
 
 				/* Array Formatting */
 
+				div#phpdump .array-element-count {
+					opacity: 0.5;
+					font-weight: normal;
+					font-size: 85%;
+				}
 				div#phpdump table.dimension1 {
 					border-color: #004971;
 				}
