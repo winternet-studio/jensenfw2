@@ -5,7 +5,7 @@ use winternet\jensenfw2\csv_parser;
 final class csv_parserTest extends TestCase {
 	public function testHeaderRow() {
 		$parser = new csv_parser(['delimiter' => "\t"]);
-		$output = $parser->parse_csv(file_get_contents(__DIR__ .'/fixtures/csv_parser/header-row.csv'));
+		$output = $parser->parse(file_get_contents(__DIR__ .'/fixtures/csv_parser/header-row.csv'));
 
 		$this->assertEquals(str_replace("\r", '', '[
     {
@@ -36,8 +36,8 @@ final class csv_parserTest extends TestCase {
 	}
 
 	public function testSemicolon() {
-		$parser = new csv_parser(['delimiter' => ';', 'first_line_is_header' => false]);
-		$output = $parser->parse_csv(file_get_contents(__DIR__ .'/fixtures/csv_parser/semicolon.csv'));
+		$parser = new csv_parser(['delimiter' => ';', 'header_line' => false]);
+		$output = $parser->parse(file_get_contents(__DIR__ .'/fixtures/csv_parser/semicolon.csv'));
 
 		$this->assertEquals(str_replace("\r", '', '[
     {
@@ -68,8 +68,8 @@ final class csv_parserTest extends TestCase {
 	}
 
 	public function testTabs() {
-		$parser = new csv_parser(['delimiter' => "\t", 'first_line_is_header' => false]);
-		$output = $parser->parse_csv(file_get_contents(__DIR__ .'/fixtures/csv_parser/tabs.csv'));
+		$parser = new csv_parser(['delimiter' => "\t", 'header_line' => false]);
+		$output = $parser->parse(file_get_contents(__DIR__ .'/fixtures/csv_parser/tabs.csv'));
 		// var_export($output);
 		// file_put_contents('dump.txt', json_encode($output, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES));
 
@@ -103,7 +103,7 @@ final class csv_parserTest extends TestCase {
 
     public function testSpecialCharacters() {
         $parser = new csv_parser();
-        $output = $parser->parse_csv(file_get_contents(__DIR__ .'/fixtures/csv_parser/special-characters.csv'));  //this intentionally has Windows line-breaks to show that they are retained as-is within values
+        $output = $parser->parse(file_get_contents(__DIR__ .'/fixtures/csv_parser/special-characters.csv'));  //this intentionally has Windows line-breaks to show that they are retained as-is within values
         // var_export($output);
         // file_put_contents('dump.txt', json_encode($output, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES));
 
