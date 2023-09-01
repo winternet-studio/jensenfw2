@@ -431,4 +431,50 @@ THIS DOESN'T WORK YET. IT EXECUTES BUT NOT IN THE BACKGROUND. USING output_file 
 
 		return $parsedCommits;
 	}
+
+	/**
+	 * @param string $message : Commit message, eg. `feat: MAJOR: browser-based barcode scanner #1289 (cl)`
+	 * @param array $options : Available options:
+	 *   - `remove_issue_number` : set true to remove issue numbers
+	 */
+	public static function format_winternet_git_message($message, $options = []) {
+		// Remove indication of this message needing to be shown in the changelog
+		$message = trim(str_replace('(cl)', '', $message));
+
+		$bc = '';
+
+		// Replace prefixes with end-user friendly terms
+		$message = preg_replace_callback("/^(feat|fix|refactor|chore|docs|perf|test|style|build|ci)(\\(\\w+\\))?(!)?(:)( MAJOR:)?/", function($matches) use (&$bc) {
+			$map = [
+				'feat' => 'feature',
+				'fix' => 'fix',
+				'docs' => 'documentation',
+				'perf' => 'performance',
+				'test' => 'automated testing',
+				'style' => 'code styling',
+				'build' => 'build system',
+			];
+
+			if ($matches[3] == '!') {
+				$bc = ' (BREAKING CHANGE)';
+			}
+
+			if (in_array($matches[1], array_keys($map))) {
+				return $map[$matches[1]] . ($matches[2] ? ' '. $matches[2] : '') . rtrim($matches[5], ':') .':';
+			} else {
+				return ($matches[2] ? $matches[2] .':' : '');
+			}
+		}, $message);
+
+		$message = trim($message);
+
+		// Extra stuff
+		if (!empty($options['remove_issue_number'])) {
+			$message = preg_replace("/\\s*#\\d+/", '', $message);  //remove eg. ` #2568`
+		}
+
+		return [
+			'standard' => ucfirst($message) . $bc,
+		];
+	}
 }
