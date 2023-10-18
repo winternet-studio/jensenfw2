@@ -143,11 +143,16 @@ class system {
 				$path = dirname($parent_info[0]['file']) . DIRECTORY_SEPARATOR;
 			}
 		}
-		$filepath = rtrim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $key .'.log';
-		filesystem::cleanup_shortlived_files($filepath);
-		if (!file_exists($filepath)) {
+		$path_exists = file_exists($path);
+		if ($path_exists) {
+			$filepath = rtrim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $key .'.log';
+			filesystem::cleanup_shortlived_files($filepath);
+		}
+		if (!$path_exists || !file_exists($filepath)) {  //if path doesn't exist, ALWAYS run the function! Cannot just terminate and notifying webmaster might not be 100% stable I guess...
 			$data = $callback();
-			filesystem::save_shortlived_file($filepath, date('Y-m-d H:i:sO') ."\n". (is_string($data) ? $data : json_encode($data)), $condition);
+			if ($path_exists) {
+				filesystem::save_shortlived_file($filepath, date('Y-m-d H:i:sO') ."\n". (is_string($data) ? $data : json_encode($data)), $condition);
+			}
 			return true;
 		}
 		return false;
