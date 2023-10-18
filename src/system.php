@@ -125,7 +125,7 @@ class system {
 	 *   - days (eg. 14 days: `14d`)
 	 * @param string|integer $key : A string or number identifying this specific action. Must be safe for use in a file name.
 	 * @param callable $callback : Function that is to be run. Anything it returns will be stored in the file keeping track of the time.
-	 * @param string $path : Path to where the temporary file for keeping track of time can be created. Defaults to folder of the file calling this function (or runtime folder if Yii2 is used)
+	 * @param string $path : Path (not filename) to where the temporary file for keeping track of time can be created. Defaults to folder of the file calling this function (or runtime folder if Yii2 is used)
 	 *
 	 * @return boolean : Whether the function was executed or not
 	 */
@@ -133,17 +133,17 @@ class system {
 		if ($path === null) {
 			// Defaults if nothing specified
 			if (@constant('YII_BEGIN_TIME')) {
-				$path = \Yii::getAlias('@runtime/');
-				$preferred_path = $path .'jfw2_min_time_betwn/';
+				$path = \Yii::getAlias('@runtime'. DIRECTORY_SEPARATOR);
+				$preferred_path = $path .'jfw2_min_time_betwn'. DIRECTORY_SEPARATOR;
 				if ((is_dir($preferred_path) && is_writable($preferred_path)) || mkdir($preferred_path)) {
 					$path = $preferred_path;
 				}
 			} else {
 				$parent_info = debug_backtrace();
-				$path = dirname($parent_info[0]['file']) .'/';
+				$path = dirname($parent_info[0]['file']) . DIRECTORY_SEPARATOR;
 			}
 		}
-		$filepath = $path . $key .'.log';
+		$filepath = rtrim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $key .'.log';
 		filesystem::cleanup_shortlived_files($filepath);
 		if (!file_exists($filepath)) {
 			$data = $callback();
