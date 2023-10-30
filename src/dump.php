@@ -315,11 +315,11 @@ class dump {
 			$type[0] = 'array';
 			$type[1] = true;
 		}
-		elseif(@get_resource_type($input) == 'mysql result') {
+		elseif(is_resource($input) && @get_resource_type($input) == 'mysql result') {
 			$type[0] = 'mysql';
 			$type[1] = true;
 		}
-		elseif(@get_resource_type($input) == 'stream') {
+		elseif(is_resource($input) && @get_resource_type($input) == 'stream') {
 			$type[0] = 'stream';
 			$type[1] = true;
 		}
