@@ -1191,15 +1191,15 @@ class core {
 		}
 
 		$onetime_varname = '1';
-		if ($options['varname']) {
-			$onetime_varname = $options['varname'];
-		} elseif ($GLOBALS['_jfw_onetime_varname']) {
+		if (@$options['varname']) {
+			$onetime_varname = @$options['varname'];
+		} elseif (@$GLOBALS['_jfw_onetime_varname']) {
 			$onetime_varname = $GLOBALS['_jfw_onetime_varname'];
 		}
 
 		$qs = $_GET;
 
-		if ($qs[$onetime_varname]) {
+		if (@$qs[$onetime_varname]) {
 			foreach (explode('.', $qs[$onetime_varname]) as $onetimevar) {
 				unset($qs[$onetimevar]);
 			}
@@ -1227,7 +1227,7 @@ class core {
 			$qs[$onetime_varname] = implode('.', $onetime_vars);
 		}
 
-		if ($options['querystring_only']) {
+		if (@$options['querystring_only']) {
 			if (empty($qs)) {
 				return '';
 			} else {

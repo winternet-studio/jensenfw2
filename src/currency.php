@@ -108,8 +108,8 @@ class currency {
 	 * @return float|null
 	 */
 	public static function convert($amount, $from_currency, $to_currency, $options = []) {
-		if ($options['method'] === 'get_ecb_live_exchange_rate' || static::$conversion_method === 'get_ecb_live_exchange_rate') {
-			$exchrate = static::get_ecb_live_exchange_rate($from_currency, $to_currency, $options['fallback_rate']);
+		if (@$options['method'] === 'get_ecb_live_exchange_rate' || static::$conversion_method === 'get_ecb_live_exchange_rate') {
+			$exchrate = static::get_ecb_live_exchange_rate($from_currency, $to_currency, @$options['fallback_rate']);
 			if (empty($exchrate)) {
 				return null;
 			} else {
