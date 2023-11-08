@@ -48,4 +48,40 @@ Reset Password';
 
 		$this->assertSame($expect, core::parse_multipart_translation($template, $translation));
 	}
+
+	public function testJsonDecode() {
+		$json = '{
+    "partner_id": 4513,
+	// "customer_name": "Outpost Centers International",  
+	// "customer_addr_full": "Puchong\n47170 Puchong, Selangor\nMalaysia",
+    "invoice_date": "2023-11-08",
+    "invoice_currency": "EUR",
+    // "orderID": 15053,
+    "invoice_items": [
+        {
+            "desc": "registerseat.com fee // event OCI23",
+            "qty": 1,
+            "unit_price": 96,
+            "account_ref": "website_licenses"
+        }
+    ]
+}';
+
+		$expect = '{
+    "partner_id": 4513,
+    "invoice_date": "2023-11-08",
+    "invoice_currency": "EUR",
+    "invoice_items": [
+        {
+            "desc": "registerseat.com fee // event OCI23",
+            "qty": 1,
+            "unit_price": 96,
+            "account_ref": "website_licenses"
+        }
+    ]
+}';
+
+		$this->assertEquals(json_decode($expect), core::json_decode($json));
+	}
+
 }

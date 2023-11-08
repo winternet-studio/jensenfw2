@@ -1126,6 +1126,14 @@ class core {
 	}
 
 	/**
+	 * Improved version of native json_decode() that allows full-line comments in JSON string
+	 */
+	public static function json_decode($string, $associative = null, $depth = 512, $flags = 0) {
+		$string = preg_replace("|^\\s*//.*[\\r\\n]+|m", '', $string);
+		return json_decode($string, $associative, $depth, $flags);
+	}
+
+	/**
 	 * Get a system setting from database
 	 *
 	 * @param string $name : Name of system setting to get
