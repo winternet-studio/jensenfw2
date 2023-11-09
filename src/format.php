@@ -204,18 +204,18 @@ class format {
 	 * @return string
 	 */
 	public static function strtotitle($text, $options = []) {
-		if ($options['is_address']) {
+		if (@$options['is_address']) {
 			$options['fix_ordinals_numbers'] = true;
 		}
 
 		// Exceptions to standard case conversion
-		if ($options['is_person']) {
+		if (@$options['is_person']) {
 			$all_uppercase = 'Ii|Iii';  //the 2nd, the 3rd
 			$all_lowercase = 'De La|De Las|Der|Van De|Van Der|Vit De|Von|Or|And';
 		} else {
 			//addresses, essay titles ... and anything else
 			$all_uppercase = 'Po|Rr|Se|Sw|Ne|Nw';
-			if ($options['is_address']) $all_uppercase .= '|Us|Hc|Pmb';  // abbreviations used in US
+			if (@$options['is_address']) $all_uppercase .= '|Us|Hc|Pmb';  // abbreviations used in US
 			$all_lowercase = 'A|And|As|By|In|Of|Or|To';
 		}
 		$prefixes = 'Mc';  //separate with |
@@ -243,7 +243,7 @@ class format {
 		}
 		// Decapitalize short words e.g. and
 		if ($all_lowercase) {
-			if ($is_name) {
+			if (@$is_name /*unsure what this is suppose to mean because this variable has never existed!*/) {
 				//all occurences will be changed to lowercase
 				$text = preg_replace_callback("/\\b(". $all_lowercase .")\\b/". core::$preg_u, $cb_strtolower1, $text);
 			} else {
@@ -260,7 +260,7 @@ class format {
 			$text = preg_replace_callback("/(\\w)(". $suffixes .")\\b/". core::$preg_u, $cb_strtolower2, $text);
 		}
 
-		if ($options['fix_ordinals_numbers']) {
+		if (@$options['fix_ordinals_numbers']) {
 			$text = preg_replace_callback("/(\\d(St|Nd|Rd|Th)\\b)/". core::$preg_u, $cb_strtolower1, $text);
 		}
 
@@ -429,7 +429,7 @@ class format {
 	 */
 	public static function cleanup_title_url_safe($title, $options = []) {
 		$output = preg_replace(['/[^a-zA-Z0-9 -]/'. core::$preg_u, '/[ -]+/'. core::$preg_u, '/^-|-$/'. core::$preg_u], ['', '-', ''], self::replace_accents($title));
-		if (!$options['maintain_case']) {
+		if (!@$options['maintain_case']) {
 			$output = strtolower($output);
 		}
 		return $output;

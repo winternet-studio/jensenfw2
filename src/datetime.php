@@ -51,18 +51,18 @@ class datetime {
 		}
 
 		// Automatically add comma between day and year, but not between month and year
-		if (!$options['skip_auto_comma_year'] && strpos($format, 'd yy') !== false) {
+		if (!@$options['skip_auto_comma_year'] && strpos($format, 'd yy') !== false) {
 			$format = str_replace('d yy', 'd, yy', $format);
 		}
 
 		static::$_formatters[$locale]->setPattern($format);
 		$output = static::$_formatters[$locale]->format($datetime);
-		if ($options['short_month_no_dot']) {
+		if (@$options['short_month_no_dot']) {
 			$output = preg_replace("/([^0-9]{3,})\\./", '$1', $output);
 		}
 		if ($possibly_ampm) {
 			$output = preg_replace_callback('/([^a-z])(AM|PM)\b/i', function($matches) use (&$options) {
-				if ($options['short_ampm']) {
+				if (@$options['short_ampm']) {
 					return $matches[1] . strtolower(substr($matches[2], 0, 1));
 				} else {
 					// just convert to lower case
@@ -529,14 +529,16 @@ class datetime {
 
 			$dot_after_date = false;
 			$locales_countries = static::uses_dot_after_date();
-			if (in_array($locale, $locales_countries, true) || ($options['country'] && in_array($options['country'], $locales_countries, true))) {
+			if (in_array($locale, $locales_countries, true) || (@$options['country'] && in_array($options['country'], $locales_countries, true))) {
 				$dot_after_date = true;
 			}
+		} else {
+			$locale = null;
 		}
 
 		// Streamline input into DateTime objects
 		if (!is_numeric($from_date)) {
-			if ($options['input_timezone']) {
+			if (@$options['input_timezone']) {
 				$from_date = new \DateTime($from_date, new \DateTimeZone($options['input_timezone']));
 			} else {
 				$from_date = new \DateTime($from_date, new \DateTimeZone('UTC'));
@@ -545,7 +547,7 @@ class datetime {
 			$from_date = new \DateTime($from_date);
 		}
 		if (!is_numeric($to_date)) {
-			if ($options['input_timezone']) {
+			if (@$options['input_timezone']) {
 				$to_date = new \DateTime($to_date, new \DateTimeZone($options['input_timezone']));
 			} else {
 				$to_date = new \DateTime($to_date, new \DateTimeZone('UTC'));
@@ -555,7 +557,7 @@ class datetime {
 		}
 
 		// Handle timezone options
-		if ($options['output_timezone']) {
+		if (@$options['output_timezone']) {
 			$timezone = new \DateTimeZone($options['output_timezone']);
 			$from_date->setTimezone($timezone);
 			$to_date->setTimezone($timezone);
@@ -564,14 +566,14 @@ class datetime {
 			}
 		} else {
 			// in this case only mess with timezone if an *input* timezone was specified, otherwise leave everything in the same timezone to "ignore" timezone handling
-			if ($options['input_timezone']) {
+			if (@$options['input_timezone']) {
 				$from_date->setTimezone(new \DateTimeZone(date_default_timezone_get()));
 				$to_date->setTimezone(new \DateTimeZone(date_default_timezone_get()));
 			}
 		}
 
-		$yr_mode = ($options['2digit_year'] ? '2dig' : ($options['no_year'] ? 'noyr' : '4dig'));
-		$monthdot = ($options['no_dot_after_month'] ? '' : '.');
+		$yr_mode = (@$options['2digit_year'] ? '2dig' : (@$options['no_year'] ? 'noyr' : '4dig'));
+		$monthdot = (@$options['no_dot_after_month'] ? '' : '.');
 
 		$conditional_comma = function($string) {
 			// Only add comma before year if the part before ends on a digit
@@ -583,7 +585,7 @@ class datetime {
 		};
 
 		// Determine "to" and "from" month names
-		if ($options['never_abbrev_months']) {
+		if (@$options['never_abbrev_months']) {
 			if ($locale) {
 				$formatter->setPattern('MMMM');
 				$from_month = $formatter->format($from_date);
@@ -592,8 +594,8 @@ class datetime {
 				$from_month = $from_date->format('F');
 				$to_month   = $to_date->format('F');
 			}
-		} elseif (!$options['always_abbrev_months']) {
-			$short_months = (is_array($options['short_months']) ? $options['short_months'] : [3, 4, 5, 6, 7]);
+		} elseif (!@$options['always_abbrev_months']) {
+			$short_months = (is_array(@$options['short_months']) ? $options['short_months'] : [3, 4, 5, 6, 7]);
 			if (in_array($from_date->format('n'), $short_months)) {
 				if ($locale) {
 					$formatter->setPattern('MMMM');
@@ -605,7 +607,7 @@ class datetime {
 				if ($locale) {
 					$formatter->setPattern('MMM');  //the formatter automatically adds month dot if needed, so no need to use $monthdot
 					$from_month = $formatter->format($from_date);
-					if ($options['no_dot_after_month']) {  //remove what formatter automatically might have added
+					if (@$options['no_dot_after_month']) {  //remove what formatter automatically might have added
 						$from_month = rtrim($from_month, '.');
 					}
 				} else {
@@ -623,7 +625,7 @@ class datetime {
 				if ($locale) {
 					$formatter->setPattern('MMM');  //the formatter automatically adds month dot if needed, so no need to use $monthdot
 					$to_month = $formatter->format($to_date);
-					if ($options['no_dot_after_month']) {  //remove what formatter automatically might have added
+					if (@$options['no_dot_after_month']) {  //remove what formatter automatically might have added
 						$to_month = rtrim($to_month, '.');
 					}
 				} else {
@@ -636,7 +638,7 @@ class datetime {
 				$formatter->setPattern('MMM');
 				$from_month = $formatter->format($from_date);
 				$to_month   = $formatter->format($to_date);
-				if ($options['no_dot_after_month']) {  //remove what formatter automatically might have added
+				if (@$options['no_dot_after_month']) {  //remove what formatter automatically might have added
 					$from_month = rtrim($from_month, '.');
 					$to_month = rtrim($to_month, '.');
 				}
@@ -835,21 +837,21 @@ class datetime {
 	 */
 	public static function period_to_datetime($period, $options = []) {
 		if (preg_match('/^(\\d+)(h|d)$/i', $period, $match)) {
-			if ($options['timezone']) {
+			if (@$options['timezone']) {
 				$options['timezone'] = new \DateTimeZone($options['timezone']);
 			}
 			switch ($match[2]) {
 			case 'h':
-				return new \DateTime('+'. $match[1] .' hours', $options['timezone']);
+				return new \DateTime('+'. $match[1] .' hours', @$options['timezone']);
 				break;
 			case 'd':
-				return new \DateTime('+'. $match[1] .' days', $options['timezone']);
+				return new \DateTime('+'. $match[1] .' days', @$options['timezone']);
 				break;
 			default:
 				core::system_error('Undefined unit for converting period to date/time.', ['Unit' => $unit]);
 			}
 		} else {
-			if ($options['null_on_fail']) {
+			if (@$options['null_on_fail']) {
 				return null;
 			} else {
 				core::system_error('Incorrect format for converting period to date/time.', ['Period' => $period]);
@@ -943,7 +945,7 @@ class datetime {
 		$locale = static::clean_locale($locale);
 
 		if (!array_key_exists($locale, static::$_formatters)) {
-			static::$_formatters[$locale] = new \IntlDateFormatter($locale, \IntlDateFormatter::SHORT, \IntlDateFormatter::SHORT);
+			static::$_formatters[$locale] = new \IntlDateFormatter(($locale === 'DONTUSE' ? null : $locale), \IntlDateFormatter::SHORT, \IntlDateFormatter::SHORT);
 		}
 		return $locale;
 	}
@@ -987,17 +989,17 @@ class datetime {
 		}
 
 		if ($locale === 'en_US' || $locale === 'en-US') {
-			if ($options['return_boolean']) {
+			if (@$options['return_boolean']) {
 				return true;
-			} elseif ($options['short_month'] || $options['short_month_no_dot']) {
+			} elseif (@$options['short_month'] || @$options['short_month_no_dot']) {
 				return 'MMM d';
 			} else {
 				return 'MMMM d';
 			}
 		} else {
-			if ($options['return_boolean']) {
+			if (@$options['return_boolean']) {
 				return false;
-			} elseif ($options['short_month'] || $options['short_month_no_dot']) {
+			} elseif (@$options['short_month'] || @$options['short_month_no_dot']) {
 				return 'd. MMM';
 			} else {
 				return 'd. MMMM';
@@ -1025,23 +1027,23 @@ class datetime {
 		$locale = static::clean_locale($locale);
 
 		$country = null;
-		if ($options['time_country']) {
+		if (@$options['time_country']) {
 			$country = $options['time_country'];
-		} elseif ($options['country']) {
+		} elseif (@$options['country']) {
 			$country = $options['country'];
 		}
 
 		if (
-			$options['force_clock'] === '12hr'
+			@$options['force_clock'] === '12hr'
 				||
-			(in_array($locale, ['en_US', 'en_GB', 'en_AU', 'hi_IN']) && !$options['time_country'] && $options['force_clock'] !== '24hr')
+			(in_array($locale, ['en_US', 'en_GB', 'en_AU', 'hi_IN']) && !@$options['time_country'] && @$options['force_clock'] !== '24hr')
 				||
-			($country && in_array(strtoupper($country), ['US', 'GB', 'AU', 'IN', 'IE', 'CA', 'NZ', 'PK', 'BD', 'MY', 'MT', '12hr']) && $options['force_clock'] !== '24hr')
+			($country && in_array(strtoupper($country), ['US', 'GB', 'AU', 'IN', 'IE', 'CA', 'NZ', 'PK', 'BD', 'MY', 'MT', '12hr']) && @$options['force_clock'] !== '24hr')
 		) {
-			$hour_symbol = ($options['twodigit_hour'] ? 'hh' : 'h');
+			$hour_symbol = (@$options['twodigit_hour'] ? 'hh' : 'h');
 			return ['hour' => $hour_symbol, 'ampm' => 'a', '12hour' => true];
 		} else {
-			$hour_symbol = ($options['twodigit_hour'] ? 'HH' : 'H');
+			$hour_symbol = (@$options['twodigit_hour'] ? 'HH' : 'H');
 			return ['hour' => $hour_symbol, 'ampm' => '', '12hour' => false];
 		}
 	}

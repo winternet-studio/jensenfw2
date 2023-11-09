@@ -31,7 +31,7 @@ class csv_parser {
 	public function __construct($options = []) {
 		if (!empty($options)) {
 			// For backward compatiblity
-			if ($options['first_line_is_header']) {
+			if (@$options['first_line_is_header']) {
 				$this->header_line = true;
 			}
 
@@ -88,7 +88,7 @@ class csv_parser {
 
 			// Set field names
 			if ($this->header_line) {
-				if (!$has_fieldnames && is_array($this->header_line)) {
+				if (!@$has_fieldnames && is_array($this->header_line)) {
 					$anyMissing = false;
 					foreach ($this->header_line as $value) {
 						if (!in_array($value, $data)) {
@@ -119,7 +119,7 @@ class csv_parser {
 				if ($this->trim_values) {
 					$value = trim($value);
 				}
-				if ($has_fieldnames && $fieldnames[$c]) {
+				if (@$has_fieldnames && $fieldnames[$c]) {
 					$curr_row[$fieldnames[$c]] = $value;
 				} else {
 					$curr_row[$c+1] = $value;

@@ -32,7 +32,7 @@ final class datetimeTest extends TestCase {
 		$this->assertSame('8. jun.', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'da_DK', ['short_month' => true]));
 		$this->assertSame('8. jun', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'da_DK', ['short_month_no_dot' => true]));
 		$this->assertSame('8. jun.', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'nb_NO', ['short_month' => true]));
-		$this->assertSame('8. jun.', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'es_ES', ['short_month' => true]));
+		$this->assertSame('8. jun', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'es_ES', ['short_month' => true]));
 		$this->assertSame('8. kesäk.', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'DAYMTH', 'fi_FI', ['short_month' => true]));
 
 		// Test automatic handling of comma between day and year
@@ -54,14 +54,14 @@ final class datetimeTest extends TestCase {
 		$this->assertSame('Juni', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'MMM', 'de_DE'));
 		$this->assertSame('jun.', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'MMM', 'da_DK'));
 		$this->assertSame('jun.', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'MMM', 'nb_NO'));
-		$this->assertSame('jun.', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'MMM', 'es_ES'));
+		$this->assertSame('jun', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'MMM', 'es_ES'));
 		$this->assertSame('kesäk.', datetime::format_local(new \DateTime('2020-06-08 14:23:05'), 'MMM', 'fi_FI'));
 		// August
 		$this->assertSame('Aug', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'MMM', 'en_US'));
 		$this->assertSame('Aug.', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'MMM', 'de_DE'));
 		$this->assertSame('aug.', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'MMM', 'da_DK'));
 		$this->assertSame('aug.', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'MMM', 'nb_NO'));
-		$this->assertSame('ago.', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'MMM', 'es_ES'));
+		$this->assertSame('ago', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'MMM', 'es_ES'));
 		$this->assertSame('elok.', datetime::format_local(new \DateTime('2020-08-08 14:23:05'), 'MMM', 'fi_FI'));
 
 		// Test overriding time formatting

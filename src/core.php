@@ -735,7 +735,7 @@ class core {
 			} elseif ($cfg['log_errors_to'] == 'database') {
 				self::require_database();
 				//   Create table if it does not exist
-				if (!$_SESSION['_jfw_error_table_created']) {  //only run this check once per session
+				if (!@$_SESSION['_jfw_error_table_created']) {  //only run this check once per session
 					$createtblSQL = "CREATE TABLE IF NOT EXISTS ". $cfg['errorlog_table'] ." (
 					  `errorID` int(10) unsigned NOT NULL auto_increment,
 					  `err_msg` varchar(255),
@@ -748,7 +748,7 @@ class core {
 					  PRIMARY KEY (`errorID`)
 					)";
 					$db_createtbl = mysqli_query($GLOBALS['_jfw_db_connection'], $createtblSQL) or error_log('JFW2: Database update for creating error logging table failed while logging:'. PHP_EOL . $errordata) and die('Database update for creating error logging table failed.'); //mysqli_error($GLOBALS['_jfw_db_connection'])
-					$_SESSION['_jfw_error_table_created'] = true;
+					@$_SESSION['_jfw_error_table_created'] = true;
 				}
 				$sql = [];
 				$sql[] = "`errorinfo` = '". self::sql_esc(mb_substr($errordata, 0, 65000)) ."'";
@@ -775,7 +775,7 @@ class core {
 		}
 
 		// SAVE ERRORDATA IN SESSION for later use (notification email)
-		$_SESSION['sys_errordata_mail'] = "ERROR INFORMATION:\r\n---------------------------------------\r\n";
+		@$_SESSION['sys_errordata_mail'] = "ERROR INFORMATION:\r\n---------------------------------------\r\n";
 		$_SESSION['sys_errordata_mail'] .= $errordata;
 
 		// NOTIFY
@@ -913,7 +913,7 @@ class core {
 				return false;
 			}
 		} else {
-			if ($reference && $_SESSION['_jfw_webmaster_notifd_'. $reference] && !$GLOBALS['_send_all_webmaster_notifs']) {
+			if ($reference && @$_SESSION['_jfw_webmaster_notifd_'. $reference] && !$GLOBALS['_send_all_webmaster_notifs']) {
 				return false;
 			}
 		}
@@ -956,7 +956,7 @@ class core {
 			if ($use_systembuffer) {
 				system::set_buffer_value('jfwnotifd'. $reference, '1', $expire);
 			} else {
-				$_SESSION['_jfw_webmaster_notifd_'. $reference] = true;
+				@$_SESSION['_jfw_webmaster_notifd_'. $reference] = true;
 			}
 		}
 
@@ -1066,7 +1066,7 @@ class core {
 				foreach ($str as &$a) {
 					if (preg_match('|^\\s*([a-zA-Z]{2})\\s*=\\s*(.*?)\\s*$|s'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''), $a, $match)) {
 						$clang = strtolower($match[1]);
-						if ($_SESSION['runtime']['currlang'] == $clang || ($GLOBALS['_override_current_language'] && $GLOBALS['_override_current_language'] == $clang) ) {
+						if (@$_SESSION['runtime']['currlang'] == $clang || ($GLOBALS['_override_current_language'] && $GLOBALS['_override_current_language'] == $clang) ) {
 							return $match[2];
 						}
 					}
@@ -1111,7 +1111,7 @@ class core {
 			foreach ($matches[0] as $key => $match) {
 				$fieldname = trim($match[0], '#:');
 				$start_pos = $match[1] + strlen($match[0]);  //cannot use mb_strlen() because PREG_OFFSET_CAPTURE works in bytes, not characters. See also https://bugs.php.net/bug.php?id=37391 and https://stackoverflow.com/questions/1725227/preg-match-and-utf-8-in-php
-				if ($matches[0][$key+1]) {
+				if (array_key_exists($key+1, $matches[0])) {
 					$length = $matches[0][$key+1][1] - $start_pos;
 				} else {
 					$length = strlen($translation);   //may NOT be NULL! (see docs) So just set a high number.

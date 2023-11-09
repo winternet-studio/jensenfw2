@@ -79,13 +79,13 @@ class html {
 		};
 
 		$html_to_obj = function($html) use (&$element_to_obj, &$options) {
-			if (is_callable($options['error_callback'])) {
+			if (is_callable(@$options['error_callback'])) {
 				libxml_use_internal_errors(true);
 			}
 			$dom = new \DOMDocument();
 			$res = $dom->loadHTML('<?xml encoding="UTF-8">'. $html);
 			// IGNORE ERRORS: see http://stackoverflow.com/a/12328343/2404541 - espacially the comment I upvoted
-			if (is_callable($options['error_callback'])) {
+			if (is_callable(@$options['error_callback'])) {
 				$errors = [];
 				foreach (libxml_get_errors() as $error) {  //NOTE: $res doesn't necessarily have to evaluate to false
 					$errors[] = $error;
@@ -119,7 +119,7 @@ class html {
 						}
 					}
 
-					if (!$options['optlist_unique_tag_keys']) {
+					if (!@$options['optlist_unique_tag_keys']) {
 						// Ensure globally unique ID
 						$tag_counter[$a]++;
 						$id = $id . $tag_counter[$a];

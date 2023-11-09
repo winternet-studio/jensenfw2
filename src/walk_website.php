@@ -49,21 +49,21 @@ class walk_website {
 		curl_setopt($this->ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36');
 		curl_setopt($this->ch, CURLOPT_AUTOREFERER, true);
 		curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, false);  //sometimes needed for pages with SSL to work, otherwise you might just get an empty string
-		if ($options['use_ssl_version3']) {
+		if (@$options['use_ssl_version3']) {
 			curl_setopt($this->ch, CURLOPT_SSLVERSION, 3);
 		}
 		curl_setopt($this->ch, CURLINFO_HEADER_OUT, true);
 		if (!ini_get('safe_mode') && !ini_get('open_basedir')) {  //CURLOPT_FOLLOWLOCATION is not allowed in safe mode and when open basedir is set
 			curl_setopt($this->ch, CURLOPT_FOLLOWLOCATION, true);  //automatically follow redirects
 		}
-		if (!empty($options['authorization_basic'])) {
+		if (!empty(@$options['authorization_basic'])) {
 			$authhead = 'Authorization: Basic '. base64_encode($options['authorization_basic']['username'] .':'. $options['authorization_basic']['password']);
 			$this->defaultheaders[] = $authhead;
 			curl_setopt($this->ch, CURLOPT_HTTPHEADER, [$authhead]);
 		}
-		if ($options['enable_cookies']) {
+		if (@$options['enable_cookies']) {
 			// Set full path
-			if ($options['cookie_jar_file']) {
+			if (@$options['cookie_jar_file']) {
 				$this->cookie_file_path = $options['cookie_jar_file'];
 			} else {
 				$this->cookie_file_path = dirname(dirname(__FILE__)) .'/cookiejar.txt';
@@ -218,23 +218,23 @@ class walk_website {
 		- HTML or whatever response came from the server/URL
 		- or nothing if response is ignored
 		*/
-		if ($options['ignore_response']) {
+		if (@$options['ignore_response']) {
 			$this->option_ignore_response = true;
 		}
-		if ($options['throw_exception_on_error']) {
+		if (@$options['throw_exception_on_error']) {
 			$this->option_throw_exception = true;
 		}
-		if (is_array($options['extraheaders']) && !empty($options['extraheaders'])) {
+		if (!empty($options['extraheaders']) && is_array($options['extraheaders'])) {
 			$extraheaders = [];
 			foreach ($options['extraheaders'] as $headername => $headervalue) {
 				$extraheaders[] = $headername .': '. $headervalue;
 			}
 		}
-		$return = $this->fetch_page_oldformat($url, $options['post_variables'], $options['raw_post'], $extraheaders);
-		if ($options['throw_exception_on_error']) {
+		$return = $this->fetch_page_oldformat($url, @$options['post_variables'], @$options['raw_post'], $extraheaders);
+		if (@$options['throw_exception_on_error']) {
 			$this->option_throw_exception = false;
 		}
-		if ($options['ignore_response']) {
+		if (@$options['ignore_response']) {
 			$this->option_ignore_response = false;
 		} else {
 			return $return;
@@ -582,7 +582,7 @@ OLD METHOD where we looked for the existing cookies/headers
 						}
 						$item['_parsed'] = [$match[1], $cookie_array];
 
-						if ($options['incl_cookie']) {
+						if (@$options['incl_cookie']) {
 							$output['headers_simple'][] = $orig_item;
 							// Remember which one is the Cookie
 							end($output['headers_simple']);

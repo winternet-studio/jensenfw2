@@ -407,7 +407,7 @@ class filesystem {
 			core::system_error('Failed to save short-lived file.', ['File' => $file]);
 		}
 
-		$metadata_file = $pathinfo['dirname'] .'/'. $pathinfo['filename'] .'.EXPIRE'. (datetime::period_to_datetime($expiration_date))->format('YmdHi') . ($pathinfo['extension'] ? '.' : '') . $pathinfo['extension'];
+		$metadata_file = $pathinfo['dirname'] .'/'. $pathinfo['filename'] .'.EXPIRE'. (datetime::period_to_datetime($expiration_date))->format('YmdHi') . (@$pathinfo['extension'] ? '.' : '') . @$pathinfo['extension'];
 		if (!file_put_contents($metadata_file, $bytes .'|'. date('Y-m-d H:i:s'))) {
 			core::system_error('Failed to save file with metadata for short-lived file.', ['File' => $metadata_file]);
 		}

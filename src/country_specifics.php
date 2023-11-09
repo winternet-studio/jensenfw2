@@ -108,7 +108,7 @@ class country_specifics {
 	 */
 	public static function validate_zip($country, $zip_value, $options = []) {
 		$is_valid = false;
-		$do_reformat = ($options['reformat'] ? true : false);
+		$do_reformat = (@$options['reformat'] ? true : false);
 
 		if ($do_reformat) {
 			$zip_value = ($zip_value === null ? '' : trim( (string) $zip_value));
@@ -120,7 +120,7 @@ class country_specifics {
 			//exactly 5 digits or 5+4 if flag is set
 			if (preg_match("/^\\d{5}$/", $zip_value)) {
 				$is_valid = true;
-			} elseif ($options['US_allow_zip4'] && preg_match("/^\\d{5}\\-\\d{4}$/", $zip_value)) {
+			} elseif (@$options['US_allow_zip4'] && preg_match("/^\\d{5}\\-\\d{4}$/", $zip_value)) {
 				$is_valid = true;
 			}
 		} elseif ($country === 'CA') {
@@ -293,9 +293,9 @@ class country_specifics {
 
 		if (in_array($country, ['US', 'CA']) || in_array($country_code, [1], true)) {
 			if (preg_match("/^(.*\\d.*\\d.*\\d.*\\d.*\\d.*\\d.*\\d.*\\d.*\\d.*\\d)(.*)$/U", (string) $phone_num, $match)) {
-				if ($options['US-format'] === 'dotted') {
+				if (@$options['US-format'] === 'dotted') {
 					$sep = '.';
-				} elseif ($options['US-format'] === 'spaced') {
+				} elseif (@$options['US-format'] === 'spaced') {
 					$sep = ' ';
 				} else {
 					$sep = '-';
@@ -309,7 +309,7 @@ class country_specifics {
 		} elseif (in_array($country, ['DK', 'NO', 'SE']) || in_array($country_code, [45, 47, 46], true)) {
 			if (preg_match("/^(.*\\d.*\\d.*\\d.*\\d.*\\d.*\\d.*\\d.*\\d)(.*)$/U", (string) $phone_num, $match)) {
 				$clean = preg_replace("/[^\\d]/", '', $match[1]);
-				if ($options['DK-format'] === '4groups') {
+				if (@$options['DK-format'] === '4groups') {
 					return trim(substr($clean, 0, 2) .' '. substr($clean, 2, 2) .' '. substr($clean, 4, 2) .' '. substr($clean, 6) .' '. trim($match[2]));
 				} else {
 					return trim(substr($clean, 0, 4) .' '. substr($clean, 4) .' '. trim($match[2]));

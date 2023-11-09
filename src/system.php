@@ -465,9 +465,9 @@ THIS DOESN'T WORK YET. IT EXECUTES BUT NOT IN THE BACKGROUND. USING output_file 
 			}
 
 			if (in_array($matches[1], array_keys($map))) {
-				return $map[$matches[1]] . ($matches[2] ? ' '. $matches[2] : '') . rtrim($matches[5], ':') .':';
+				return $map[$matches[1]] . (@$matches[2] ? ' '. $matches[2] : '') . rtrim((string) @$matches[5], ':') .':';
 			} else {
-				return ($matches[2] ? $matches[2] .':' : '');
+				return (@$matches[2] ? $matches[2] .':' : '');
 			}
 		}, $message);
 
