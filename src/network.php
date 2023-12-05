@@ -44,7 +44,7 @@ class network {
 		// curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 		// curl_setopt($ch, CURLOPT_TIMEOUT, 7);
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-		if (is_array($options['curl_options'])) {
+		if (is_array(@$options['curl_options'])) {
 			foreach ($options['curl_options'] as $curlopt => $value) {
 				curl_setopt($ch, $curlopt, $value);
 			}
@@ -68,7 +68,7 @@ class network {
 		}
 
 		// Parse returned JSON string
-		if ($options['parse_json']) {
+		if (@$options['parse_json']) {
 			$response = json_decode($rsp, ($options['parse_json'] === 'object' ? false : true));
 			if ($response === null) {
 				throw new \Exception('Failed to parse response: '. $rsp);

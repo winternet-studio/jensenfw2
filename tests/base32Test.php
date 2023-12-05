@@ -1,10 +1,10 @@
 <?php
 use PHPUnit\Framework\TestCase;
 use winternet\jensenfw2\base32;
- 
+
 final class base32Test extends TestCase {
-	public function testMyCase() {
-		$input = 'Allan Jensen';		
+	public function testConversion() {
+		$input = 'Allan Jensen';
 		$result = base32::encode($input);
 		$expect = 'IFWGYYLOEBFGK3TTMVXA';
 		$this->assertSame($expect, $result);

@@ -366,6 +366,7 @@ class dump {
 	----------------------------------------------------------------------*/
 
 	function is_query($input) {
+		if (!$input) return false;
 
 		$matches[] = '/^SELECT.*FROM.*/is';
 		$matches[] = '/^INSERT INTO.*VALUES.*/is';
@@ -374,8 +375,8 @@ class dump {
 
 		$result = false;
 
-		foreach($matches as $key => $value) {
-			if(!$result)
+		foreach ($matches as $key => $value) {
+			if (!$result)
 				$result = preg_match($value, trim($input));
 		}
 
