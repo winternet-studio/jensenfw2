@@ -19,6 +19,8 @@ class network {
 
 	/**
 	 * Perform an HTTP request
+	 *
+	 * @return string|object
 	 */
 	public static function http_request($method, $url, $data = [], $options = []) {
 		global $ch;
@@ -49,18 +51,20 @@ class network {
 				curl_setopt($ch, $curlopt, $value);
 			}
 		}
-		if ($options['debug']) {
+		if (@$options['debug'] || @$options['return_all']) {
 			curl_setopt($ch, CURLINFO_HEADER_OUT, true);  //request headers
 			curl_setopt($ch, CURLOPT_HEADER, true);  //response headers
 		}
 		$rsp = curl_exec($ch);
 		$transfer_info = curl_getinfo($ch);
-		if ($options['debug']) {
+		if (@$options['debug'] || @$options['return_all']) {
 			$requestHeaders = curl_getinfo($ch, CURLINFO_HEADER_OUT);
 			$headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
 			$responseHeaders = substr($rsp, 0, $headerSize);
 			$rsp = substr($rsp, $headerSize);
-			file_put_contents(__DIR__ .'/last-curl-request.log', '--------'. gmdate('Y-m-d H:i:s') .' UTC ** '. $method .' '. $url . PHP_EOL . PHP_EOL .'REQUEST HEADERS:'. PHP_EOL . $requestHeaders . PHP_EOL . PHP_EOL .'REQUEST BODY:'. PHP_EOL . json_encode($data, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES) . PHP_EOL . PHP_EOL .'RESPONSE HEADERS:'. PHP_EOL . $responseHeaders . PHP_EOL . PHP_EOL .'RESPONSE BODY:'. PHP_EOL . $rsp . PHP_EOL);
+			if (@$options['debug']) {
+				file_put_contents(__DIR__ .'/last-curl-request.log', '--------'. gmdate('Y-m-d H:i:s') .' UTC ** '. $method .' '. $url . PHP_EOL . PHP_EOL .'REQUEST HEADERS:'. PHP_EOL . $requestHeaders . PHP_EOL . PHP_EOL .'REQUEST BODY:'. PHP_EOL . json_encode($data, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES) . PHP_EOL . PHP_EOL .'RESPONSE HEADERS:'. PHP_EOL . $responseHeaders . PHP_EOL . PHP_EOL .'RESPONSE BODY:'. PHP_EOL . $rsp . PHP_EOL);
+			}
 		}
 		if (curl_errno($ch) || $transfer_info['http_code'] >= 400) {
 			throw new \Exception('Request for fetching URL failed: '. curl_error($ch) .'<br><pre>'. htmlentities(trim($rsp)) .'<br><br><span style="color:#aaaaaa">'. var_export($transfer_info, true) .'</span>');
@@ -73,10 +77,53 @@ class network {
 			if ($response === null) {
 				throw new \Exception('Failed to parse response: '. $rsp);
 			}
-			return $response;
-		} else {
-			return $rsp;
 		}
+
+		if (@$options['return_all']) {
+			$output = (object) [
+				'request' => (object) [
+					'headers' => static::parse_header($requestHeaders, true),
+					'headers_raw' => $requestHeaders,
+				],
+				'response' => (object) [
+					'headers' => static::parse_header($responseHeaders, false),
+					'headers_raw' => $responseHeaders,
+					'body' => $rsp,
+				],
+			];
+			if (@$options['parse_json']) {
+				$output->response->body_parsed = $response;
+			}
+			return $output;
+		} else {
+			if (@$options['parse_json']) {
+				return $response;
+			} else {
+				return $rsp;
+			}
+		}
+	}
+
+	/**
+	 * @param string $header
+	 */
+	public static function parse_header($header, $is_request_header = false) {
+		$counter = -1;
+		return array_reduce(explode("\r\n", trim($header)), function($carry, $item) use (&$counter, &$is_request_header) {
+			$counter++;
+			if ($counter == 0) {
+				if ($is_request_header) {
+					// Not parsing this part yet for requests: `GET /winternet.no/someurl.php?format=json HTTP/1.1`
+				} else {
+					// Not parsing this part yet for responses: `HTTP/1.1 200 OK`
+				}
+				return $carry;
+			} else {
+				$parts = explode(':', $item, 2);
+			}
+			$carry[ strtolower(trim($parts[0])) ] = trim($parts[1]);
+			return $carry;
+		});
 	}
 
 	/**
