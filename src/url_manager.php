@@ -21,6 +21,7 @@ namespace winternet\jensenfw2;
 class url_manager {
 
 	public $uri = null;
+	public $doc_root = null;
 	// public $querystring = null;  //have no use for this yet
 
 	public $rules = [];
@@ -39,10 +40,12 @@ class url_manager {
 
 		// $this->options['debug'] = true;
 
+		$this->doc_root = $_SERVER['DOCUMENT_ROOT'];
+
 		$this->uri = $_SERVER['REQUEST_URI'];
-		if (!empty($this->options['subdirectory_root'])) {
+		if (!empty($this->options['subdirectory'])) {
 			//  If application is in a subdirectory remove it from the URI
-			$this->uri = preg_replace("|^". preg_quote($this->options['subdirectory_root']) ."|", '', $this->uri);
+			$this->uri = preg_replace("|^". preg_quote($this->options['subdirectory']) ."|", '', $this->uri);
 		}
 
 		// Remove query string
@@ -64,7 +67,7 @@ class url_manager {
 
 	/**
 	 * @param string $pattern : Pattern to match on the URI excl. the query string part and excl. any leading and trailing slashes (/). Eg. `^create$`
-	 * @param string $destination : Path to PHP script to process the request, relative to the path of the file that uses this class. Eg. `create.php` or `somefolder/create.php` or `../create.php`
+	 * @param string $destination : Path to PHP script to process the request, relative to the document root - or root of the application if the option `subdirectory` is used. Eg. `create.php` or `somefolder/create.php` or `../create.php`
 	 */
 	public function add_url($pattern, $destination) {
 		$this->rules[] = [
@@ -80,7 +83,7 @@ class url_manager {
 					echo '<div style="color: green"><b>MATCH: '. htmlentities($rule['destination']) .'</b></div>';
 					exit;
 				}
-				require_once(__DIR__ .'/'. $rule['destination']);
+				require_once($this->doc_root .'/'. $rule['destination']);
 				return;  //stop after finding first matching rule
 			} elseif (!empty($this->options['debug'])) {
 				echo '<div style="color: red">NO MATCH: '. htmlentities($rule['pattern']) .'</div>';
