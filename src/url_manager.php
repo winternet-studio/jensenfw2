@@ -14,7 +14,19 @@ namespace winternet\jensenfw2;
  * $url->run();
  * ```
  *
- * Within the destination script you can use these:
+ * You web server needs to redirect requests to the file you put the above code in.
+ * For Apache, add this to your `.htaccess` file, assuming the above code is in `urlhandler.php`:
+ *
+ * ```
+ * <IfModule mod_rewrite.c>
+ * RewriteEngine On
+ * RewriteCond %{REQUEST_FILENAME} !-f
+ * RewriteCond %{REQUEST_FILENAME} !-d
+ * RewriteRule . /urlhandler.php [L]
+ * </IfModule>
+ * ```
+ *
+ * Within the destination script you can use these calls:
  *
  * - `url_manager::uri()`
  */
@@ -83,7 +95,7 @@ class url_manager {
 					echo '<div style="color: green"><b>MATCH: '. htmlentities($rule['destination']) .'</b></div>';
 					exit;
 				}
-				require_once($this->doc_root .'/'. $rule['destination']);
+				require($this->doc_root .'/'. $rule['destination']);
 				return;  //stop after finding first matching rule
 			} elseif (!empty($this->options['debug'])) {
 				echo '<div style="color: red">NO MATCH: '. htmlentities($rule['pattern']) .'</div>';
@@ -97,6 +109,7 @@ class url_manager {
 
 		header('HTTP/1.0 404 Not Found');
 		echo 'Sorry, this page doesn\'t exist.';
+		// TODO: maybe use this nicely styled layout: C:\Data\Information\_Computer\_Kommunikation, Internet\Internet\_Design-ideer\Blank, placeholder website template, coming soon, under construction.php
 		exit;
 	}
 
