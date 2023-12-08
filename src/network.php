@@ -20,6 +20,14 @@ class network {
 	/**
 	 * Perform an HTTP request
 	 *
+	 * @param array $options : Available options:
+	 *   - `headers`
+	 *   - `send_json` : set true to indicate that request body should be JSON
+	 *   - `curl_options`
+	 *   - `debug`
+	 *   - `parse_json`
+	 *   - `return_all`
+	 *
 	 * @return string|object
 	 */
 	public static function http_request($method, $url, $data = [], $options = []) {
@@ -30,14 +38,31 @@ class network {
 		if (!is_array($data) && !$data) $data = [];
 		if (!is_array($data)) throw new \Exception('Data argument is not an array.');
 
-		if ($method == 'POST') {
-			curl_setopt($ch, CURLOPT_POST, 1);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
-			// curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode());  //then Content-Type: application/json must be set
-		} else {
+		if (!empty($options['send_json'])) {
+			@$options['headers']['Content-Type'] = 'application/json';
+		}
+
+		$content_type = null;
+		if (!empty($options['headers']) && is_array($options['headers'])) {
+			foreach ($options['headers'] as $header_name => $header_value) {
+				if (!$content_type && strtolower($header_name) == 'content-type') {
+					$content_type = $header_value;
+				}
+				@$options['curl_options'][CURLOPT_HTTPHEADER][] = $header_name .': '. $header_value;
+			}
+		}
+
+		if (in_array($method, ['GET', 'HEAD'], true)) {
 			curl_setopt($ch, CURLOPT_POST, 0);
 			if (!empty($data)) {
 				$url .= '?'. http_build_query($data);
+			}
+		} else {
+			curl_setopt($ch, CURLOPT_POST, 1);
+			if ($content_type == 'application/json') {
+				curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+			} else {
+				curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
 			}
 		}
 		curl_setopt($ch, CURLOPT_URL, $url);

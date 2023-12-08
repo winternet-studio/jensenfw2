@@ -130,6 +130,12 @@ In your bootstrap file includes this piece of code:
 \winternet\jensenfw2\core::$userconfig = ['\app\config\jensenfw2', 'returnConfig'];
 ```
 
+Tests
+-----
+
+Before running tests with the command `phpunit`, you should start the internal web server used for the tests in `networkTest.php`.
+To do so run the command `php -S localhost:8018 -t tests/webserver_docroot`.
+
 Other notes
 -----------
 
