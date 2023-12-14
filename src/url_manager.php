@@ -52,7 +52,7 @@ class url_manager {
 
 		// $this->options['debug'] = true;
 
-		$this->doc_root = $_SERVER['DOCUMENT_ROOT'];
+		$this->doc_root = rtrim($_SERVER['DOCUMENT_ROOT'], '/\\');
 
 		$this->uri = $_SERVER['REQUEST_URI'];
 		if (!empty($this->options['subdirectory'])) {
@@ -88,15 +88,19 @@ class url_manager {
 		];
 	}
 
-	public function run() {
+	public function run($options = []) {
 		foreach ($this->rules as $rule) {
 			if (preg_match('#'. $rule['pattern'] .'#', $this->uri)) {
 				if (!empty($this->options['debug'])) {
 					echo '<div style="color: green"><b>MATCH: '. htmlentities($rule['destination']) .'</b></div>';
 					exit;
 				}
-				require($this->doc_root .'/'. $rule['destination']);
-				return;  //stop after finding first matching rule
+				if (empty($options['return'])) {
+					require($this->doc_root .'/'. $rule['destination']);
+					return;  //stop after finding first matching rule
+				} else {
+					return $this->doc_root .'/'. $rule['destination'];
+				}
 			} elseif (!empty($this->options['debug'])) {
 				echo '<div style="color: red">NO MATCH: '. htmlentities($rule['pattern']) .'</div>';
 			}
@@ -107,10 +111,14 @@ class url_manager {
 			exit;
 		}
 
-		header('HTTP/1.0 404 Not Found');
-		echo 'Sorry, this page doesn\'t exist.';
-		// TODO: maybe use this nicely styled layout: C:\Data\Information\_Computer\_Kommunikation, Internet\Internet\_Design-ideer\Blank, placeholder website template, coming soon, under construction.php
-		exit;
+		if (empty($options['return'])) {
+			header('HTTP/1.0 404 Not Found');
+			echo 'Sorry, this page doesn\'t exist.';
+			// TODO: maybe use this nicely styled layout: C:\Data\Information\_Computer\_Kommunikation, Internet\Internet\_Design-ideer\Blank, placeholder website template, coming soon, under construction.php
+			exit;
+		} else {
+			return false;
+		}
 	}
 
 	// --------------------------------------------
