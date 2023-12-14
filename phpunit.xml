@@ -11,6 +11,8 @@
     <testsuites>
         <testsuite name="JensenFW2 Test Suite">
             <directory suffix=".php">./tests/</directory>
+            <exclude>./tests/fixtures</exclude>
+            <exclude>./tests/webserver_docroot</exclude>
         </testsuite>
     </testsuites>
 </phpunit>
