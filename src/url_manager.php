@@ -34,6 +34,8 @@ class url_manager {
 
 	public $uri = null;
 	public $doc_root = null;
+	public $params = [];
+	public $components = [];  //for holding the URI components split by the slash
 	// public $querystring = null;  //have no use for this yet
 
 	public $rules = [];
@@ -70,6 +72,8 @@ class url_manager {
 		//  Make clean URI
 		$this->uri = trim($this->uri, '/');  //eg. "http://mydomain.com/sa_local_ticket_server/cancel-product/" becomes $uri = "sa_local_ticket_server/cancel-product"
 
+		$this->components = explode('/', $this->uri);
+
 		if (!empty($this->options['debug'])) {
 			echo '<div>URI: '. var_export($this->uri, true) .'</div>';
 			// echo '<div>Query String: '. var_export($this->querystring, true) .'</div>';
@@ -90,10 +94,20 @@ class url_manager {
 
 	public function run($options = []) {
 		foreach ($this->rules as $rule) {
-			if (preg_match('#'. $rule['pattern'] .'#', $this->uri)) {
+			$pattern = preg_replace("|<\\w+:|i", '(', $rule['pattern']);  //handle parameters in URL by first making them normal regular expressions
+			$pattern = preg_replace("|>|", ')', $pattern);
+			if (preg_match('#^'. $pattern .'$#', $this->uri, $match)) {
 				if (!empty($this->options['debug'])) {
 					echo '<div style="color: green"><b>MATCH: '. htmlentities($rule['destination']) .'</b></div>';
 					exit;
+				}
+
+				if (array_key_exists(1, $match)) {  //means we that at least one submatch/parameter
+					$params = preg_match_all("|<(\\w+):|", $rule['pattern'], $params_matches, PREG_SET_ORDER);
+					for ($i = 1; $i < count($match); $i++) {
+						$param_name = $params_matches[$i-1][1];
+						$this->params[$param_name] = $match[$i];
+					}
 				}
 				if (empty($options['return'])) {
 					require($this->doc_root .'/'. $rule['destination']);
@@ -121,6 +135,14 @@ class url_manager {
 		}
 	}
 
+	public function get_param($name_or_number) {
+		if (is_numeric($name_or_number)) {
+			return @$this->components[$name_or_number - 1];
+		} else {
+			return @$this->params[$name_or_number];
+		}
+	}
+
 	// --------------------------------------------
 	// Methods to be used in the destination script
 	// --------------------------------------------
@@ -129,7 +151,7 @@ class url_manager {
 	 * Get a named parameter from the URI
 	 */
 	public static function param($name_or_number) {
-		throw new \Exception('Method url_manager::param() not yet implemented.');
+		return static::instance()->get_param($name_or_number);
 	}
 
 	/**
@@ -143,14 +165,6 @@ class url_manager {
 
 /*
 // file_put_contents('url_manager.log', date('Y-m-d H:i:s') ."\t". $_SERVER['REMOTE_ADDR'] ."\t". $_SERVER['REQUEST_URI'] ."\r\n", FILE_APPEND);
-
-SPECIAL EXAMPLES to take ideas from:
-
-	$url->add_url('^buy-gifts/<for:friends>$', 'buygifts.php');
-	// "for" becomes a variable that we can retrieve the value "friends" with in the PHP script, eg. like `url_manager::param('for')`
-	// And maybe to get each part between the slashes one could do `url_manager::param(1)` for the first, `url_manager::param(2)` for the second etc...
-	// Could we use Yii2 URL manager class for all this actually??!
-
 
 SPECIAL EXAMPLES to maybe take ideas from:
 } elseif (preg_match("|^get-tunnel-cmd|", $uri, $match)) { //SSH tunnel
