@@ -56,11 +56,14 @@ class threshold_monitor {
 		// }
 		$data[$this->name][$period]++;
 
-		$this->set_data($data);
-
 		if (is_callable($callback_when_max_reached) && $this->max_reached()) {
 			$callback_when_max_reached($data[$this->name][$period]);
+
+			// Reset the counter so we need to reach the threshold anew in order to trigger another callback
+			$data[$this->name][$period] = 0;
 		}
+
+		$this->set_data($data);
 	}
 
 	/**
