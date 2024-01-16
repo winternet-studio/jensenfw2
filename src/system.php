@@ -133,7 +133,7 @@ class system {
 		if ($path === null) {
 			// Defaults if nothing specified
 			if (@constant('YII_BEGIN_TIME')) {
-				$path = \Yii::getAlias('@runtime'. DIRECTORY_SEPARATOR);
+				$path = \Yii::getAlias('@runtime') . DIRECTORY_SEPARATOR;
 				$preferred_path = $path .'jfw2_min_time_betwn'. DIRECTORY_SEPARATOR;
 				if ((is_dir($preferred_path) && is_writable($preferred_path)) || mkdir($preferred_path)) {
 					$path = $preferred_path;
