@@ -141,9 +141,16 @@ class system_administration {
 			$cmdoutput = [];
 			exec($command, $cmdoutput, $returnstatus);
 
-			if ($returnstatus > 0 && !$this->_sent_error_notif) {
+			if ($returnstatus > 0) {
 				echo '   PROBABLY FAILED! Email notif being sent...';
-				$this->notify_error('Please check the '. $this->system_name .' backup script '. __FILE__ .' - there might be errors. Return code was '. $returnstatus . PHP_EOL . PHP_EOL . print_r($cmdoutput, true));
+				if (!$this->_sent_error_notif) {
+					$this->notify_error('Please check the '. $this->system_name .' backup script '. __FILE__ .' - there might be errors. Return code was '. $returnstatus . PHP_EOL . PHP_EOL . print_r($cmdoutput, true));
+				}
+			} elseif (!file_exists(filesystem::concat_path($options['mysq_dump_path'], $filename)) || filesize(filesystem::concat_path($options['mysq_dump_path'], $filename)) < 10000) {
+				echo '   PROBABLY FAILED! Email notif being sent...';
+				if (!$this->_sent_error_notif) {
+					$this->notify_error('Please check the '. $this->system_name .' backup script '. __FILE__ .' - there might be errors. Backup file '. filesystem::concat_path($options['mysq_dump_path'], $filename) .' is missing or seems too small. Return code was '. $returnstatus . PHP_EOL . PHP_EOL . print_r($cmdoutput, true));
+				}
 			} else {
 				// Gzip the file
 				$command = "gzip -f ". filesystem::concat_path($options['mysq_dump_path'], $filename);
