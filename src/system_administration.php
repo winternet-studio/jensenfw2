@@ -85,6 +85,8 @@ class system_administration {
 	 *   - `publickey_path` (opt.) : path to a public key in order to asymmetrically encrypt the database dump, eg. `/home/myuser/mysqldump-secure.pub.pem`
 	 *       (key pair can be made with command: openssl req -x509 -nodes -newkey rsa:2048 -keyout mysqldump-secure.priv.pem -out mysqldump-secure.pub.pem)
 	 *   - `purge_after` (opt.) : delete backups after X days, or set to -1 to not delete backups. Defaults to 30 days.
+	 *   - `keep_monthly_backup` (opt.) : set true to permanently keep a monthly backup (it's the latest backup of the month that is retained)
+	 *   - `keep_annual_backup` (opt.) : set true to permanently keep an annual backup (it's the latest backup of the year that is retained)
 	 *   - `command_after` (opt.) : run a system command after creating the MySQL dump (after encryption has been done (if encryption is enabled)), eg. `rsync -larvzi --checksum --delete-during --omit-dir-times  /home/myuser/backups/ someuser@otherserver.com:/storage/mysql-backups/`
 	 *   - `post_to_url` (opt.) : URL to post the MySQL dump (after encryption has been done (if encryption is enabled)). See sample above for receiving PHP script.
 	 */
@@ -112,8 +114,12 @@ class system_administration {
 
 			if ($options['publickey_path']) {
 				$filename = 'BACKUP_'. date('Y-m-d_Hi', $starttime) .'_'. $db .'.sql.enc';
+				$filename_monthly = 'BACKUP_'. date('Y-m', $starttime) .'_monthly_'. $db .'.sql.enc';
+				$filename_annual = 'BACKUP_'. date('Y', $starttime) .'_annual_'. $db .'.sql.enc';
 			} else {
 				$filename = 'BACKUP_'. date('Y-m-d_Hi', $starttime) .'_'. $db .'.sql';
+				$filename_monthly = 'BACKUP_'. date('Y-m', $starttime) .'_monthly_'. $db .'.sql';
+				$filename_annual = 'BACKUP_'. date('Y', $starttime) .'_annual_'. $db .'.sql';
 			}
 
 			$this->ln($db .' > '. $filename);
@@ -146,6 +152,17 @@ class system_administration {
 				exec($command, $cmdoutput, $returnstatus);
 
 				echo '   Done!';
+
+				if ($options['keep_monthly_backup']) {
+					if (!copy(filesystem::concat_path($options['mysq_dump_path'], $filename_gz), filesystem::concat_path($options['mysq_dump_path'], $filename_monthly) .'.gz')) {
+						$this->notify_error('Please check the '. $this->system_name .' backup script '. __FILE__ .' - Failed to copy the monthly backup.');
+					}
+				}
+				if ($options['keep_annual_backup']) {
+					if (!copy(filesystem::concat_path($options['mysq_dump_path'], $filename_gz), filesystem::concat_path($options['mysq_dump_path'], $filename_annual) .'.gz')) {
+						$this->notify_error('Please check the '. $this->system_name .' backup script '. __FILE__ .' - Failed to copy the annual backup.');
+					}
+				}
 
 				if ($options['command_after']) {
 					$this->ln();
