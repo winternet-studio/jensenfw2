@@ -507,7 +507,13 @@ class dump {
 
 		$className = get_class($input);
 		//MODIFICATION 2 BEGIN
-		$classHash = md5(serialize($input));
+		try {
+			$classHash = md5(serialize($input));
+		} catch (\Exception $e) {
+			// Do this simple workaround for now for objects that includes closures
+			// ChatGPT talked about binding the closure to an object to make it serializable - maybe ask it to generate the code dealing with this...
+			$classHash = $e->getMessage();
+		}
 		if(isset($this->set[$classHash])) {
 			$output = '<table '.$this->tableAtts.' class="object">';
 			$output .= '<thead>';
