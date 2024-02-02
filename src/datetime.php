@@ -236,13 +236,13 @@ class datetime {
 	 */
 	public static function time_ago($mysql_or_unix_timestamp, $options = []) {
 		$unit_names = 'short'; $decimals = 0; $include_weeks = false;
-		if ($options['unit_names']) {
+		if (@$options['unit_names']) {
 			$unit_names = $options['unit_names'];
 		}
-		if (is_numeric($options['decimals'])) {
+		if (is_numeric(@$options['decimals'])) {
 			$decimals = $options['decimals'];
 		}
-		if ($options['include_weeks']) {
+		if (@$options['include_weeks']) {
 			$include_weeks = true;
 		}
 
@@ -251,10 +251,10 @@ class datetime {
 				$ts =& $mysql_or_unix_timestamp;
 			} else {
 				// MySQL timestamp
-				if ($options['smart_general_guide'] && strlen($mysql_or_unix_timestamp) <= 10 && $options['hour_adjustment'] !== false) {
+				if (@$options['smart_general_guide'] && strlen($mysql_or_unix_timestamp) <= 10 && @$options['hour_adjustment'] !== false) {
 					$mysql_or_unix_timestamp .= ' '. ($options['hour_adjustment'] ? $options['hour_adjustment'] : 12) .':00:00';   //set a date like "2017-06-17" to be at eg. noon instead of midnight so that the general guide usually feels more correct
 				}
-				if ($options['input_timezone']) {
+				if (@$options['input_timezone']) {
 					$mysql_or_unix_timestamp = $mysql_or_unix_timestamp .' '. $options['input_timezone'];
 				} elseif (stripos($mysql_or_unix_timestamp, 'UTC') === false && strpos($mysql_or_unix_timestamp, '/') === false) {
 					$mysql_or_unix_timestamp = $mysql_or_unix_timestamp .' UTC';
@@ -266,8 +266,8 @@ class datetime {
 
 			$return = self::time_period_single_unit($now_ts - $ts, $unit_names, $decimals, $include_weeks);
 
-			if ($options['smart_general_guide']) {
-				$last_midnight = (new \DateTime('today midnight', new \DateTimeZone(($options['output_timezone'] ? $options['output_timezone'] : 'UTC'))))->getTimestamp();
+			if (@$options['smart_general_guide']) {
+				$last_midnight = (new \DateTime('today midnight', new \DateTimeZone((@$options['output_timezone'] ? $options['output_timezone'] : 'UTC'))))->getTimestamp();
 				if ($ts < $last_midnight - 24*3600) {
 					$return['general_guide'] = $return['general_guide'] .' '. core::txt('ago', 'ago', '#');
 					$return['relative_guide'] = 'ago';
@@ -945,7 +945,11 @@ class datetime {
 		$locale = static::clean_locale($locale);
 
 		if (!array_key_exists($locale, static::$_formatters)) {
-			static::$_formatters[$locale] = new \IntlDateFormatter(($locale === 'DONTUSE' ? null : $locale), \IntlDateFormatter::SHORT, \IntlDateFormatter::SHORT);
+			try {
+				static::$_formatters[$locale] = new \IntlDateFormatter(($locale === 'DONTUSE' ? null : $locale), \IntlDateFormatter::SHORT, \IntlDateFormatter::SHORT);
+			} catch (\IntlException $e) {
+				static::$_formatters[$locale] = new \IntlDateFormatter(null, \IntlDateFormatter::SHORT, \IntlDateFormatter::SHORT);
+			}
 		}
 		return $locale;
 	}
@@ -1115,33 +1119,33 @@ class datetime {
 		case 'hours':
 		case 'hr':
 		case 'hrs':
-			$newtime = mktime(date("G",$time) + $adjust_by, date("i",$time), date("s",$time), date("m",$time), date("d",$time), date("Y",$time));
+			$newtime = mktime(date('G',$time) + $adjust_by, date('i',$time), date('s',$time), date('m',$time), date('d',$time), date('Y',$time));
 			break;
 		case 'minute':
 		case 'minutes':
 		case 'min':
 		case 'mins':
-			$newtime = mktime(date("G",$time), date("i",$time) + $adjust_by, date("s",$time), date("m",$time), date("d",$time), date("Y",$time));
+			$newtime = mktime(date('G',$time), date('i',$time) + $adjust_by, date('s',$time), date('m',$time), date('d',$time), date('Y',$time));
 			break;
 		case 'second':
 		case 'seconds':
 		case 'sec':
 		case 'secs':
-			$newtime = mktime(date("G",$time), date("i",$time), date("s",$time) + $adjust_by, date("m",$time), date("d",$time), date("Y",$time));
+			$newtime = mktime(date('G',$time), date('i',$time), date('s',$time) + $adjust_by, date('m',$time), date('d',$time), date('Y',$time));
 			break;
 		case 'day':
 		case 'days':
-			$newtime = mktime(date("G",$time), date("i",$time), date("s",$time), date("m",$time), date("d",$time) + $adjust_by, date("Y",$time));
+			$newtime = mktime(date('G',$time), date('i',$time), date('s',$time), date('m',$time), date('d',$time) + $adjust_by, date('Y',$time));
 			break;
 		case 'month':
 		case 'months':
-			$newtime = mktime(date("G",$time), date("i",$time), date("s",$time), date("m",$time) + $adjust_by, date("d",$time), date("Y",$time));
+			$newtime = mktime(date('G',$time), date('i',$time), date('s',$time), date('m',$time) + $adjust_by, date('d',$time), date('Y',$time));
 			break;
 		case 'year':
 		case 'years':
 		case 'yr':
 		case 'yrs':
-			$newtime = mktime(date("G",$time), date("i",$time), date("s",$time), date("m",$time), date("d",$time), date("Y",$time) + $adjust_by);
+			$newtime = mktime(date('G',$time), date('i',$time), date('s',$time), date('m',$time), date('d',$time), date('Y',$time) + $adjust_by);
 			break;
 		default:
 			core::system_error('Configuration error. Interval not defined.', ['Function' => 'time_add()', 'Interval' => $interval]);

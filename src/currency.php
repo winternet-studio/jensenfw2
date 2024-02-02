@@ -32,7 +32,7 @@ class currency {
 
 		$storage = null;
 		$storage_key = 'exchRate_'. $from_currency .'_'. $to_currency;
-		if (@constant('YII_BEGIN_TIME')) {
+		if (@defined('YII_BEGIN_TIME')) {
 			if (\Yii::$app->cache) {
 				$storage = 'yii_cache';
 				$current_value = \Yii::$app->cache->get($storage_key);
@@ -43,7 +43,7 @@ class currency {
 		}
 		if (!$storage) {
 			$storage = 'native_session';
-			$current_value = $_SESSION[$storage_key];
+			$current_value = @$_SESSION[$storage_key];
 		}
 
 		if (!$current_value) {

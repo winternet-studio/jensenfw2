@@ -132,7 +132,7 @@ class system {
 	public static function minimum_time_between($condition, $key, $callback, $path = null) {
 		if ($path === null) {
 			// Defaults if nothing specified
-			if (@constant('YII_BEGIN_TIME')) {
+			if (@defined('YII_BEGIN_TIME')) {
 				$path = \Yii::getAlias('@runtime') . DIRECTORY_SEPARATOR;
 				$preferred_path = $path .'jfw2_min_time_betwn'. DIRECTORY_SEPARATOR;
 				if ((is_dir($preferred_path) && is_writable($preferred_path)) || mkdir($preferred_path)) {

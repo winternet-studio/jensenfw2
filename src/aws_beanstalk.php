@@ -24,7 +24,7 @@ class aws_beanstalk {
 			$this->load_awsebsysteminitialized();
 		}
 
-		if (!$this->awsebsysteminitialized['instance_id']) {
+		if (!@$this->awsebsysteminitialized['instance_id']) {
 			core::error('Instance ID not found.', ['Contents' => $this->awsebsysteminitialized]);
 		}
 
@@ -36,7 +36,7 @@ class aws_beanstalk {
 			$this->load_awsebsysteminitialized();
 		}
 
-		if (!$this->awsebsysteminitialized['first_init_time']) {
+		if (!@$this->awsebsysteminitialized['first_init_time']) {
 			core::error('First initialization time not found.', ['Contents' => $this->awsebsysteminitialized]);
 		}
 

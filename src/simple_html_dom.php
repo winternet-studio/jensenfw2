@@ -642,7 +642,7 @@ class simple_html_dom_node {
 
     function is_utf8($string)
     {
-        return (utf8_encode(utf8_decode($string)) == $string);
+        return (mb_convert_encoding(mb_convert_encoding($string, 'ISO-8859-1', 'UTF-8'), 'UTF-8', 'ISO-8859-1') == $string);
     }
 
     // camel naming conventions

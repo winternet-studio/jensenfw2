@@ -112,7 +112,7 @@ class core {
 	public static function require_database($serverID = 0) {
 		$serverID = (int) $serverID;  //convert empty strings to 0
 		$server_id = ($serverID == 0 ? '' : $serverID);
-		if (!$GLOBALS['_jfw_db_connection'.$server_id]) {  //don't open the database if it is already open
+		if (!@$GLOBALS['_jfw_db_connection'.$server_id]) {  //don't open the database if it is already open
 			$cfg = self::get_class_defaults(__CLASS__, 'databases');
 			$GLOBALS['_jfw_db_connection'.$server_id] = mysqli_connect($cfg[$serverID]['db_host'], $cfg[$serverID]['db_user'], $cfg[$serverID]['db_pw'], $cfg[$serverID]['db_name'], $cfg[$serverID]['db_port']);
 			if (!$GLOBALS['_jfw_db_connection'.$server_id]) {
@@ -124,7 +124,7 @@ class core {
 
 	public static function disconnect_database($serverID = 0) {
 		$server_id = ($serverID == 0 ? '' : (int) $serverID);
-		if ($GLOBALS['_jfw_db_connection'.$server_id]) {
+		if (@$GLOBALS['_jfw_db_connection'.$server_id]) {
 			mysqli_close($GLOBALS['_jfw_db_connection'.$server_id]);
 			unset($GLOBALS['_jfw_db_connection'.$server_id]);
 		}
@@ -150,6 +150,7 @@ class core {
 			self::system_error('Configuration error. Extra information for error debugging is invalid.', ['Varinfo' => $varinfo]);
 		}
 		// Prepare query
+		$server_id = '';
 		if (is_array($sql)) {
 			if (array_key_exists('server_id', $sql)) {
 				$server_id = ($sql['server_id'] == 0 ? '' : $sql['server_id']);
@@ -192,11 +193,10 @@ class core {
 	 *	- for SELECT if no records were found, an empty array is returned
 	 */
 	public static function database_result($sql, $format = false, $err_msg = 'Communication with the database failed.', $varinfo = [], $directives = 'AUTO' ) {
+		$server_id = '';
 		if (is_array($sql)) {
 			if (array_key_exists('server_id', $sql) && $sql['server_id'] != 0) {
 				$server_id = $sql['server_id'];
-			} else {
-				$server_id = '';
 			}
 			$effsql =& $sql[0];
 		} else {
@@ -334,7 +334,7 @@ class core {
 		if ($str && !is_string($str) && !is_numeric($str)) {
 			self::system_error('A non-string was passed to SQL escaping function.', ['Argument' => print_r($str, true)], ['xnotify' => 'developer']);
 		}
-		if (!$GLOBALS['_jfw_db_connection']) {
+		if (!@$GLOBALS['_jfw_db_connection']) {
 			self::system_error('Database connection was not found in SQL escaping function.', ['Argument' => print_r($str, true)], ['xnotify' => 'developer']);
 		}
 		return mysqli_real_escape_string($GLOBALS['_jfw_db_connection'], (string) $str);  //cast numbers as strings
@@ -589,7 +589,7 @@ class core {
 		}
 
 		// Use different mechanism in a Yii application that uses the winternet\yii2\SystemError module
-		if (@constant('YII_BEGIN_TIME') && \Yii::$app->system && get_class(\Yii::$app->system) == 'winternet\yii2\SystemError') {
+		if (defined('YII_BEGIN_TIME') && \Yii::$app->system && get_class(\Yii::$app->system) == 'winternet\yii2\SystemError') {
 			self::$system_error_in_process = false;  //again allow new errors to occur
  			\Yii::$app->system->error($msg, $varinfo, ['silent' => $silent, 'register' => $register, 'notify' => $notify, 'terminate' => $terminate, 'severe' => $severe, 'expire' => $expire]);
 			return;
@@ -621,11 +621,11 @@ class core {
 
 		$errordata .= "--- GENERAL ---------------------------\r\n";
 		$errordata .= 'Date/time: '. $err_timestamp ."\r\n";
-		$errordata .= 'URL: '. $_SERVER['REQUEST_URI'] ."\r\n";
+		$errordata .= 'URL: '. @$_SERVER['REQUEST_URI'] ."\r\n";
 
 		// Process the backtrace information
 		$backtrace = debug_backtrace();
-		if (!$GLOBALS['phpunit_is_running'] && is_array($backtrace)) {
+		if (!@$GLOBALS['phpunit_is_running'] && is_array($backtrace)) {
 			$backtraces_count = count($backtrace);
 			if ($backtraces_count > 0) {
 				if ($backtraces_count == 1) {  //if only 1 entry the reference is always the same file as in URL
@@ -683,22 +683,22 @@ class core {
 		*/
 
 		// Process other info
-		$errordata .= 'Referer: '. $_SERVER['HTTP_REFERER'] ."\r\n";
-		$errordata .= 'User agent: '. $_SERVER['HTTP_USER_AGENT'] . "\r\n";
-		$errordata .= 'IP: '. ($_SERVER['HTTP_X_FORWARDED_FOR'] ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']) . "\r\n";
+		$errordata .= 'Referer: '. @$_SERVER['HTTP_REFERER'] ."\r\n";
+		$errordata .= 'User agent: '. @$_SERVER['HTTP_USER_AGENT'] . "\r\n";
+		$errordata .= 'IP: '. (!empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : @$_SERVER['REMOTE_ADDR']) . "\r\n";
 		if (is_callable($cfg['errorlog_extra'])) {
 			$extradata = (array) $cfg['errorlog_extra']();
 			foreach ($extradata as $clabel => $cdata) {
 				$errordata .= $clabel .': '. $cdata . "\r\n";
 			}
 		}
-		$errordata .= 'HTTP Accept language: '. $_SERVER['HTTP_ACCEPT_LANGUAGE'] . "\r\n";
+		$errordata .= 'HTTP Accept language: '. @$_SERVER['HTTP_ACCEPT_LANGUAGE'] . "\r\n";
 		if ($userinfo === null) {
 			$errordata .= "User: DATA NOT PROVIDED\r\n";
 		} else {
 			if ($userinfo['logged_in']) {
 				$errordata .= "--- USER ------------------------------\r\n";
-				$errordata .= 'Username: '. (!$userinfo['is_emulating'] ?  $userinfo['username']  :  'EMULATING '. $userinfo['username'] .' BY '. $userinfo['emulator_username']) ."\r\n";
+				$errordata .= 'Username: '. (!@$userinfo['is_emulating'] ?  $userinfo['username']  :  'EMULATING '. $userinfo['username'] .' BY '. $userinfo['emulator_username']) ."\r\n";
 				$errordata .= 'Full name: '. $userinfo['fullname'] ."\r\n";
 				$errordata .= 'Access levels (text): '. implode(', ', $userinfo['accesslevels']) . "\r\n";
 				$errordata .= 'User ID: '. $userinfo['userID'] . "\r\n";
@@ -754,7 +754,7 @@ class core {
 				$sql[] = "`errorinfo` = '". self::sql_esc(mb_substr($errordata, 0, 65000)) ."'";
 				$sql[] = "`err_msg` = '". self::sql_esc(mb_substr($msg, 0, 255)) ."'";
 				$sql[] = "`url` = '". self::sql_esc(substr($_SERVER['REQUEST_URI'], 0, 255)) ."'";
-				if ($userinfo['logged_in']) {
+				if (@$userinfo['logged_in']) {
 					if ($userinfo['fullname']) {
 						$sql[] = "`fullname` = '". self::sql_esc(mb_substr($userinfo['fullname'], 0, 100)) ."'";
 					}
@@ -827,7 +827,7 @@ class core {
 			echo 'Error occurred: '. htmlentities($msg) .' (this robot is probably trying to access an invalid URL)';
 			echo '</body></html>';
 			exit;
-		} elseif ($GLOBALS['sys_interface'] == 'webservice') {
+		} elseif (@$GLOBALS['sys_interface'] == 'webservice') {
 			if (!$terminate) {
 				//if not terminating don't do anything concerning the output
 			} else {
@@ -843,7 +843,7 @@ class core {
 				}
 				exit;
 			}
-		} elseif (PHP_SAPI == 'cli' || $GLOBALS['sys_interface'] == 'cli') {
+		} elseif (PHP_SAPI == 'cli' || @$GLOBALS['sys_interface'] == 'cli') {
 			if (!$terminate) {
 				//if not terminating don't do anything concerning the output
 			} else {
@@ -895,11 +895,11 @@ class core {
 			$use_systembuffer = ($reference['persist'] ? true : false);
 
 			$expire = false;
-			if ($reference['expire']) {
+			if (@$reference['expire']) {
 				$expire = $reference['expire'];
 			}
 
-			$reference = $reference['ref'];
+			$reference = @$reference['ref'];
 			if (!$reference) {
 				self::system_error('Missing reference for recording we have sent webmaster a message.');
 			}
@@ -909,11 +909,11 @@ class core {
 
 		// Don't send duplicate notifications
 		if ($use_systembuffer) {
-			if ($reference && system::get_buffer_value('jfwnotifd'. $reference) && !$GLOBALS['_send_all_webmaster_notifs']) {
+			if ($reference && system::get_buffer_value('jfwnotifd'. $reference) && !@$GLOBALS['_send_all_webmaster_notifs']) {
 				return false;
 			}
 		} else {
-			if ($reference && @$_SESSION['_jfw_webmaster_notifd_'. $reference] && !$GLOBALS['_send_all_webmaster_notifs']) {
+			if ($reference && @$_SESSION['_jfw_webmaster_notifd_'. $reference] && !@$GLOBALS['_send_all_webmaster_notifs']) {
 				return false;
 			}
 		}
@@ -946,7 +946,7 @@ class core {
 		foreach ($bt as $bt_key => $bt_value) {
 			$body .= $bt_key .') '. basename($bt[$bt_key]['file']) . ($bt[$bt_key]['line'] ? ':'. $bt[$bt_key]['line'] : '') . ($bt[$bt_key+1]['function'] ? ' - in '. $bt[$bt_key+1]['class'] . $bt[$bt_key+1]['type'] . $bt[$bt_key+1]['function'] .'()' : '') ."\r\n";
 		}
-		$body .= "\r\nURI: ". $_SERVER['REQUEST_URI'];  // $bt[0]['file'] is the lowest in the stack and this is the highest
+		$body .= "\r\nURI: ". @$_SERVER['REQUEST_URI'];  // $bt[0]['file'] is the lowest in the stack and this is the highest
 		if ($reference) {
 			$body .= "\r\nReference: ". $reference;
 		}
@@ -1036,7 +1036,7 @@ class core {
 	}
 
 	public static function txt($tag, $default, $other = null) {
-		if (@constant('YII_BEGIN_TIME')) {
+		if (defined('YII_BEGIN_TIME')) {
 			// Can't do translation here as it won't be picked up by the text collector. Must be done manually where the text is used.
 			return $default;
 		} else {
@@ -1156,7 +1156,7 @@ class core {
 			}
 		}
 		if (!array_key_exists($name, $GLOBALS['cache']['system_settings'])) {
-			if (!$options['no_error']) {
+			if (!@$options['no_error']) {
 				self::system_error('Configuration error. A system setting could not be found.', ['Name' => $name]);
 			} else {
 				return false;
@@ -1172,7 +1172,7 @@ class core {
 	 */
 	public static function get_parent_function($f = 1) {
 		$parent_info = debug_backtrace();
-		$parent_function = $parent_info[1 + $f]['function'];  //the parent function of the function that called this function, has the index no. 2 in the debug array. Higher levels has higher numbers.
+		$parent_function = @$parent_info[1 + $f]['function'];  //the parent function of the function that called this function, has the index no. 2 in the debug array. Higher levels has higher numbers.
 		if ($parent_function) {
 			return $parent_function;
 		} else {
@@ -1242,7 +1242,7 @@ class core {
 				return http_build_query($qs);
 			}
 		} else {
-			$url = $_SERVER['REQUEST_URI'];
+			$url = (string) @$_SERVER['REQUEST_URI'];
 			$quest_pos = strpos($url, '?');
 			if ($quest_pos) {
 				$url = substr($url, 0, $quest_pos);

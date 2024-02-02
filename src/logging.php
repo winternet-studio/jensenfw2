@@ -62,7 +62,7 @@ class logging {
 	public static function log_action($action, $subaction = false, $primary_parms = [], $secondary_parms = false, $options = []) {
 		// Don't register duplicate entries if requested
 		if (is_numeric($options['duplicate_window'])) {
-			if (@constant('YII_BEGIN_TIME') && PHP_SAPI != 'cli') {
+			if (@defined('YII_BEGIN_TIME') && PHP_SAPI != 'cli') {
 				\Yii::$app->session->open();  //ensure session has been started
 			}
 			$session_varname = '_logentry_dedupe_'. md5($action .'-'. $subaction .'-'. json_encode($primary_parms) .'-'. json_encode($secondary_parms));
@@ -122,7 +122,7 @@ class logging {
 		}
 		$logSQL = substr($logSQL, 0, strlen($logSQL)-2);
 
-		if (@constant('YII_BEGIN_TIME')) {
+		if (@defined('YII_BEGIN_TIME')) {
 			// Using Yii framework
 			\Yii::$app->db->createCommand($logSQL, $logSQL_vars)->execute();
 			$new_operationID = \Yii::$app->db->getLastInsertID();
@@ -153,7 +153,7 @@ class logging {
 
 		$table_name = str_replace('`', '', $table_name);
 
-		if (false && @constant('YII_BEGIN_TIME')) {
+		if (false && @defined('YII_BEGIN_TIME')) {
 			throw new \Exception('The Yii method has not yet been implemented.');
 			// // Using Yii framework
 			// \Yii::$app->db->createCommand($logSQL, $logSQL_vars)->execute();

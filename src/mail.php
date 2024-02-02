@@ -1120,7 +1120,7 @@ class mail {
 			'id' => (array_key_exists('intervowen_id', $data) ? mb_substr($data['intervowen_id'], 0, 255) : null),
 		];
 
-		if (@constant('YII_BEGIN_TIME')) {
+		if (@defined('YII_BEGIN_TIME')) {
 			// Using Yii framework
 			\Yii::$app->db->createCommand($sql, $sql_vars)->execute();
 			$emaillog_rawID = \Yii::$app->db->getLastInsertID();
@@ -1134,7 +1134,7 @@ class mail {
 
 		if ($cfg['purge_database_log_after'] && !$_SESSION['_purged_db_maillog_now']) {
 			$purgeSQL = "DELETE FROM `". $cfg['log_to_database'] ."`.`". $cfg['db_log_table'] ."` WHERE TO_DAYS(CURDATE()) - TO_DAYS(eml_timestamp) > ". (int) $cfg['purge_database_log_after'] ."";
-			if (@constant('YII_BEGIN_TIME')) {
+			if (@defined('YII_BEGIN_TIME')) {
 				\Yii::$app->db->createCommand($purgeSQL)->execute();
 				if (PHP_SAPI != 'cli') {
 					\Yii::$app->session->set('_purged_db_maillog_now', true);

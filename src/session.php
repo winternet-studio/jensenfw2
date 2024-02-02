@@ -56,7 +56,7 @@ class session {
 		}
 
 		// Determine if variable is currently set (used to determine if we should assign default value)
-		if (@constant('YII_BEGIN_TIME') && PHP_SAPI !== 'cli' && \Yii::$app->session) {
+		if (@defined('YII_BEGIN_TIME') && PHP_SAPI !== 'cli' && \Yii::$app->session) {
 			$session = \Yii::$app->session;
 		}
 		if (isset($_SESSION[$primary_name])) {
