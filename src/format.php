@@ -378,27 +378,32 @@ class format {
 	}
 
 	/**
-	 * Convert a distance (km, m, miles)
+	 * Convert a distance (km, m, miles, feet)
 	 *
 	 * @param float $distance : Distance to convert
-	 * @param string $from : Kilometers (`km`), meters (`m`), miles (`miles`)
-	 * @param string $to   : Kilometers (`km`), meters (`m`), miles (`miles`)
+	 * @param string $from : Kilometers (`km`), meters (`m`), miles (`miles`), feet (`feet`)
+	 * @param string $to   : Kilometers (`km`), meters (`m`), miles (`miles`), feet (`feet`)
 	 */
 	public static function convert_distance($distance, $from, $to) {
 		$table = [
 			'km' => 1,
 			'm' => 1000,
 			'miles' => 0.6214,
+			'feet' => 3280.84,
 		];
-		if ($from != 'km') {
+		if ($from !== 'km') {
 			$dist_km = $distance / $table[$from];
 		} else {
 			$dist_to = $distance;
 		}
-		if ($to != 'km') {
-			$dist_to = $distance * $table[$to];
+		if ($to !== 'km') {
+			return $distance * $table[$to];
+		} else {
+			if ($from !== 'km') {
+				return $dist_km;
+			}
+			return $distance;
 		}
-		return $dist_to;
 	}
 
 	/**
