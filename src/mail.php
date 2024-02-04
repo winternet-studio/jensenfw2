@@ -899,7 +899,8 @@ class mail {
 			$subject = $filearray[0];
 			$subject = str_replace('SUBJ:', '', $subject);
 			$subject = trim($subject);
-			for ($fi = 1; $fi <= count($filearray); $fi++) {
+			$body = '';
+			for ($fi = 1; $fi <= count($filearray) - 1; $fi++) {
 				$body .= $filearray[$fi];
 			}
 			//replace tags

@@ -13,25 +13,25 @@ class xml {
 	 * @param string $content : Value for the given tag
 	 * @return string
 	 */
-	public static function xml_tag($tag, $content, $flags = '') {
+	public static function xml_tag($tag, $content, $options = []) {
 		if (is_array($tag)) {
 			$attribs = $tag[1];
 			$tag = $tag[0];
 			$tmp = [];
 			foreach ($attribs as $name => $value) {
-				if (strpos($eff_flags, 'skip-entities') === false) {
-					$tmp[] = $name .'="'. xml_entities($value) .'"';
+				if (!@$options['skip_entities']) {
+					$tmp[] = $name .'="'. static::xml_entities($value) .'"';
 				} else {
 					$tmp[] = $name .'="'. $value .'"';
 				}
 			}
 			$attribs = ' '. implode(' ', $tmp);
 		}
-		if ($content && strpos($eff_flags, 'cdata') !== false) {
+		if ($content && @$options['cdata']) {
 			return '<'. $tag . ($attribs ? $attribs : '') .'><![CDATA['. $content .']]></'. $tag .'>'."\r\n";
 		} else {
-			if (strpos($eff_flags, 'skip-entities') === false) {
-				$content = self::xml_entities($content);
+			if (!@$options['skip_entities']) {
+				$content = static::xml_entities($content);
 			}
 			return '<'. $tag . ($attribs ? $attribs : '') .'>'. $content .'</'. $tag .'>'."\r\n";
 		}
@@ -95,10 +95,10 @@ class xml {
 			}
 		}
 
-		$output = json_decode(json_encode(@simplexml_load_string($xml_string, 'SimpleXMLElement', ($options['flatten_cdata'] ? LIBXML_NOCDATA : 0))), ($options['use_objects'] ? false : true));
+		$output = json_decode(json_encode(@simplexml_load_string($xml_string, 'SimpleXMLElement', (@$options['flatten_cdata'] ? LIBXML_NOCDATA : 0))), (@$options['use_objects'] ? false : true));
 
 		// Cast string values "true" and "false" to booleans
-		if ($options['convert_booleans']) {
+		if (@$options['convert_booleans']) {
 			$bool = function(&$item, $key) {
 				if (in_array($item, ['true', 'TRUE', 'True'], true)) {
 					$item = true;
@@ -110,6 +110,15 @@ class xml {
 		}
 
 		return $output;
+	}
+
+	/**
+	 * Parse an XML string into an object
+	 *
+	 * @param array $options : See parse_xml_into_array()
+	 */
+	public static function parse_xml($xml_string, $options = []) {
+		return static::parse_xml_into_array($xml_string, array_merge($options, ['use_objects' => true]));
 	}
 
 	public static function dump_xml($xml_string) {
