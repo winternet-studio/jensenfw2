@@ -394,15 +394,12 @@ class format {
 		if ($from !== 'km') {
 			$dist_km = $distance / $table[$from];
 		} else {
-			$dist_to = $distance;
+			$dist_km = $distance;
 		}
 		if ($to !== 'km') {
-			return $distance * $table[$to];
+			return $dist_km * $table[$to];
 		} else {
-			if ($from !== 'km') {
-				return $dist_km;
-			}
-			return $distance;
+			return $dist_km;
 		}
 	}
 

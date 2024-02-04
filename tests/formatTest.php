@@ -55,6 +55,8 @@ final class formatTest extends TestCase {
 		$this->assertEquals(3280.84, format::convert_distance(1, 'km', 'feet'));
 		$this->assertEquals(1000, format::convert_distance(1, 'km', 'm'));
 		$this->assertEquals(0.6214, format::convert_distance(1, 'km', 'miles'));
+		$this->assertEquals(1, format::convert_distance(1, 'km', 'km'));
+		$this->assertEquals(1, format::convert_distance(1, 'm', 'm'));
 		$this->assertEquals(1.609, round(format::convert_distance(1, 'miles', 'km'), 3));
 	}
 
