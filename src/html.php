@@ -262,6 +262,27 @@ class html {
 	}
 
 	/**
+	 * Find and extract data from JSON-LD script tags in an HTML document
+	 */
+	public static function extract_json_ld($html) {
+		$dom = new \DOMDocument;
+		libxml_use_internal_errors(true);
+
+		$dom->loadHTML($html);
+
+		$xpath = new \DOMXPath($dom);
+		$scriptNodes = $xpath->query('//script[@type="application/ld+json"]');
+
+		$output = [];
+		if ($scriptNodes->length > 0) {
+			for ($i = 0; $i < $scriptNodes->length; $i++) {
+				$output[] = json_decode(trim($scriptNodes->item($i)->textContent));
+			}
+		}
+		return $output;
+	}
+
+	/**
 	 * Format the standard result/output from a function with 'status', 'result_msg', and 'err_msg' keys in an array
 	 *
 	 * @param array $arr_result : The array that was returned by the function

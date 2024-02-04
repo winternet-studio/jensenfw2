@@ -8,4 +8,19 @@ final class htmlTest extends TestCase {
 		$expect = 'æøåöäüûÆØÅÖÄÜÛ';
 		$this->assertSame($expect, $result[0]['text']);
 	}
+
+	public function testExtractJsonLd() {
+		$result = html::extract_json_ld('<script type="application/ld+json">  
+  {"@context": "http://schema.org", "@type": "Airport", "icaoCode": "KWE", "latitude": -2.6434}  
+</script>');
+		$expect = [
+			(object) [
+				'@context' => 'http://schema.org',
+				'@type' => 'Airport',
+				'icaoCode' => 'KWE',
+				'latitude' => -2.6434,
+			],
+		];
+		$this->assertEquals($expect, $result);
+	}
 }
