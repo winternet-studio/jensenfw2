@@ -30,7 +30,9 @@ class currency {
 			return 1;
 		}
 
-		$storage = null;
+		$secs_to_expiration = 21600;
+
+		$storage = $current_value = null;
 		$storage_key = 'exchRate_'. $from_currency .'_'. $to_currency;
 		if (@defined('YII_BEGIN_TIME')) {
 			if (\Yii::$app->cache) {
@@ -38,12 +40,16 @@ class currency {
 				$current_value = \Yii::$app->cache->get($storage_key);
 			} elseif (PHP_SAPI !== 'cli' && \Yii::$app->session) {
 				$storage = 'yii_session';
-				$current_value = \Yii::$app->session[$storage_key];
+				if (\Yii::$app->session[$storage_key .'_time'] && time() - \Yii::$app->session[$storage_key .'_time'] <= $secs_to_expiration) {
+					$current_value = \Yii::$app->session[$storage_key];
+				}
 			}
 		}
 		if (!$storage) {
 			$storage = 'native_session';
-			$current_value = @$_SESSION[$storage_key];
+			if (@$_SESSION[$storage_key .'_time'] && time() - $_SESSION[$storage_key .'_time'] <= $secs_to_expiration) {
+				$current_value = @$_SESSION[$storage_key];
+			}
 		}
 
 		if (!$current_value) {
@@ -83,11 +89,13 @@ class currency {
 			if ($exchrate) {
 				$current_value = $exchrate;
 				if ($storage === 'yii_cache') {
-					\Yii::$app->cache->set($storage_key, $current_value, 21600);
+					\Yii::$app->cache->set($storage_key, $current_value, $secs_to_expiration);
 				} elseif ($storage === 'yii_session') {
 					\Yii::$app->session[$storage_key] = $current_value;
+					\Yii::$app->session[$storage_key .'_time'] = time();
 				} elseif ($storage === 'native_session') {
 					$_SESSION[$storage_key] = $current_value;
+					$_SESSION[$storage_key .'_time'] = time();
 				}
 			} else {
 				$current_value = $fallback_rate;
