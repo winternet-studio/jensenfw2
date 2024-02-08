@@ -51,8 +51,8 @@ class geocoding {
 	 * - the raw API response (decoded JSON string) is available through `$GLOBALS['_jfw_google_address_geocoder_raw_response']` whenever the request required a call to the Google API (not using cache)
 	 */
 	public static function google_address_geocoder($location, $options = []) {
-		if (!$options['skip_database_caching']) {
-			core::require_database($options['server_id']);
+		if (!@$options['skip_database_caching']) {
+			core::require_database(@$options['server_id']);
 		}
 
 		if (empty($location)) {
@@ -75,7 +75,7 @@ class geocoding {
 		unset($GLOBALS['_jfw_google_addr_geocoder_url']);
 
 		// Ensure database table exists
-		if (!$options['skip_database_caching'] && !$options['skip_table_autocreate'] && !$_SESSION['_jfw_address_geocoding_cache_table_created']) {  //only run this check once per session
+		if (!@$options['skip_database_caching'] && !@$options['skip_table_autocreate'] && !@$_SESSION['_jfw_address_geocoding_cache_table_created']) {  //only run this check once per session
 			$createtblSQL = "CREATE TABLE IF NOT EXISTS ". $tableSQL ." (
 				`cached_addr_latlonID` INT(3) UNSIGNED NOT NULL AUTO_INCREMENT,
 				`geoaddr_address` VARCHAR(255) NOT NULL,
@@ -96,7 +96,7 @@ class geocoding {
 			$q = 'https://maps.googleapis.com/maps/api/geocode/json?sensor=false&address='. rawurlencode($location);
 		} else {
 			// Differentiate between US and European/world address formats
-			$tmp = mb_strtoupper((string) $location['country']);
+			$tmp = mb_strtoupper((string) @$location['country']);
 			$country_iso3166 = (strlen($tmp) == 2 ? $tmp : false);
 			if (in_array($tmp, ['US', 'USA', 'UNITED STATES', 'UNITED STATES OF AMERICA'])) {
 				$str_location = $location['address'] .', '. $location['city'] . ($location['state'] ? ', '. $location['state'] : '') .' '. $location['zip'] .', United States';
@@ -106,14 +106,14 @@ class geocoding {
 				$str_location = $location['address'] .', '. $location['city'] . ($location['state'] ? ', '. $location['state'] : '') .' '. $location['zip'] .', Canada';
 			} else {
 				// Rest of the world
-				$str_location = $location['address'] .', '. $location['zip'] .' '. $location['city'] . ($location['state'] ? ', '. $location['state'] : '') .', '. $location['country'];
+				$str_location = $location['address'] .', '. $location['zip'] .' '. $location['city'] . ($location['state'] ? ', '. $location['state'] : '') .', '. @$location['country'];
 			}
 			$q = 'https://maps.googleapis.com/maps/api/geocode/json?sensor=false&address='. rawurlencode($str_location);
 			$components = [];
-			if ($location['country']) {
+			if (@$location['country']) {
 				$components[] = 'country:'. urlencode($location['country']);
 			}
-			if ($location['zip']) {
+			if (@$location['zip']) {
 				$components[] = 'postal_code:'. urlencode($location['zip']);
 			}
 			if (!empty($components)) {
@@ -123,12 +123,12 @@ class geocoding {
 			$location = $str_location;
 		}
 
-		if (!$options['skip_database_caching']) {
+		if (!@$options['skip_database_caching']) {
 			// Register result in database
 			$checkcacheSQL = "SELECT cached_addr_latlonID, geoaddr_latitude, geoaddr_longitude FROM ". $tableSQL ." WHERE geoaddr_address = '". core::sql_esc($location) ."'";
 			$db_checkcache =& core::database_query(($options['server_id'] !== '' ? [$options['server_id'], $checkcacheSQL, []] : $checkcacheSQL), 'Database query for checking lat/lon cache failed.');
 		}
-		if (!$options['skip_database_caching'] && mysqli_num_rows($db_checkcache) > 0) {
+		if (!@$options['skip_database_caching'] && mysqli_num_rows($db_checkcache) > 0) {
 			$checkcache = mysqli_fetch_assoc($db_checkcache);
 
 			// Register that it was retrieved (so that we have an idea of it this address is no longer relevant and we can purge it from the cache)
@@ -159,11 +159,11 @@ class geocoding {
 			}
 			static::$google_maps_api_last_req = microtime(true);
 
-			if ($options['google_api_key']) {
+			if (@$options['google_api_key']) {
 				$q .= '&key='. $options['google_api_key'];
 			}
 			$GLOBALS['_jfw_google_addr_geocoder_url'] = $q;
-			if ($options['proxy_url']) {
+			if (@$options['proxy_url']) {
 				$urlquery = parse_url($q, PHP_URL_QUERY);
 				$tmp = file_get_contents($options['proxy_url'] . urlencode($urlquery));
 			} else {
@@ -175,7 +175,7 @@ class geocoding {
 
 			if ($json['status'] == 'OK' || $json['status'] == 'ZERO_RESULTS') {
 				if ($json['results'][0]['geometry']['location']['lat'] && $json['results'][0]['geometry']['location']['lng']) {
-					if (!$options['skip_database_caching']) {
+					if (!@$options['skip_database_caching']) {
 						$addtocacheSQL = "INSERT INTO ". $tableSQL ." SET geoaddr_address = '". core::sql_esc($location) ."', geoaddr_latitude = '". core::sql_esc($json['results'][0]['geometry']['location']['lat']) ."', geoaddr_longitude = '". core::sql_esc($json['results'][0]['geometry']['location']['lng']) ."', geoaddr_date_added = NOW()";
 						if ($json['results'][0]['partial_match']) {
 							$addtocacheSQL .= ", geoaddr_is_partial = 1";
@@ -196,7 +196,7 @@ class geocoding {
 					}
 					$return = false;
 				}
-				if (!$options['skip_database_caching']) {
+				if (!@$options['skip_database_caching']) {
 					$db_addtocache =& core::database_query(($options['server_id'] !== '' ? [$options['server_id'], $addtocacheSQL, []] : $addtocacheSQL), 'Database update for caching lat/lon for an address failed.');
 				}
 				return $return;
@@ -231,7 +231,7 @@ class geocoding {
 		if (static::$google_maps_api_last_req) {
 			$diff = $now - static::$google_maps_api_last_req;
 			if ($diff < $min_time_between) {  //sleep a little bit if requests are too close together (Google is throttling the usage)
-				if ($GLOBALS['cli']) {
+				if (@$GLOBALS['cli']) {
 					echo ' PAUSE-'. ($min_time_between - $diff) .'  ';
 				}
 				usleep($min_time_between - $diff);
@@ -261,7 +261,7 @@ class geocoding {
 	 * @return array : Associative array
 	 */
 	public static function ip2country_maxmind_service($ip, $userID, $licensekey, $options = []) {
-		$skip_database = ($options['skip_database'] ? true : false);
+		$skip_database = (@$options['skip_database'] ? true : false);
 
 		$continent_code = $country_iso = $err_msg = $used_cache = $data = false;
 
@@ -274,16 +274,16 @@ class geocoding {
 
 			core::require_database($cfg['db_server_id']);
 
-			if (is_numeric($options['max_cache_age'])) {
+			if (is_numeric(@$options['max_cache_age'])) {
 				$max_age = $options['max_cache_age'];  //days
 			} else {
 				$max_age = 3;  //days
 			}
 
-			$tablename = ($options['db_table'] ? $options['db_table'] : 'temp_cached_maxmind_ip2country');
+			$tablename = (@$options['db_table'] ? $options['db_table'] : 'temp_cached_maxmind_ip2country');
 
 			// Ensure database table exists
-			if (!$options['skip_table_autocreate'] && !$_SESSION['_jfw_maxmindip2country_cache_table_created']) {  //only run this check once per session
+			if (!@$options['skip_table_autocreate'] && !@$_SESSION['_jfw_maxmindip2country_cache_table_created']) {  //only run this check once per session
 				$createtblSQL = "CREATE TABLE IF NOT EXISTS `". $tablename ."` (
 					`maxmipctry_ip` VARCHAR(40) NOT NULL,
 					`maxmipctry_country_iso` CHAR(2) NOT NULL,
@@ -298,7 +298,7 @@ class geocoding {
 			}
 
 			//NOTE: no automatic clean-up of old cache entries is currently being done
-			if ($options['clean_cache']) {
+			if (@$options['clean_cache']) {
 				$sql = "DELETE FROM ". $tablename ." WHERE maxmipctry_date_added < DATE_SUB(NOW(), INTERVAL ". ($max_age+2) ." DAY)";
 				core::database_result($sql, false, 'Database query for cleaning cached IP2country results failed.');
 			}
@@ -389,7 +389,7 @@ class geocoding {
 				$continent_name = $record->continent->names['en'];
 				$country_iso = $record->country->isoCode;
 				$country_name = $record->country->name;
-			} catch (Exception $e) {
+			} catch (\Exception $e) {
 				$err_msg = $e->getMessage();
 			}
 		}
@@ -445,7 +445,7 @@ class geocoding {
 				$timezone = $record->location->timeZone;
 				$latitude = $record->location->latitude;
 				$longitude = $record->location->longitude;
-			} catch (Exception $e) {
+			} catch (\Exception $e) {
 				$err_msg = $e->getMessage();
 			}
 		}

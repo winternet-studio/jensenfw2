@@ -156,8 +156,8 @@ class html {
 
 					if (!empty($attributes)) {  //no reason to add it if it is empty
 						$the_optlist[$id]['attribs'] = $attributes;
-						if ($the_optlist[$id]['attribs']['style']) {
-							$the_optlist[$id]['attribs']['style_parsed'] = self::parse_style_css($the_optlist[$id]['attribs']['style']);
+						if (@$the_optlist[$id]['attribs']['style']) {
+							$the_optlist[$id]['attribs']['style_parsed'] = static::parse_style_css($the_optlist[$id]['attribs']['style']);
 						}
 					}
 				} elseif (is_array($a) && array_key_exists('children', $a)) {
@@ -229,6 +229,7 @@ class html {
 	public static function parse_css_shorthand($css_value) {
 		$css_value = trim($css_value);
 		if (strpos($css_value, ' ') !== false) {
+			$output = [];
 			$parts = preg_split("/[\\s]+/", $css_value);
 			$partscount = count($parts);
 			if ($partscount == 2) {
@@ -271,12 +272,12 @@ class html {
 		$dom->loadHTML($html);
 
 		$xpath = new \DOMXPath($dom);
-		$scriptNodes = $xpath->query('//script[@type="application/ld+json"]');
+		$script_nodes = $xpath->query('//script[@type="application/ld+json"]');
 
 		$output = [];
-		if ($scriptNodes->length > 0) {
-			for ($i = 0; $i < $scriptNodes->length; $i++) {
-				$output[] = json_decode(trim($scriptNodes->item($i)->textContent));
+		if ($script_nodes->length > 0) {
+			for ($i = 0; $i < $script_nodes->length; $i++) {
+				$output[] = json_decode(trim($script_nodes->item($i)->textContent));
 			}
 		}
 		return $output;

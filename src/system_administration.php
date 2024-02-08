@@ -93,16 +93,16 @@ class system_administration {
 	public function backup_mysql($options = []) {
 		$this->check_base_config();
 
-		if (!is_numeric($options['purge_after'])) {
+		if (!is_numeric(@$options['purge_after'])) {
 			$options['purge_after'] = 30;
 		}
-		if (!is_array($options['databases'])) {
+		if (!is_array(@$options['databases'])) {
 			$this->system_error('List of databases is not an array.');
 		}
 
-		$this->check_path($options['mysql_config_file'], true);
-		$this->check_path($options['mysq_dump_path'], true);
-		if ($options['publickey_path']) {
+		$this->check_path(@$options['mysql_config_file'], true);
+		$this->check_path(@$options['mysq_dump_path'], true);
+		if (@$options['publickey_path']) {
 			$this->check_path($options['publickey_path'], true);
 		}
 
@@ -112,7 +112,7 @@ class system_administration {
 		foreach ($options['databases'] as $db => $db_details) {
 			$this->check_database_table_name($db);
 
-			if ($options['publickey_path']) {
+			if (@$options['publickey_path']) {
 				$filename = 'BACKUP_'. date('Y-m-d_Hi', $starttime) .'_'. $db .'.sql.enc';
 				$filename_monthly = 'BACKUP_'. date('Y-m', $starttime) .'_monthly_'. $db .'.sql.enc';
 				$filename_annual = 'BACKUP_'. date('Y', $starttime) .'_annual_'. $db .'.sql.enc';
@@ -132,7 +132,7 @@ class system_administration {
 					$command .= ' --ignore-table='. $db .'.'. $skip_table;
 				}
 			}
-			if ($options['publickey_path']) {
+			if (@$options['publickey_path']) {
 				$command .= " | openssl smime -encrypt -binary -text -aes256 -out ". filesystem::concat_path($options['mysq_dump_path'], $filename) ." -outform DER ". $options['publickey_path'];
 				// NOTE: to decrypt: openssl smime -decrypt -in database.sql.enc -binary -inform DEM -inkey mysqldump-secure.priv.pem -out database.sql
 			} else {
@@ -160,18 +160,18 @@ class system_administration {
 
 				echo '   Done!';
 
-				if ($options['keep_monthly_backup']) {
+				if (@$options['keep_monthly_backup']) {
 					if (!copy(filesystem::concat_path($options['mysq_dump_path'], $filename_gz), filesystem::concat_path($options['mysq_dump_path'], $filename_monthly) .'.gz')) {
 						$this->notify_error('Please check the '. $this->system_name .' backup script '. __FILE__ .' - Failed to copy the monthly backup.');
 					}
 				}
-				if ($options['keep_annual_backup']) {
+				if (@$options['keep_annual_backup']) {
 					if (!copy(filesystem::concat_path($options['mysq_dump_path'], $filename_gz), filesystem::concat_path($options['mysq_dump_path'], $filename_annual) .'.gz')) {
 						$this->notify_error('Please check the '. $this->system_name .' backup script '. __FILE__ .' - Failed to copy the annual backup.');
 					}
 				}
 
-				if ($options['command_after']) {
+				if (@$options['command_after']) {
 					$this->ln();
 					$this->ln('Running post-command...');
 					$this->ln('--------------------------------------------'. PHP_EOL);
@@ -183,7 +183,7 @@ class system_administration {
 					$this->ln('--------------------------------------------');
 					$this->ln();
 				}
-				if ($options['post_to_url']) {
+				if (@$options['post_to_url']) {
 					// Command line version: curl -i -k -X POST -H "Content-Type: multipart/form-data" -F "f1=@/path/to/file" https://servertopostto.com/index.php
 					// TODO: check the hashes on the receiving side
 					echo '  Created. Now uploading... ';
@@ -279,7 +279,7 @@ class system_administration {
 
 		$this->check_path($options['source_path'], true);
 		$this->check_path($options['destination_path'], false);
-		if ($options['backups_path']) {
+		if (@$options['backups_path']) {
 			$this->check_path($options['backups_path'], false);
 		}
 
@@ -359,7 +359,7 @@ class system_administration {
 		if (!$options['mysq_dump_path']) {
 			$this->system_error('MySQL dump path unknown for checking backup.');
 		}
-		if (!is_numeric($options['max_hours_since_last_backup'])) {
+		if (!is_numeric(@$options['max_hours_since_last_backup'])) {
 			$options['max_hours_since_last_backup'] = 48;
 		}
 
@@ -430,7 +430,7 @@ class system_administration {
 		if ($handle) {
 			$processed_tables = [];
 
-			if (!is_callable($options['query_callback'])) {
+			if (!is_callable(@$options['query_callback'])) {
 				$link = $this->connect_database($options);
 			}
 
@@ -463,7 +463,7 @@ class system_administration {
 					}
 
 					if ($table_enabled) {
-						if (is_callable($options['query_callback'])) {
+						if (is_callable(@$options['query_callback'])) {
 							if ($options['query_callback']($query_details, $sql_buffer) === false) {
 								break;
 							}
@@ -540,7 +540,7 @@ class system_administration {
 
 		ob_start();
 
-		if (!is_callable($options['allow_receive_callback'])) {
+		if (!is_callable(@$options['allow_receive_callback'])) {
 			core::system_error('Callback for determining if this machine is allowed to receive a database is missing.');
 		} else {
 			if (!call_user_func($options['allow_receive_callback'])) {
@@ -548,12 +548,12 @@ class system_administration {
 			}
 		}
 
-		if (!$options['skip_confirmation']) {
-			if (@constant('YII_BEGIN_TIME')) {
+		if (!@$options['skip_confirmation']) {
+			if (@defined('YII_BEGIN_TIME')) {
 				$is_confirmed = \Yii::$app->request->get('confirm');
 				$curr_url_confirmed = \yii\helpers\Url::current(['confirm' => 1]);
 			} else {
-				$is_confirmed = $_GET['confirm'];
+				$is_confirmed = @$_GET['confirm'];
 				$curr_url_confirmed = core::page_url(['confirm' => 1]);
 			}
 			if (!$is_confirmed) {
@@ -568,12 +568,12 @@ class system_administration {
 
 		$starttime = microtime(true);
 
-		if ($options['database_host'] == 'USE-YII') {
+		if (@$options['database_host'] == 'USE-YII') {
 			$this->use_yii_db($options);
 		}
 
 		$postfields = ['key' => $options['key']];
-		if ($options['where_condition']) {
+		if (@$options['where_condition']) {
 			$postfields['where_condition'] = $options['where_condition'];
 		}
 
@@ -675,6 +675,7 @@ class system_administration {
 	 *   - `database_username` (req.)
 	 *   - `database_password` (req.)
 	 *   - `database_name` (req.)
+	 *   - `tables` - WHAT ABOUT THIS ONE?
 	 */
 	public function send_production_database($options) {
 		$this->check_base_config();
@@ -683,7 +684,7 @@ class system_administration {
 		//   https://www.phpclasses.org/package/10137-PHP-Dump-MySQL-database-tables-for-file-download.html
 		//   http://stackoverflow.com/questions/6750531/using-a-php-file-to-generate-a-mysql-dump
 
-		if (!is_callable($options['allow_send_callback'])) {
+		if (!is_callable(@$options['allow_send_callback'])) {
 			core::system_error('Callback for determining if this machine is allowed to send its database is missing.');
 		} else {
 			if (!call_user_func($options['allow_send_callback'])) {
@@ -691,43 +692,43 @@ class system_administration {
 			}
 		}
 
-		if ($_POST['key'] !== $options['key']) {
+		if (@$_POST['key'] !== @$options['key']) {
 			core::system_error('Invalid key.');
 		}
 
 		$output = '';
 
-		if ($options['database_host'] == 'USE-YII') {
+		if (@$options['database_host'] == 'USE-YII') {
 			$this->use_yii_db($options);
 		}
 
 		$tempname = 'database_out'. time() .'_'. rand(10000, 99999) .'.sql';
-		if (@constant('YII_BEGIN_TIME')) {
+		if (@defined('YII_BEGIN_TIME')) {
 			$fullpath_tempfile = \Yii::getAlias('@runtime/'. $tempname);
 		} else {
 			$fullpath_tempfile = sys_get_temp_dir() .'/'. $tempname;
 		}
 
 		$cmd = 'mysqldump --compact';
-		if ($_POST['where_condition']) {
+		if (@$_POST['where_condition']) {
 			$cmd .= ' --no-create-info --replace';
 		} else {
 			$cmd .= ' --add-drop-table';
 		}
 		$cmd .= ' --add-locks --user='. $options['database_username'] .' --password='. $options['database_password'] .' --host='. $options['database_host'];
-		if ($_POST['where_condition']) {
-			if ($_POST['where_condition']['where'] && preg_match("/^[a-z0-9_\\-\\(\\)=<>'% ]+$/i", $_POST['where_condition']['where'])) {
+		if (@$_POST['where_condition']) {
+			if (@$_POST['where_condition']['where'] && preg_match("/^[a-z0-9_\\-\\(\\)=<>'% ]+$/i", $_POST['where_condition']['where'])) {
 				$cmd .= ' --where="'. $_POST['where_condition']['where'] .'"';
 			} else {
-				core::system_error('Invalid where condition for table.', ['Table' => $_POST['where_condition']['table'], 'Where' => $_POST['where_condition']['where']]);
+				core::system_error('Invalid where condition for table.', ['Table' => @$_POST['where_condition']['table'], 'Where' => @$_POST['where_condition']['where']]);
 			}
 		}
 		$cmd .= ' '. $options['database_name'];
-		if ($_POST['where_condition']) {
-			if ($_POST['where_condition']['table'] && preg_match("/^[a-z0-9_ ]+$/i", $_POST['where_condition']['table'])) {
+		if (@$_POST['where_condition']) {
+			if (@$_POST['where_condition']['table'] && preg_match("/^[a-z0-9_ ]+$/i", $_POST['where_condition']['table'])) {
 				$cmd .= ' '. $_POST['where_condition']['table'];
 			} else {
-				core::system_error('Invalid table for where condition.', ['Table' => $_POST['where_condition']['table']]);
+				core::system_error('Invalid table for where condition.', ['Table' => @$_POST['where_condition']['table']]);
 			}
 		} else {
 			$cmd .= ' '. implode(' ', $options['tables']);

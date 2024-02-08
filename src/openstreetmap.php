@@ -78,7 +78,7 @@ class openstreetmap {
 			foreach ($data['way'] as $way) {
 				$tags = [];
 				foreach ($way['tag'] as $tag) {
-					if ($tag['@attributes']) {
+					if (isset($tag['@attributes'])) {
 						$tags[ $tag['@attributes']['k'] ] = $tag['@attributes']['v'];
 					} else {
 						// when it only has one tag

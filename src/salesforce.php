@@ -85,7 +85,7 @@ class salesforce {
 
 			$response = json_decode($json_response, true);
 
-			if ($response['access_token']) {
+			if (@$response['access_token']) {
 				$this->auth_response = $response;
 				$this->is_authenticated = true;
 			} else {
@@ -258,7 +258,7 @@ class salesforce {
 		$status = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
 		if ($status == 404) {
 			$result = json_decode($json_response, true);
-			if ($result[0]['errorCode'] == 'ENTITY_IS_DELETED') {
+			if (@$result[0]['errorCode'] == 'ENTITY_IS_DELETED') {
 				// entity has already been deleted
 				return false;
 			} else {
@@ -321,7 +321,7 @@ class salesforce {
 	 * 		}
 	 * ```
 	 *
-	 * @return array : Sxample (in JSON notation):
+	 * @return array : Example (in JSON notation):
 	 * ```
 	 * 		{
 	 * 			"hasErrors": false,

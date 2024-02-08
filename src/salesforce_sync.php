@@ -226,7 +226,7 @@ class salesforce_sync {
 							return;
 						}
 						$sf_fields[ $fld_cfg['sf_field'] ] = $conversion;
-					} elseif (substr($fld_cfg['trigger_field'], 0, 1) === '*' && !$done_autofield[$fld_cfg['sf_field']]) {
+					} elseif (substr($fld_cfg['trigger_field'], 0, 1) === '*' && !@$done_autofield[$fld_cfg['sf_field']]) {
 						if (($fld_cfg['trigger_field'] === '*insert' && $action == 'insert') || ($fld_cfg['trigger_field'] === '*update' && $action == 'update') || $fld_cfg['trigger_field'] === '*') {
 							$sf_fields[ $fld_cfg['sf_field'] ] = $this->convert_value_to_salesforce($action, $fld_cfg, $fields);
 							$done_autofield[$fld_cfg['sf_field']] = true;
@@ -701,28 +701,28 @@ WHAT IS THIS ABOUT? The line below was uncommented when I started looking at thi
 			$field_cfg['our_field'] = $field_cfg['trigger_field'];
 		}
 
-		if ($field_cfg['conversion'] && is_callable($field_cfg['conversion'])) {
+		if (@$field_cfg['conversion'] && is_callable($field_cfg['conversion'])) {
 			$value = $field_cfg['conversion']($db_record);
 			if ($value === '__dont_sync_to_salesforce') {
 				return '__skip_record';
 			}
-		} elseif ($field_cfg['conversion'] == 'null_if_empty_string') {
+		} elseif (@$field_cfg['conversion'] == 'null_if_empty_string') {
 			$value = ($db_record[ $field_cfg['our_field'] ] === '' ? null : $db_record[ $field_cfg['our_field'] ]);
-		} elseif ($field_cfg['conversion'] == 'tinyint_checkbox') {  //conversion of 1 and 0 to true and false
+		} elseif (@$field_cfg['conversion'] == 'tinyint_checkbox') {  //conversion of 1 and 0 to true and false
 			$value = ($db_record[ $field_cfg['our_field'] ] ? true : false);
-		} elseif ($field_cfg['conversion'] == 'date_to_checkbox') {
+		} elseif (@$field_cfg['conversion'] == 'date_to_checkbox') {
 			$value = ($db_record[ $field_cfg['our_field'] ] ? true : false);
-		} elseif ($field_cfg['conversion'] == 'date_to_iso8601') {
+		} elseif (@$field_cfg['conversion'] == 'date_to_iso8601') {
 			$value = $db_record[ $field_cfg['our_field'] ];
 
 			// OBS!! Phpforce\SoapClient automatically convert timestamps to the system timezone!
-			if ($field_cfg['timezone'] && $field_cfg['timezone'] != 'system' && $field_cfg['timezone'] != date_default_timezone_get()) {
+			if (@$field_cfg['timezone'] && $field_cfg['timezone'] != 'system' && $field_cfg['timezone'] != date_default_timezone_get()) {
 				$value = datetime::change_timestamp_timezone($value, $field_cfg['timezone'], date_default_timezone_get(), 'c');
 			} else {
 				// only convert to ISO-8601
 				$value = date(DATE_ATOM, strtotime($value));  // DATE_ATOM = 'c'
 			}
-		} elseif ($field_cfg['fixed_value']) {
+		} elseif (@$field_cfg['fixed_value']) {
 			$value = $field_cfg['fixed_value'];
 		} else {
 			$value = $db_record[ $field_cfg['our_field'] ];

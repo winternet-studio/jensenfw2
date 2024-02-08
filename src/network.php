@@ -175,7 +175,7 @@ class network {
 	 */
 	public static function get_url_post($url, $post_data, $options = []) {
 		// Make POST string
-		if ($options['raw_post']) {
+		if (@$options['raw_post']) {
 			$post_string = (string) $post_data;
 		} else {
 			$post_string = '';
@@ -190,14 +190,14 @@ class network {
 		curl_setopt($ch, CURLOPT_POST, 1);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $post_string);  //NOTE from PHP manual: Passing an array to CURLOPT_POSTFIELDS will encode the data as multipart/form-data, while passing a URL-encoded string will encode the data as application/x-www-form-urlencoded.
 			//Further notes: on the other end use file_get_contents('php://input') to retrieve the POSTed data ($HTTP_RAW_POST_DATA many times does not work due to some php.ini settings) (php://input does not work with enctype="multipart/form-data"! Source: http://www.codediesel.com/php/reading-raw-post-data-in-php/)
-		if ($options['raw_post']) {
+		if (@$options['raw_post']) {
 			curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: text/plain']);
 		}
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 		curl_setopt($ch, CURLOPT_USERAGENT, 'JensenFW2 winternet.no');  //set a default one since many servers/firewalls now require a user agent
 
 		// Set extra cURL options
-		if (is_array($options['set_curl_opt'])) {
+		if (is_array(@$options['set_curl_opt'])) {
 			foreach ($options['set_curl_opt'] as $curl_opt => $curl_value) {
 				curl_setopt($ch, $curl_opt, $curl_value);
 			}
@@ -271,10 +271,10 @@ class network {
 			$is_url = false;
 		}
 		if ($is_url) {
-			if ($options['skip_url_exist_check']) {
+			if (@$options['skip_url_exist_check']) {
 				$file_exists = true;
 			} else {
-				$file_exists = self::url_exists($file);
+				$file_exists = static::url_exists($file);
 			}
 		} else {
 			$file_exists = true;
@@ -332,7 +332,7 @@ class network {
 			// Prepare HTTP headers
 			if ($dont_force_download == false) {
 				// Force download
-				if (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE')) {
+				if (strpos(@$_SERVER['HTTP_USER_AGENT'], 'MSIE')) {
 					header('Content-Type: application/force-download');
 				} else {
 					header('Content-Type: application/octet-stream');
@@ -414,9 +414,10 @@ class network {
 		}
 		flush();
 
-		if ($options['skip_padding'] && !$GLOBALS['_jfw_have_padded_flush']) {
+		if (@$options['skip_padding'] && !@$GLOBALS['_jfw_have_padded_flush']) {
 			// Firefox, IE and other browsers have a buffer which must be filled before incremental rendering kicks in
 			echo '<!--'. str_repeat(' ', 1024) .'-->';
+			// TODO: refactor to not use globals
 			$GLOBALS['_jfw_have_padded_flush'] = true;
 		}
 	}
@@ -441,6 +442,7 @@ class network {
 		if (!$headpos) {
 			core::system_error('Page is invalid. Closing header tag not found.');
 		}
+		// TODO: refactor to not use globals
 		$GLOBALS['head_code_buffer'] = $buf;
 		$GLOBALS['head_code_closingtag_pos'] = $headpos;
 		ob_clean();
@@ -458,8 +460,9 @@ class network {
 	public static function html_head_code_end() {
 		$headcode = ob_get_contents();
 		ob_clean();
-		$buf = $GLOBALS['head_code_buffer'];
-		$headpos = $GLOBALS['head_code_closingtag_pos'];
+		// TODO: refactor to not use globals
+		$buf = @$GLOBALS['head_code_buffer'];
+		$headpos = @$GLOBALS['head_code_closingtag_pos'];
 		if (!$buf) {
 			core::system_error('Configuration error. Page output buffer for inserting header code is not available.');
 		}
@@ -513,7 +516,7 @@ class network {
 		$arr_attributes = [];
 		try {
 			$xml = @new SimpleXMLElement($curr_tag .'</body>');
-		} catch (Exception $e) {
+		} catch (\Exception $e) {
 			core::system_error('Body tag could not be parsed correctly for adding attribute.', ['Body tag' => $curr_tag, 'Parse error' => $e->getMessage() ]);
 		}
 		foreach ($xml->attributes() as $c_key => $c_value) {
@@ -663,10 +666,10 @@ class network {
 	public static function limit_ip_access($resource_id, $timeperiod, $timeperiod_unit, $allowed_hits, $options = []) {
 		$cfg = core::get_class_defaults(__CLASS__);
 
-		if ($options['override_db_name']) {
+		if (isset($options['override_db_name'])) {
 			$cfg['limit_ip_access_db_name'] = $options['override_db_name'];
 		}
-		if ($options['override_db_table']) {
+		if (isset($options['override_db_table'])) {
 			$cfg['limit_ip_access_db_table'] = $options['override_db_table'];
 		}
 
@@ -682,19 +685,19 @@ class network {
 		}
 
 		// 'check_only' implies the 'return_status' as well, so ensure it's added
-		if ($options['check_only']) {
+		if (@$options['check_only']) {
 			$options['return_status'] = true;
 		}
 
 		core::require_database();
 		$sql = "SELECT ";
-		if ($options['variation_key']) {
+		if (@$options['variation_key']) {
 			$sql .= " resource_variation_key ";
 		} else {
 			$sql .= " accesstime ";
 		}
-		$sql .= "FROM `". $cfg['limit_ip_access_db_name'] ."`.`". $cfg['limit_ip_access_db_table'] ."` WHERE resource_id = '". core::sql_esc($resource_id) ."' AND ip_addr = '". core::sql_esc(($_SERVER['HTTP_X_FORWARDED_FOR'] ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'])) ."' AND TIMESTAMPDIFF(". $timeperiod_unit .", accesstime, NOW()) <= ". $timeperiod;
-		if ($options['variation_key']) {
+		$sql .= "FROM `". $cfg['limit_ip_access_db_name'] ."`.`". $cfg['limit_ip_access_db_table'] ."` WHERE resource_id = '". core::sql_esc($resource_id) ."' AND ip_addr = '". core::sql_esc((@$_SERVER['HTTP_X_FORWARDED_FOR'] ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'])) ."' AND TIMESTAMPDIFF(". $timeperiod_unit .", accesstime, NOW()) <= ". $timeperiod;
+		if (@$options['variation_key']) {
 			$sql .= " AND resource_variation_key IS NOT NULL";
 			$sql .= " AND resource_variation_key <> '". core::sql_esc($options['variation_key']) ."'";
 			$sql .= " GROUP BY resource_variation_key";
@@ -705,23 +708,23 @@ class network {
 		$actual_hits++;  //add the current request to the number of hits
 
 		if ($actual_hits > $allowed_hits) {
-			if ($options['custom_err_msg']) {
+			if (@$options['custom_err_msg']) {
 				$err_msg = $options['custom_err_msg'];
 			} else {
-				if ($options['variation_key']) {
+				if (@$options['variation_key']) {
 					$err_msg = 'You have exceeded the number of different requests allowed to this resource. Wait a while and try again.';
 				} else {
 					$err_msg = 'You have exceeded the number of allowed requests to this resource. Wait a while and try again.';
 				}
 			}
-			if ($options['return_status']) {
+			if (@$options['return_status']) {
 				return 'prohibit';
 			} else {
 				core::system_error($err_msg, ['Resource' => $resource_id, 'Variation key' => $options['variation_key'], 'Time period' => $timeperiod .' '. $timeperiod_unit, 'Allowed hits' => $allowed_hits, 'Actual hits' => $actual_hits]);
 			}
 		}
 
-		if (!$options['check_only']) {
+		if (!@$options['check_only']) {
 			// Register current hit, only if options `check_only` has not been set
 			switch ($timeperiod_unit) {
 			case 'SECOND':
@@ -740,21 +743,21 @@ class network {
 			case 'YEAR':
 				$expiredays = ceil($timeperiod * 365); break;
 			}
-			$sql = "INSERT INTO `". $cfg['limit_ip_access_db_name'] ."`.`". $cfg['limit_ip_access_db_table'] ."` SET `resource_id` = '". core::sql_esc($resource_id) ."', `ip_addr` ='". core::sql_esc(($_SERVER['HTTP_X_FORWARDED_FOR'] ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'])) ."', `expire_days` = ". $expiredays;
-			if ($options['variation_key']) {
+			$sql = "INSERT INTO `". $cfg['limit_ip_access_db_name'] ."`.`". $cfg['limit_ip_access_db_table'] ."` SET `resource_id` = '". core::sql_esc($resource_id) ."', `ip_addr` ='". core::sql_esc((@$_SERVER['HTTP_X_FORWARDED_FOR'] ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'])) ."', `expire_days` = ". $expiredays;
+			if (@$options['variation_key']) {
 				$sql .= ", resource_variation_key = '". core::sql_esc($options['variation_key']) ."'";
 			}
 			core::database_query($sql, 'Database query for registering IP address hit failed.');
 		}
 
 		// Purge unneded records once per session
-		if (!$_SESSION['_system_ip_access_has_been_purged']) {
+		if (!@$_SESSION['_system_ip_access_has_been_purged']) {
 			$sql = "DELETE FROM `". $cfg['limit_ip_access_db_name'] ."`.`". $cfg['limit_ip_access_db_table'] ."` WHERE DATEDIFF(NOW(), `accesstime`) > `expire_days`";
 			$recordsdeleted = core::database_result($sql, false, 'Database query for purging IP access table failed.');
 			$_SESSION['_system_ip_access_has_been_purged'] = true;
 		}
 
-		if ($options['return_status']) {
+		if (@$options['return_status']) {
 			return 'allow';
 		}
 	}

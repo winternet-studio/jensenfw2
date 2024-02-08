@@ -56,25 +56,25 @@ class format {
 			}
 		}
 
-		if (!is_array($options['skip_columns'])) {
+		if (!is_array(@$options['skip_columns'])) {
 			$options['skip_columns'] = [];
 		}
 
 ?>
-		<table class="table <?= $options['table_classes'] ?>">
+		<table class="table <?= @$options['table_classes'] ?>">
 		<tr>
 <?php
 		foreach (array_keys($array[0]) as $name) {
 			if (in_array($name, $options['skip_columns'])) continue;
 
-			if (is_callable($options['th_callback'])) {
+			if (is_callable(@$options['th_callback'])) {
 				$name = $options['th_callback']($name);
 			}
 ?>
 			<th><?= htmlentities($name) ?></th>
 <?php
 		}
-		if (is_array($options['extra_columns'])) {
+		if (is_array(@$options['extra_columns'])) {
 			foreach ($options['extra_columns'] as $extra_column_name => $extra_column_callback) {
 ?>
 			<th><?= $extra_column_name ?></th>
@@ -91,17 +91,17 @@ class format {
 			foreach ($row as $name => $value) {
 				if (in_array($name, $options['skip_columns'])) continue;
 
-				if (is_callable($options['td_callback'])) {
+				if (is_callable(@$options['td_callback'])) {
 					$value = $options['td_callback']($row, $name, $value);
 				}
-				if (empty($options['skip_html_encoding']) || (is_array($options['skip_html_encoding']) && !in_array($name, $options['skip_html_encoding']))) {
+				if (empty($options['skip_html_encoding']) || (is_array(@$options['skip_html_encoding']) && !in_array($name, @$options['skip_html_encoding']))) {
 					$value = nl2br(htmlentities($value));
 				}
 ?>
 				<td><?= $value ?></td>
 <?php
 			}
-			if (is_array($options['extra_columns'])) {
+			if (is_array(@$options['extra_columns'])) {
 				foreach ($options['extra_columns'] as $extra_column) {
 ?>
 				<td><?= $extra_column($row, $row_index) ?></td>
@@ -310,9 +310,9 @@ class format {
 	 * @return string
 	 */
 	public static function fix_wrong_title_case($text, $upper_percentage_low = 20, $upper_percentage_high = 50, $strtotitle_options = []) {
-		$upper_percentage = self::uc_percentage($text);
+		$upper_percentage = static::uc_percentage($text);
 		if ($upper_percentage >= $upper_percentage_high || $upper_percentage <= $upper_percentage_low) {
-			$text = self::strtotitle($text, (array) $strtotitle_options);
+			$text = static::strtotitle($text, (array) $strtotitle_options);
 		}
 		return $text;
 	}
@@ -323,6 +323,9 @@ class format {
 	 * @see https://stackoverflow.com/a/27194169/2404541
 	 */
 	public static function mb_str_pad($str, $pad_len, $pad_str = ' ', $dir = STR_PAD_RIGHT, $encoding = NULL) {
+		if (PHP_VERSION_ID >= 80300) {
+			return \mb_str_pad($str, $pad_len, $pad_str, $dir, $encoding);  //native function introduced in PHP 8.3
+		}
 		$encoding = $encoding === NULL ? mb_internal_encoding() : $encoding;
 		$padBefore = $dir === STR_PAD_BOTH || $dir === STR_PAD_LEFT;
 		$padAfter = $dir === STR_PAD_BOTH || $dir === STR_PAD_RIGHT;
@@ -430,7 +433,7 @@ class format {
 	 * @return string
 	 */
 	public static function cleanup_title_url_safe($title, $options = []) {
-		$output = preg_replace(['/[^a-zA-Z0-9 -]/'. core::$preg_u, '/[ -]+/'. core::$preg_u, '/^-|-$/'. core::$preg_u], ['', '-', ''], self::replace_accents($title));
+		$output = preg_replace(['/[^a-zA-Z0-9 -]/'. core::$preg_u, '/[ -]+/'. core::$preg_u, '/^-|-$/'. core::$preg_u], ['', '-', ''], static::replace_accents($title));
 		if (!@$options['maintain_case']) {
 			$output = strtolower($output);
 		}
@@ -506,11 +509,11 @@ class format {
 						$token = explode($options['field_separator'], $part, 3);
 						$token2 = [];
 						foreach ($token as $t) {
-							$token2[] = self::extract_tags($t, $options);
+							$token2[] = static::extract_tags($t, $options);
 						}
 						$tokens[] = $token2;
 					} else {
-						$tokens[] = self::extract_tags($part, $options);
+						$tokens[] = static::extract_tags($part, $options);
 					}
 				} else {
 					if ($options['field_separator'] !== false) {

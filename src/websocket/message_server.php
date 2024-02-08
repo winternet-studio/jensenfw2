@@ -12,7 +12,7 @@ class message_server implements MessageComponentInterface {
 	public function __construct($options = []) {
 		$this->clients = new \SplObjectStorage;
 		$this->channels = [];
-		if ($options['channels'] === '*') {
+		if (@$options['channels'] === '*') {
 			$this->autocreate_channels = true;
 		} else {
 			foreach ($options['channels'] as $channel) {
@@ -31,11 +31,11 @@ class message_server implements MessageComponentInterface {
 	public function onMessage(ConnectionInterface $from, $msg) {
 		echo sprintf('---------------------------------------------------------------'."\n", $from->resourceId);
 		$data = json_decode($msg, true);
-		if ($data['action'] == 'joinChannel') {
-			if (!$data['channel']) {
+		if (@$data['action'] == 'joinChannel') {
+			if (!@$data['channel']) {
 				echo sprintf('Connection %d did not specify which channel to join'."\n", $from->resourceId);
-			} elseif ($this->channels[$data['channel']] || $this->autocreate_channels) {
-				if (!$this->channels[$data['channel']]) {  //auto-create it
+			} elseif (@$this->channels[$data['channel']] || $this->autocreate_channels) {
+				if (!@$this->channels[$data['channel']]) {  //auto-create it
 					$this->channels[$data['channel']]['clients'] = new \SplObjectStorage;
 					echo sprintf('Connection %d create new channel "%s"'."\n", $from->resourceId, $data['channel']);
 				}
@@ -52,7 +52,7 @@ class message_server implements MessageComponentInterface {
 			// $numRecv = count($this->clients) - 1;
 			echo sprintf('Connection %d sending msg "%s"'."\n", $from->resourceId, mb_substr($msg, 0, 50));
 
-			if ($data['toChannel'] === '*') {
+			if (@$data['toChannel'] === '*') {
 				echo sprintf('to all clients/channels'."\n");
 			}
 
@@ -61,14 +61,14 @@ class message_server implements MessageComponentInterface {
 					// don't send to sender
 					echo sprintf('Not to %d (self)'."\n", $client->resourceId);
 					continue;
-				} elseif (!$data['toChannel']) {
+				} elseif (!@$data['toChannel']) {
 					echo sprintf('Connection %d tried to send msg without specifying channel'."\n", $from->resourceId);
 					break;
 				} elseif ($data['toChannel'] === '*') {
 					// allow
 				} else {
 					// is for a specific channel
-					if (!$this->channels[$data['toChannel']]) {
+					if (!@$this->channels[$data['toChannel']]) {
 						echo sprintf('Connection %d tried to send msg to non-existing channel "%s"'."\n", $from->resourceId, $data['toChannel']);
 						break;
 					} elseif ($data['toChannel'] === '*') {

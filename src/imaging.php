@@ -206,17 +206,17 @@ class imaging {
 			if (!extension_loaded('imagick')) {
 				core::system_error('The extension Imagick is not installed. Required for using resize_save() with TIFF files.');
 			}
-			if ($options['src_x'] || $options['src_y']) {
+			if (@$options['src_x'] || @$options['src_y']) {
 				core::system_error('Options src_x and src_y for TIFF images is not yet supported by resize_save().');
 			}
 		}
 
-		if (!is_numeric($options['src_x'])) {
+		if (!is_numeric(@$options['src_x'])) {
 			$options['src_x'] = 0;
 		} else {
 			$options['src_x'] = (int) $options['src_x'];  //ensure it's an integer
 		}
-		if (!is_numeric($options['src_y'])) {
+		if (!is_numeric(@$options['src_y'])) {
 			$options['src_y'] = 0;
 		} else {
 			$options['src_y'] = (int) $options['src_y'];  //ensure it's an integer
@@ -227,7 +227,7 @@ class imaging {
 				$img_src = new \Imagick($inputfilepath);
 			} elseif ($src_ext == 'jpg') {
 				$img_src = imagecreatefromjpeg($inputfilepath);
-				if (!is_numeric($options['quality'])) {
+				if (!is_numeric(@$options['quality'])) {
 					$options['quality'] = 90;
 				} elseif ($options['quality'] > 99) {
 					$err_msg[] = 'JPG quality must be between 0 and 99.';
@@ -235,13 +235,13 @@ class imaging {
 			} else {
 				// is png
 				$img_src = imagecreatefrompng($inputfilepath);
-				if ($options['autodetect_transparency']) {
-					$has_transparency = self::png_has_transparency($inputfilepath);
+				if (@$options['autodetect_transparency']) {
+					$has_transparency = static::png_has_transparency($inputfilepath);
 					if ($has_transparency) {  //source: http://stackoverflow.com/a/313103/2404541
 						imagealphablending($img_src, true);
 					}
 				}
-				if (!is_numeric($options['quality'])) {
+				if (!is_numeric(@$options['quality'])) {
 					$options['quality'] = -1;
 				} elseif ($options['quality'] > 9) {
 					$err_msg[] = 'PNG quality must be between 0 and 9.';
@@ -263,7 +263,7 @@ class imaging {
 					imagealphablending($img_dst, false);
 					imagesavealpha($img_dst, true);
 				}
-				$result = imagecopyresampled($img_dst, $img_src, 0, 0, $options['src_x'], $options['src_y'], $new_width, $new_height, $curr_width, $curr_height);
+				$result = imagecopyresampled($img_dst, $img_src, 0, 0, @$options['src_x'], @$options['src_y'], $new_width, $new_height, $curr_width, $curr_height);
 			}
 			if ($result == false) {
 				$err_msg[] = 'Failed to create destination image.';
@@ -271,14 +271,14 @@ class imaging {
 		}
 
 		if (count($err_msg) == 0 && $src_ext != 'tif') {
-			if ($options['fix_gamma']) {
+			if (@$options['fix_gamma']) {
 				imagegammacorrect($img_dst, 2.2, 1.0);  //see https://web.archive.org/web/20120208120928/http://www.4p8.com/eric.brasseur/gamma.html#PHP
 			}
 		}
 
 		if (count($err_msg) == 0) {
 			// Write text on image
-			if (is_string($options['add_elements']) && $options['add_elements']) {
+			if ((@$options['add_elements'] || is_numeric(@$options['add_elements'])) && is_string($options['add_elements'])) {
 				if ($src_ext == 'tif') {
 					core::system_error('Writing text on the TIFF images is not yet supported by resize_save().');
 				} else {
@@ -294,7 +294,7 @@ class imaging {
 					];
 				}
 			}
-			if (!is_array($options['add_elements'])) {
+			if (!is_array(@$options['add_elements'])) {
 				$options['add_elements'] = [];
 			}
 			foreach ($options['add_elements'] as $elem) {
@@ -310,7 +310,7 @@ class imaging {
 					// write text
 					$black = imagecolorallocate($img_dst, 255,255,255);
 					if ($elem['position'] == 'bottom_left') {
-						imagettftext($img_dst, (array_key_exists('fontsize', $elem) ? $elem['fontsize'] : 10), (array_key_exists('angle', $elem) ? $elem['angle'] : 0), 4, $new_height-4, $black, ($elem['fontfile'] ? $elem['fontfile'] : './arial.ttf'), $elem['writetext']);
+						imagettftext($img_dst, (array_key_exists('fontsize', $elem) ? $elem['fontsize'] : 10), (array_key_exists('angle', $elem) ? $elem['angle'] : 0), 4, $new_height-4, $black, (@$elem['fontfile'] ? $elem['fontfile'] : './arial.ttf'), $elem['writetext']);
 					} else {
 						$err_msg[] = 'Text position is not among implemented values.';
 					}
@@ -335,12 +335,12 @@ class imaging {
 					if (!imagepng($img_dst, $outputfilepath, $options['quality'])) {
 						$err_msg[] = 'Failed to write PNG file.';
 					} else {
-						if ($options['compress_png']) {
-							if ($options['calc_png_compression_savings']) {
+						if (@$options['compress_png']) {
+							if (@$options['calc_png_compression_savings']) {
 								$size_before = filesize($outputfilepath);
 							}
-							self::compress_png($outputfilepath, ['save_to_file' => $outputfilepath, 'allow_overwrite' => true, 'ignore_exitcodes' => [99 /*ignore if compression fails due to minimum quality not being met*/]]);
-							if ($options['calc_png_compression_savings']) {
+							static::compress_png($outputfilepath, ['save_to_file' => $outputfilepath, 'allow_overwrite' => true, 'ignore_exitcodes' => [99 /*ignore if compression fails due to minimum quality not being met*/]]);
+							if (@$options['calc_png_compression_savings']) {
 								clearstatcache();
 								$size_after = filesize($outputfilepath);
 							}
@@ -367,7 +367,7 @@ class imaging {
 				'result_msg' => $result_msg,
 			];
 		}
-		if ($dest_ext == 'png' && $options['calc_png_compression_savings'] && $size_before) {
+		if ($dest_ext == 'png' && @$options['calc_png_compression_savings'] && $size_before) {
 			$result['png_compression_savings'] = $size_before - $size_after;
 			$result['png_compression_savings_perc'] = $result['png_compression_savings'] / $size_before * 100;
 		}
@@ -405,7 +405,7 @@ class imaging {
 		}
 
 		if ($options['only_if_applicable']) {
-			$image_color_space = self::get_colorspace($image_path_rgb);
+			$image_color_space = static::get_colorspace($image_path_rgb);
 			if (!$image_color_space) {
 				core::system_error('Could not determine the current colorspace of image.', ['Image' => $image_path_rgb]);
 			} elseif (in_array($image_color_space, ['GRAY'])) {  //a TIFF bitmap file (grene.tif) had the value "GRAY" - that should of course not be converted
@@ -564,7 +564,7 @@ class imaging {
 		// echo -e "208\n68\n117\n" | transicc -i ./icc_profiles/AdobeRGB1998.icc -o ./icc_profiles/ISOcoated_v2_300_eci.icc -n
 
 		if ($from_colorspace == 'rgb') {
-			if (!is_numeric($color_value['r']) || !is_numeric($color_value['g']) || !is_numeric($color_value['g'])) {
+			if (!is_numeric(@$color_value['r']) || !is_numeric(@$color_value['g']) || !is_numeric(@$color_value['g'])) {
 				core::system_error('At least one RGB input value is not numeric when converting colorspace.', ['Values' => $color_value]);
 			}
 			$color_string = (int) $color_value['r'] .'\n'. (int) $color_value['g'] .'\n'. (int) $color_value['b'] .'\n';

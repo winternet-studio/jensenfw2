@@ -211,10 +211,10 @@ class geography {
 	 */
 	public static function square_around_point($lat, $lng, $distance) {
 		return [
-			'min_lng' => self::point_from_bearing_distance($lat, $lng, 270, $distance)[1],
-			'min_lat' => self::point_from_bearing_distance($lat, $lng, 180, $distance)[0],
-			'max_lng' => self::point_from_bearing_distance($lat, $lng, 90, $distance)[1],
-			'max_lat' => self::point_from_bearing_distance($lat, $lng, 0, $distance)[0],
+			'min_lng' => static::point_from_bearing_distance($lat, $lng, 270, $distance)[1],
+			'min_lat' => static::point_from_bearing_distance($lat, $lng, 180, $distance)[0],
+			'max_lng' => static::point_from_bearing_distance($lat, $lng, 90, $distance)[1],
+			'max_lat' => static::point_from_bearing_distance($lat, $lng, 0, $distance)[0],
 		];
 	}
 
@@ -317,7 +317,7 @@ class geography {
 	 * @return array : Array with keys `degrees`, `minutes`, `direction`
 	 */
 	public static function convert_coordinate_decimal_to_ddm($decimal, $type) {
-		$output = self::convert_coordinate_decimal_to_dms($decimal, $type);
+		$output = static::convert_coordinate_decimal_to_dms($decimal, $type);
 
 		$output['minutes'] = $output['minutes'] + round($output['seconds'] / 60, 5);
 		unset($output['seconds']);
@@ -345,7 +345,7 @@ class geography {
 		}
 		$points_polygon = count($vertices_x) - 1;  // number vertices - zero-based array
 
-		return self::_is_in_polygon($points_polygon, $vertices_x, $vertices_y, $longitude_x, $latitude_y);
+		return static::_is_in_polygon($points_polygon, $vertices_x, $vertices_y, $longitude_x, $latitude_y);
 	}
 	private static function _is_in_polygon(&$points_polygon, &$vertices_x, &$vertices_y, &$longitude_x, &$latitude_y) {
 		$i = $j = $c = 0;

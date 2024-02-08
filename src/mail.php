@@ -104,22 +104,25 @@ class mail {
 	 *   - `enable_debugging` : set to true to echo debugging info
 	 */
 	public static function send_email($fromemail, $fromname, $to, $fsubj, $femailbody, $htmlbody = false, $options = []) {
+
+		error_log('You should rather use a more complete library than using \winternet\jensenfw2\mail::send_email().');
+
 		// Check arguments
 		if (empty($options)) $options = [];
 		if (!is_array($options)) {
 			core::system_error('Invalid options for sending email.', ['Options' => $options]);
 		}
 		// Determine options/flags
-		if (!is_array($options['attach_files']) && !empty($options['attach_files'])) {
+		if (!empty($options['attach_files']) && !is_array($options['attach_files'])) {
 			core::system_error('Invalid parameter with files to attach when sending email.', ['Attach files' => $options['attach_files']]);
 		}
-		if (!is_array($options['attach_files'])) {
+		if (!isset($options['attach_files'])) {
 			$options['attach_files'] = [];
 		}
-		if (!is_array($options['extra_headers']) && !empty($options['extra_headers'])) {
+		if (!empty($options['extra_headers']) && !is_array($options['extra_headers'])) {
 			core::system_error('Invalid parameter with extra headers for sending email.', ['Extra headers' => $options['extra_headers']]);
 		}
-		if (!is_array($options['extra_headers'])) {
+		if (!isset($options['extra_headers'])) {
 			$options['extra_headers'] = [];
 		}
 		// Prohibit exploits attempting header injection
@@ -129,13 +132,13 @@ class mail {
 		if (strpos($fromname, "\n") !== false) {
 			core::system_error('Invalid sender name for sending email.');
 		}
-		if (is_string($options['cc']) && $options['cc'] && strpos($options['cc'], "\n") !== false) {
+		if (is_string(@$options['cc']) && $options['cc'] && strpos($options['cc'], "\n") !== false) {
 			core::system_error('Invalid Carbon Copy list for sending email.');
 		}
-		if (is_string($options['bcc']) && $options['bcc'] && strpos($options['bcc'], "\n") !== false) {
+		if (is_string(@$options['bcc']) && $options['bcc'] && strpos($options['bcc'], "\n") !== false) {
 			core::system_error('Invalid Blind Carbon Copy list for sending email.');
 		}
-		if (is_string($options['reply_to']) && $options['reply_to'] && strpos($options['reply_to'], "\n") !== false) {
+		if (is_string(@$options['reply_to']) && $options['reply_to'] && strpos($options['reply_to'], "\n") !== false) {
 			core::system_error('Invalid Blind Carbon Copy list for sending email.');
 		}
 		if (strpos($fsubj, "\n") !== false) {
@@ -147,14 +150,14 @@ class mail {
 
 		// Other preparations
 		if (is_array($to)) {
-			if (!$to[1] && !$to['multiple']) {
+			if (!@$to[1] && !@$to['multiple']) {
 				core::system_error('Missing recipient email address for sending email.');
 			}
-			if ($to['multiple']) {
+			if (@$to['multiple']) {
 				// Multiple To-addresses have been specified
 				$arr_recipients = $arr_recipients_log = [];
 				foreach ($to['multiple'] as $curr_recip) {
-					if ($curr_recip['email'] && $curr_recip['name']) {
+					if (isset($curr_recip['email']) && isset($curr_recip['name'])) {
 						if (strpos($curr_recip['email'], "\n") !== false || strpos($curr_recip['name'], "\n") !== false) {  // Prohibit exploits attempting header injection
 							core::system_error('An invalid recipient name or email address was found when trying to send email.');
 						}
@@ -164,7 +167,7 @@ class mail {
 							$arr_recipients[] = '"'. str_replace('"', '', $curr_recip['name']) .'" <'. $curr_recip['email'] .'>';
 						}
 						$arr_recipients_log[] = [$curr_recip['email'] => $curr_recip['name']];
-					} elseif ($curr_recip['email']) {
+					} elseif (isset($curr_recip['email'])) {
 						if (strpos($curr_recip['email'], "\n") !== false) {  // Prohibit exploits attempting header injection
 							core::system_error('An invalid recipient email address was found when trying to send email.');
 						}
@@ -205,7 +208,7 @@ class mail {
 			$recipient_log = json_encode($arr_recipients);
 		}
 
-		if ($options['bounce_to_sender'] && $fromemail) {
+		if (@$options['bounce_to_sender'] && $fromemail) {
 			$bounce_email_addr = $fromemail;
 		} elseif ($cfg['bounce_addr']) {
 			$bounce_email_addr = $cfg['bounce_addr'];
@@ -228,7 +231,7 @@ class mail {
 				$diff_sender = true;
 			}
 			if ($diff_sender) {
-				if (!$options['reply_to']) {  //specific Reply-To has higher priority
+				if (!isset($options['reply_to'])) {  //specific Reply-To has higher priority
 					$options['reply_to'] = $fromemail;
 				}
 				$fromname = $em[1] .' - '. $fromname;  //also set name to attempt avoiding that recipient thinks this address is sender's own address
@@ -236,7 +239,7 @@ class mail {
 			}
 		}
 
-		if ($cfg['sending_enabled'] || $GLOBALS['always_send_email']) {
+		if ($cfg['sending_enabled'] || @$GLOBALS['always_send_email']) {
 
 			if ($cfg['use_mailer'] == 'swiftmailer') {
 				//==============================================================================
@@ -249,10 +252,10 @@ class mail {
 				$message->setSubject($fsubj);
 				$message->setFrom([$fromemail => $fromname]);
 				$message->setTo($arr_recipients);
-				if ($bounce_email_addr && $options['bounce_to_sender'] !== 'SKIP' && $cfg['bounce_addr'] !== 'SKIP') {
+				if ($bounce_email_addr && @$options['bounce_to_sender'] !== 'SKIP' && $cfg['bounce_addr'] !== 'SKIP') {
 					$message->setReturnPath($bounce_email_addr);
 				}
-				if ($options['reply_to']) {
+				if (isset($options['reply_to'])) {
 					$message->setReplyTo($options['reply_to']);
 				}
 				if (!empty($options['cc'])) {
@@ -388,7 +391,7 @@ class mail {
 				// Send the message
 				$mailer = \Swift_Mailer::newInstance($transport);
 
-				if ($options['enable_debugging']) {
+				if (@$options['enable_debugging']) {
 					// Debugging: output the SMTP communication
 					$logger = new \Swift_Plugins_Loggers_EchoLogger();
 					$mailer->registerPlugin(new \Swift_Plugins_LoggerPlugin($logger));
@@ -422,7 +425,7 @@ class mail {
 						file_put_contents($cfg['swift_fail_log'], $log, FILE_APPEND);
 					}
 					if ($cfg['call_url_on_error']) {
-						network::get_url_post($cfg['call_url_on_error'], ['mailsubj' => 'Email error at '. $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'], 'mailbody' => $log]);
+						network::get_url_post($cfg['call_url_on_error'], ['mailsubj' => 'Email error at '. @$_SERVER['HTTP_HOST'] . @$_SERVER['REQUEST_URI'], 'mailbody' => $log]);
 					}
 					core::system_error('Sorry, an error occured while trying to send the email.', ['Exception msg' => $mailexception, 'Failed recips' => print_r($failed_recips, true)], ['xnotify' => false]);  //avoid endless loop
 				}
@@ -484,7 +487,7 @@ class mail {
 				} else {
 					$headers .= $fromemail ."\r\n";
 				}
-				if ($options['reply_to']) {
+				if (isset($options['reply_to'])) {
 					$headers .= 'Reply-To: '. $options['reply_to'] ."\r\n";
 				}
 				if (!empty($options['cc'])) {
@@ -647,11 +650,11 @@ class mail {
 					$body = str_replace("\r", '', $body);  //this character together with \n would cause double line-breaks
 				}
 				// Have bounces sent to a specific address
-				if ($bounce_email_addr && $options['bounce_to_sender'] !== 'SKIP' && $cfg['bounce_addr'] !== 'SKIP') {
+				if ($bounce_email_addr && @$options['bounce_to_sender'] !== 'SKIP' && $cfg['bounce_addr'] !== 'SKIP') {
 					$additional_parameters = '-f'. $bounce_email_addr;  //force PHP to send return bounced mail to this address
 				}
 
-				if ($options['enable_debugging']) {
+				if (@$options['enable_debugging']) {
 					//debug raw email content
 					echo '<pre>';
 					echo nl2br(htmlentities($headers));
@@ -743,7 +746,7 @@ class mail {
 			foreach ($options['extra_headers'] as $cheader_name => $cheader_value) {
 				echo $cheader_name .' : <b>'. $cheader_value .'</b><br/>';
 			}
-			if ($options['bounce_to_sender'] !== 'SKIP' && $cfg['bounce_addr'] !== 'SKIP') {
+			if (@$options['bounce_to_sender'] !== 'SKIP' && $cfg['bounce_addr'] !== 'SKIP') {
 				echo 'Bounce address : <b>'. $bounce_email_addr .'</b><br/>';
 			}
 			 echo '</div>';
@@ -781,14 +784,14 @@ class mail {
 			if ($str_bcc) {
 				fwrite($fp, 'BCC : '. $str_bcc . "\r\n");
 			}
-			if ($options['reply_to']) {
+			if (isset($options['reply_to'])) {
 				fwrite($fp, 'Reply-To : '. $options['reply_to'] . "\r\n");
 			}
 			fwrite($fp, 'Subj: '. $fsubj . "\r\n");
 			foreach ($options['extra_headers'] as $cheader_name => $cheader_value) {
 				fwrite($fp, $cheader_name .' : '. $cheader_value . "\r\n");
 			}
-			if ($options['bounce_to_sender'] !== 'SKIP' && $cfg['bounce_addr'] !== 'SKIP') {
+			if (@$options['bounce_to_sender'] !== 'SKIP' && $cfg['bounce_addr'] !== 'SKIP') {
 				fwrite($fp, 'Bounce address : '. $bounce_email_addr . "\r\n");
 			}
 			if (!empty($eff_attached_files)) {
@@ -812,14 +815,14 @@ class mail {
 			if ($str_bcc) {
 				$dblog .= 'BCC : '. $str_bcc . "\r\n";
 			}
-			if ($options['reply_to']) {
+			if (isset($options['reply_to'])) {
 				$dblog .= 'Reply-To : '. $options['reply_to'] . "\r\n";
 			}
 			#LOGGED IN OWN FIELD. $dblog .= 'Subj: '. $fsubj . "\r\n";
 			foreach ($options['extra_headers'] as $cheader_name => $cheader_value) {
 				$dblog .= $cheader_name .' : '. $cheader_value . "\r\n";
 			}
-			if ($options['bounce_to_sender'] !== 'SKIP' && $cfg['bounce_addr'] !== 'SKIP') {
+			if (@$options['bounce_to_sender'] !== 'SKIP' && $cfg['bounce_addr'] !== 'SKIP') {
 				$dblog .= 'Bounce address : '. $bounce_email_addr . "\r\n";
 			}
 			if (!empty($eff_attached_files)) {
@@ -836,7 +839,7 @@ class mail {
 				$send_status = 'EmailWasSent:'. $email_was_sent .' MailResult:'. $mailresult .'';
 			}
 
-			$emaillog_rawID = self::log_email_db([
+			$emaillog_rawID = static::log_email_db([
 				'from' => $orig_fromemail,
 				'to' => $recipient_log,
 				'subject' => $fsubj,
@@ -998,7 +1001,7 @@ class mail {
 	 * @return string : Javascript block to put in HTML code, OR according to scrample mode
 	 */
 	public static function scrample_email_addressHTML($email, $options = []) {
-		switch ($options['mode']) {
+		switch (@$options['mode']) {
 		case 'plaintext':
 			return str_replace(['@', '.'], [' at ', ' dot '], $email);
 			break;
@@ -1010,17 +1013,16 @@ class mail {
 			$html .= '/'.'* <![CDATA[ */'."\r\n";  //break because of Sublime Text syntax highlighter
 			$html .= 'var '. $randomno1 .'="'. $part1 .'";';
 			$html .= 'var '. $randomno2 .'="'. $part2 .'";';
-			if ($options['mode'] != 'nolink') {
-				$html .= "document.write('<a hr'+'ef=\"mai'+'lto:'+". $randomno1 ."+eval('unes'+'cape(\'%40\')')+". $randomno2 ."+'". self::mailto_params($options['params']) ."\">');";
+			if (@$options['mode'] != 'nolink') {
+				$html .= "document.write('<a hr'+'ef=\"mai'+'lto:'+". $randomno1 ."+eval('unes'+'cape(\'%40\')')+". $randomno2 ."+'". static::mailto_params(@$options['params']) ."\">');";
 			}
 			$html .= "document.write(";
-			if ($options['text']) {
-				require_function('js_esc');
-				$html .= "'". js_esc($options['text']) ."'";
+			if (@$options['text']) {
+				$html .= "'". js::esc($options['text']) ."'";
 			} else {
 				$html .= $randomno1 ."+eval('unes'+'cape(\'%40\')')+". $randomno2;
 			}
-			if ($options['mode'] != 'nolink') {
+			if (@$options['mode'] != 'nolink') {
 				$html .= "+'</a>'";
 			}
 			$html .= ");"."\r\n";
@@ -1059,7 +1061,7 @@ class mail {
 	 * @return string : HTML code (incl. Javascript blocks for each email address), OR according to scrample mode
 	 */
 	public static function scrample_all_email_addressesHTML($html, $options = []) {
-		if ($options['remove_existing_links']) {
+		if (@$options['remove_existing_links']) {
 			//NOTE: removes existing <a href="mailto:..."></a> tags and leaves just the email address (code between the opening and closing tag is discarded)
 			$html = preg_replace("|<a href=[\"']?mailto:([^\"' ]+)[\"']?[^>]*>(.*)</a>|siU", '$1', $html);
 		}
@@ -1133,7 +1135,7 @@ class mail {
 			$emaillog_rawID = core::database_result(['server_id' => $cfg['db_server_id'], $sql], false, 'Database query for logging email to database failed.');
 		}
 
-		if ($cfg['purge_database_log_after'] && !$_SESSION['_purged_db_maillog_now']) {
+		if ($cfg['purge_database_log_after'] && !@$_SESSION['_purged_db_maillog_now']) {
 			$purgeSQL = "DELETE FROM `". $cfg['log_to_database'] ."`.`". $cfg['db_log_table'] ."` WHERE TO_DAYS(CURDATE()) - TO_DAYS(eml_timestamp) > ". (int) $cfg['purge_database_log_after'] ."";
 			if (@defined('YII_BEGIN_TIME')) {
 				\Yii::$app->db->createCommand($purgeSQL)->execute();
@@ -1208,7 +1210,7 @@ class mail {
 			$bcc = false;
 		}
 
-		$body = self::retrieve_body_from_raw_email_log($e['eml_raw']);
+		$body = static::retrieve_body_from_raw_email_log($e['eml_raw']);
 		$bodyplain = $body['plain'];
 		$bodyhtml = $body['html'];
 		if ($add_note) {
@@ -1244,7 +1246,7 @@ class mail {
 			$options['attach_files'] = [$attachment];
 		}
 
-		$result = self::send_email($fromaddr, $fromname, $recipients, $e['eml_subj'], $bodyplain, $bodyhtml, $options);
+		$result = static::send_email($fromaddr, $fromname, $recipients, $e['eml_subj'], $bodyplain, $bodyhtml, $options);
 		return $result;
 	}
 

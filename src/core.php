@@ -82,9 +82,9 @@ class core {
 		}
 		$class = call_user_func([$class_name, 'class_defaults']);
 
-		if (self::$userconfig) {
+		if (static::$userconfig) {
 			$class_name_short = ltrim(str_replace('winternet\jensenfw2\\', '', $class_name), '\\');  //when __CLASS__ is used the full namespace is included, so strip it. ltrim() is needed in case string starts with "\"
-			$user = call_user_func(self::$userconfig, $class_name_short);
+			$user = call_user_func(static::$userconfig, $class_name_short);
 
 			$eff = array_merge($class, $user);
 		} else {
@@ -113,10 +113,10 @@ class core {
 		$serverID = (int) $serverID;  //convert empty strings to 0
 		$server_id = ($serverID == 0 ? '' : $serverID);
 		if (!@$GLOBALS['_jfw_db_connection'.$server_id]) {  //don't open the database if it is already open
-			$cfg = self::get_class_defaults(__CLASS__, 'databases');
+			$cfg = static::get_class_defaults(__CLASS__, 'databases');
 			$GLOBALS['_jfw_db_connection'.$server_id] = mysqli_connect($cfg[$serverID]['db_host'], $cfg[$serverID]['db_user'], $cfg[$serverID]['db_pw'], $cfg[$serverID]['db_name'], $cfg[$serverID]['db_port']);
 			if (!$GLOBALS['_jfw_db_connection'.$server_id]) {
-				self::system_error('Could not connect to the database.', ['MySQL error' => mysqli_connect_error(), 'MySQL error no.' => mysqli_connect_errno()], ['xsevere' => 'CRITICAL ERROR']);
+				static::system_error('Could not connect to the database.', ['MySQL error' => mysqli_connect_error(), 'MySQL error no.' => mysqli_connect_errno()], ['xsevere' => 'CRITICAL ERROR']);
 			}
 			mysqli_set_charset($GLOBALS['_jfw_db_connection'.$server_id], 'utf8');
 		}
@@ -147,24 +147,24 @@ class core {
 	 */
 	public static function &database_query($sql, $err_msg = 'Communication with the database failed.', $varinfo = [], $directives = 'AUTO' ) {
 		if (!is_array($varinfo)) {
-			self::system_error('Configuration error. Extra information for error debugging is invalid.', ['Varinfo' => $varinfo]);
+			static::system_error('Configuration error. Extra information for error debugging is invalid.', ['Varinfo' => $varinfo]);
 		}
 		// Prepare query
 		$server_id = '';
 		if (is_array($sql)) {
 			if (array_key_exists('server_id', $sql)) {
 				$server_id = ($sql['server_id'] == 0 ? '' : $sql['server_id']);
-				$sql = self::prepare_sql(array_slice($sql, 1));
+				$sql = static::prepare_sql(array_slice($sql, 1));
 			} else {
 				$server_id = '';
-				$sql = self::prepare_sql($sql);
+				$sql = static::prepare_sql($sql);
 			}
 		}
 		// Execute query
 		if (count($varinfo) > 0) {  //NOTE: had to do it like this for mysqli_error() to work!
-			$db_query = mysqli_query($GLOBALS['_jfw_db_connection'.$server_id], $sql) or self::system_error($err_msg, array_merge(['MySQL error' => mysqli_error($GLOBALS['_jfw_db_connection'.$server_id]), 'SQL' => $sql], $varinfo), $directives);
+			$db_query = mysqli_query($GLOBALS['_jfw_db_connection'.$server_id], $sql) or static::system_error($err_msg, array_merge(['MySQL error' => mysqli_error($GLOBALS['_jfw_db_connection'.$server_id]), 'SQL' => $sql], $varinfo), $directives);
 		} else {
-			$db_query = mysqli_query($GLOBALS['_jfw_db_connection'.$server_id], $sql) or self::system_error($err_msg, ['MySQL error' => mysqli_error($GLOBALS['_jfw_db_connection'.$server_id]), 'SQL' => $sql], $directives);
+			$db_query = mysqli_query($GLOBALS['_jfw_db_connection'.$server_id], $sql) or static::system_error($err_msg, ['MySQL error' => mysqli_error($GLOBALS['_jfw_db_connection'.$server_id]), 'SQL' => $sql], $directives);
 		}
 		return $db_query;
 	}
@@ -205,7 +205,7 @@ class core {
 		if ($format == 'countonly') {
 			$effsql = "SELECT COUNT(*) FROM (". $effsql .") AS tmp";
 		}
-		$db_query =& self::database_query($sql, $err_msg, $varinfo, $directives);
+		$db_query =& static::database_query($sql, $err_msg, $varinfo, $directives);
 		if ($db_query === true) {
 			if (strtoupper(substr($effsql, 0, 6)) == 'INSERT') {
 				//query was INSERT
@@ -256,7 +256,7 @@ class core {
 						$arr_return[$keyval] = $row;
 					}
 				} else {
-					self::system_error('Invalid format for getting database result.');
+					static::system_error('Invalid format for getting database result.');
 				}
 			}
 			return $arr_return;
@@ -297,7 +297,7 @@ class core {
 					} elseif ($v === '' || $v === false || $v === null) {
 						$valueSQL[] = 'NULL';
 					} else {
-						$valueSQL[] = "'". self::sql_esc($v) ."'";
+						$valueSQL[] = "'". static::sql_esc($v) ."'";
 					}
 				}
 				$valueSQL = implode(', ', $valueSQL);
@@ -307,7 +307,7 @@ class core {
 				} elseif ($value === '' || $value === false || $value === null) {
 					$valueSQL = 'NULL';
 				} else {
-					$valueSQL = "'". self::sql_esc($value) ."'";
+					$valueSQL = "'". static::sql_esc($value) ."'";
 				}
 			}
 			if ($prefix === ':') {
@@ -332,10 +332,10 @@ class core {
 	 */
 	public static function sql_esc($str) {
 		if ($str && !is_string($str) && !is_numeric($str)) {
-			self::system_error('A non-string was passed to SQL escaping function.', ['Argument' => print_r($str, true)], ['xnotify' => 'developer']);
+			static::system_error('A non-string was passed to SQL escaping function.', ['Argument' => print_r($str, true)], ['xnotify' => 'developer']);
 		}
 		if (!@$GLOBALS['_jfw_db_connection']) {
-			self::system_error('Database connection was not found in SQL escaping function.', ['Argument' => print_r($str, true)], ['xnotify' => 'developer']);
+			static::system_error('Database connection was not found in SQL escaping function.', ['Argument' => print_r($str, true)], ['xnotify' => 'developer']);
 		}
 		return mysqli_real_escape_string($GLOBALS['_jfw_db_connection'], (string) $str);  //cast numbers as strings
 	}
@@ -419,7 +419,7 @@ class core {
 			$GLOBALS['sys']['hook_system']['hooks'][$hook_id][$priority] = [];
 		}
 
-		$id = self::_hook_unique_callback_id($callback_function);
+		$id = static::_hook_unique_callback_id($callback_function);
 		$GLOBALS['sys']['hook_system']['hooks'][$hook_id][$priority][$id] = [
 			'function' => $callback_function,
 		];
@@ -438,7 +438,7 @@ class core {
 	 * @return boolean : false if not found or failure, true if disconnected successfully
 	 */
 	public static function disconnect_hook($hook_id, $callback_function, $priority = 10) {
-		$id = self::_hook_unique_callback_id($callback_function);
+		$id = static::_hook_unique_callback_id($callback_function);
 		if (@isset($GLOBALS['sys']['hook_system']['hooks'][$hook_id][$priority][$id])) {
 			unset($GLOBALS['sys']['hook_system']['hooks'][$hook_id][$priority][$id]);
 			return true;
@@ -491,12 +491,12 @@ class core {
 
 	public static function system_error($msg, $varinfo = [], $directives = 'AUTO') {
 		// Protect against infinite loops (in case a function (eg. send_email() or require_database() ) is called within system_error() that again creates an error)
-		if (self::$system_error_in_process) {
-			@self::run_hooks('jfw.looped_system_error', ['msg' => $msg, 'bt' => debug_backtrace() ]);
+		if (static::$system_error_in_process) {
+			@static::run_hooks('jfw.looped_system_error', ['msg' => $msg, 'bt' => debug_backtrace() ]);
 			error_log('JFW2: '. $msg);
 			die($msg .' Please report.');  //the original error is not echoed but only this "lowest level" error
 		}
-		self::$system_error_in_process = true;
+		static::$system_error_in_process = true;
 
 		if ($varinfo === false || $varinfo === null) $varinfo = [];
 		if (!is_array($varinfo)) {
@@ -530,19 +530,19 @@ class core {
 		}
 
 		// Override any other settings if global settings has been set
-		if (self::$globaldata['errors_global_xsevere']) self::$globaldata['errors_global_xsevere'] = strtoupper(self::$globaldata['errors_global_xsevere']);
-		if (self::$globaldata['errors_global_xnotify'] == true) self::$globaldata['errors_global_xnotify'] = 'developer';  //this ONLY happens if one mistakenly set notify to true instead of one of the values! This is a safety against that.
+		if (static::$globaldata['errors_global_xsevere']) static::$globaldata['errors_global_xsevere'] = strtoupper(static::$globaldata['errors_global_xsevere']);
+		if (static::$globaldata['errors_global_xnotify'] == true) static::$globaldata['errors_global_xnotify'] = 'developer';  //this ONLY happens if one mistakenly set notify to true instead of one of the values! This is a safety against that.
 		//
-		if (array_key_exists('errors_global_xsilent', self::$globaldata)) $silent = self::$globaldata['errors_global_xsilent'];
-		if (array_key_exists('errors_global_xregister', self::$globaldata)) $register = self::$globaldata['errors_global_xregister'];
-		if (array_key_exists('errors_global_xnotify', self::$globaldata) && (self::$globaldata['errors_global_xnotify'] == 'developer' || self::$globaldata['errors_global_xnotify'] == 'sysadmin' || self::$globaldata['errors_global_xnotify'] === false)) $notify = self::$globaldata['errors_global_xnotify'];
-		if (array_key_exists('errors_global_xterminate', self::$globaldata)) $terminate = self::$globaldata['errors_global_xterminate'];
-		if (self::$globaldata['errors_global_xsevere'] == 'WARNING' || self::$globaldata['errors_global_xsevere'] == 'ERROR' || self::$globaldata['errors_global_xsevere'] == 'CRITICAL ERROR') $severe = self::$globaldata['errors_global_xsevere'];
-		if (array_key_exists('errors_global_xexpire', self::$globaldata)) $expire = self::$globaldata['errors_global_xexpire'];
+		if (array_key_exists('errors_global_xsilent', static::$globaldata)) $silent = static::$globaldata['errors_global_xsilent'];
+		if (array_key_exists('errors_global_xregister', static::$globaldata)) $register = static::$globaldata['errors_global_xregister'];
+		if (array_key_exists('errors_global_xnotify', static::$globaldata) && (static::$globaldata['errors_global_xnotify'] == 'developer' || static::$globaldata['errors_global_xnotify'] == 'sysadmin' || static::$globaldata['errors_global_xnotify'] === false)) $notify = static::$globaldata['errors_global_xnotify'];
+		if (array_key_exists('errors_global_xterminate', static::$globaldata)) $terminate = static::$globaldata['errors_global_xterminate'];
+		if (static::$globaldata['errors_global_xsevere'] == 'WARNING' || static::$globaldata['errors_global_xsevere'] == 'ERROR' || static::$globaldata['errors_global_xsevere'] == 'CRITICAL ERROR') $severe = static::$globaldata['errors_global_xsevere'];
+		if (array_key_exists('errors_global_xexpire', static::$globaldata)) $expire = static::$globaldata['errors_global_xexpire'];
 
 		// Automated directives
 		//    don't register errors caused by robots (they are usually trying to access a non-existing URL)
-		if (is_object(self::$globaldata['statistics']) && self::$globaldata['statistics']->skip_useragent) {
+		if (is_object(static::$globaldata['statistics']) && static::$globaldata['statistics']->skip_useragent) {
 			$is_robot = true;
 		}
 		if ($is_robot) {
@@ -567,7 +567,7 @@ class core {
 
 		// Count the number of errors in the current script (if error terminates the script this will of course always be only 1)
 		if ($severe != 'WARNING') {  //do not count warnings as errors
-			self::$system_error_count++;
+			static::$system_error_count++;
 		}
 
 
@@ -575,7 +575,7 @@ class core {
 		// GATHER ERROR INFORMATION
 		// ---------------------------------------------------------------
 
-		$cfg = self::get_class_defaults(__CLASS__);
+		$cfg = static::get_class_defaults(__CLASS__);
 		if (!$cfg['administrator_email'] || !$cfg['developer_email']) {
 			echo 'JFW2 basic cfg missing. Reduced handling. '. $msg;
 			exit;
@@ -590,7 +590,7 @@ class core {
 
 		// Use different mechanism in a Yii application that uses the winternet\yii2\SystemError module
 		if (defined('YII_BEGIN_TIME') && \Yii::$app->system && get_class(\Yii::$app->system) == 'winternet\yii2\SystemError') {
-			self::$system_error_in_process = false;  //again allow new errors to occur
+			static::$system_error_in_process = false;  //again allow new errors to occur
  			\Yii::$app->system->error($msg, $varinfo, ['silent' => $silent, 'register' => $register, 'notify' => $notify, 'terminate' => $terminate, 'severe' => $severe, 'expire' => $expire]);
 			return;
 		}
@@ -614,9 +614,9 @@ class core {
 		}
 
 		// Write error occurance number
-		if (self::$system_error_count > 1) {
+		if (static::$system_error_count > 1) {
 			//if more errors occur in the same script execution notify what number the current error has
-			$errordata .= 'Script error occurance number: '. self::$system_error_count . " (could be a derived error from or identical error as previous)\r\n";
+			$errordata .= 'Script error occurance number: '. static::$system_error_count . " (could be a derived error from or identical error as previous)\r\n";
 		}
 
 		$errordata .= "--- GENERAL ---------------------------\r\n";
@@ -721,8 +721,8 @@ class core {
 
 		// CHECK NUMBER OF ERRORS
 		//  if we have more than 10 errors in this script execution, it is very likely to be derived errors and we don't register and report more errors, and we terminate the script
-		if (self::$system_error_count > self::$max_errors) {
-			mail::send_email($cfg['administrator_email'], $cfg['system_name'], $cfg['developer_email'], 'ERRORS - too many!', 'Too many errors, more than '. self::$max_errors .', was encountered in '. $_SERVER['REQUEST_URI'] .' and further execution was terminated.', false);
+		if (static::$system_error_count > static::$max_errors) {
+			mail::send_email($cfg['administrator_email'], $cfg['system_name'], $cfg['developer_email'], 'ERRORS - too many!', 'Too many errors, more than '. static::$max_errors .', was encountered in '. $_SERVER['REQUEST_URI'] .' and further execution was terminated.', false);
 			echo 'Too many errors occured, further processing was terminated and developer was notified.';
 			exit;
 		}
@@ -733,7 +733,7 @@ class core {
 				$fp = @fopen($cfg['error_logfile'], 'a');
 				@fwrite($fp, $errordata ."\r\n");
 			} elseif ($cfg['log_errors_to'] == 'database') {
-				self::require_database();
+				static::require_database();
 				//   Create table if it does not exist
 				if (!@$_SESSION['_jfw_error_table_created']) {  //only run this check once per session
 					$createtblSQL = "CREATE TABLE IF NOT EXISTS ". $cfg['errorlog_table'] ." (
@@ -751,15 +751,15 @@ class core {
 					@$_SESSION['_jfw_error_table_created'] = true;
 				}
 				$sql = [];
-				$sql[] = "`errorinfo` = '". self::sql_esc(mb_substr($errordata, 0, 65000)) ."'";
-				$sql[] = "`err_msg` = '". self::sql_esc(mb_substr($msg, 0, 255)) ."'";
-				$sql[] = "`url` = '". self::sql_esc(substr($_SERVER['REQUEST_URI'], 0, 255)) ."'";
+				$sql[] = "`errorinfo` = '". static::sql_esc(mb_substr($errordata, 0, 65000)) ."'";
+				$sql[] = "`err_msg` = '". static::sql_esc(mb_substr($msg, 0, 255)) ."'";
+				$sql[] = "`url` = '". static::sql_esc(substr($_SERVER['REQUEST_URI'], 0, 255)) ."'";
 				if (@$userinfo['logged_in']) {
 					if ($userinfo['fullname']) {
-						$sql[] = "`fullname` = '". self::sql_esc(mb_substr($userinfo['fullname'], 0, 100)) ."'";
+						$sql[] = "`fullname` = '". static::sql_esc(mb_substr($userinfo['fullname'], 0, 100)) ."'";
 					}
 					if ($userinfo['userID']) {
-						$sql[] = "`localID` = '". self::sql_esc($userinfo['userID']) ."'";
+						$sql[] = "`localID` = '". static::sql_esc($userinfo['userID']) ."'";
 					}
 				}
 				if ($expire) {
@@ -816,7 +816,7 @@ class core {
 		}
 
 		// MISC
-		self::$system_error_in_process = false;  //again allow new errors to occur
+		static::$system_error_in_process = false;  //again allow new errors to occur
 
 		// OUTPUT/RETURN
 		if ($is_robot) {
@@ -901,7 +901,7 @@ class core {
 
 			$reference = @$reference['ref'];
 			if (!$reference) {
-				self::system_error('Missing reference for recording we have sent webmaster a message.');
+				static::system_error('Missing reference for recording we have sent webmaster a message.');
 			}
 		} else {
 			$use_systembuffer = false;
@@ -918,7 +918,7 @@ class core {
 			}
 		}
 
-		$cfg = self::get_class_defaults(__CLASS__);
+		$cfg = static::get_class_defaults(__CLASS__);
 		$bt = debug_backtrace();
 
 		if ($who == 'developer') {
@@ -999,8 +999,8 @@ class core {
 	 */
 	public static function any_in_array($arr_needle, $array) {
 		if (is_string($arr_needle)) $arr_needle = [$arr_needle];
-		if (!is_array($arr_needle)) self::system_error('Invalid needle for searching array.');
-		if (!is_array($array)) self::system_error('Invalid array to search.');
+		if (!is_array($arr_needle)) static::system_error('Invalid needle for searching array.');
+		if (!is_array($array)) static::system_error('Invalid array to search.');
 		$a = array_intersect($arr_needle, $array);
 		return !empty($a);
 	}
@@ -1017,7 +1017,7 @@ class core {
 	 */
 	public static function array_search_column(&$array, $key, $value) {
 		if (!is_array($array)) {
-			self::system_error('Parameter for column search is not an array.', ['Array' => $array]);
+			static::system_error('Parameter for column search is not an array.', ['Array' => $array]);
 		} else {
 			$value_lc = mb_strtolower($value);
 			foreach ($array as $curr_key => $curr_val) {
@@ -1144,9 +1144,9 @@ class core {
 	public static function get_system_setting($name, $options = []) {
 		if (!isset($GLOBALS['cache']['system_settings'])) {
 			$GLOBALS['cache']['system_settings'] = [];
-			self::require_database();
-			$sql = "SELECT settingname, settingvalue FROM ". self::get_class_defaults(__CLASS__, 'db_table_system_settings');
-			$db_query =& self::database_query($sql, 'Database query for getting system settings failed.');
+			static::require_database();
+			$sql = "SELECT settingname, settingvalue FROM ". static::get_class_defaults(__CLASS__, 'db_table_system_settings');
+			$db_query =& static::database_query($sql, 'Database query for getting system settings failed.');
 
 			$GLOBALS['cache']['system_settings'] = [];
 			if (mysqli_num_rows($db_query) > 0) {
@@ -1157,7 +1157,7 @@ class core {
 		}
 		if (!array_key_exists($name, $GLOBALS['cache']['system_settings'])) {
 			if (!@$options['no_error']) {
-				self::system_error('Configuration error. A system setting could not be found.', ['Name' => $name]);
+				static::system_error('Configuration error. A system setting could not be found.', ['Name' => $name]);
 			} else {
 				return false;
 			}
@@ -1195,7 +1195,7 @@ class core {
 	 */
 	public static function page_url($array = [], $options = []) {
 		if (!is_array($array)) {
-			self::system_error('Invalid array for generating query string.');
+			static::system_error('Invalid array for generating query string.');
 		}
 
 		$onetime_varname = '1';

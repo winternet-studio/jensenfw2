@@ -18,7 +18,7 @@ class mail_bounce {
 		}
 
 		// Then use alternative methods for determining bounced mail information
-		$alternative_status = self::get_bounce_info_misc_formats($raw_mail);
+		$alternative_status = static::get_bounce_info_misc_formats($raw_mail);
 		if ($alternative_status) {
 			return $alternative_status;
 		}

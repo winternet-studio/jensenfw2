@@ -264,7 +264,7 @@ class datetime {
 
 			$now_ts = time();
 
-			$return = self::time_period_single_unit($now_ts - $ts, $unit_names, $decimals, $include_weeks);
+			$return = static::time_period_single_unit($now_ts - $ts, $unit_names, $decimals, $include_weeks);
 
 			if (@$options['smart_general_guide']) {
 				$last_midnight = (new \DateTime('today midnight', new \DateTimeZone((@$options['output_timezone'] ? $options['output_timezone'] : 'UTC'))))->getTimestamp();
@@ -860,11 +860,11 @@ class datetime {
 	}
 
 	public static function scripttimer_start() {
-		self::$scripttimer_start = microtime(true);
-		return self::$scripttimer_start;
+		static::$scripttimer_start = microtime(true);
+		return static::$scripttimer_start;
 	}
 	public static function scripttimer_meantime($writetext = false) {
-		if (!self::$scripttimer_start) {
+		if (!static::$scripttimer_start) {
 			$html = '<div style="color: orangered"><b>Timer was not started!</b></div>';
 			if (PHP_SAPI == 'cli') {
 				echo strip_tags($html);
@@ -874,21 +874,21 @@ class datetime {
 			return;
 		}
 		$scripttimer_meantime = microtime(true);
-		$duration = number_format($scripttimer_meantime - self::$scripttimer_start, 3);
+		$duration = number_format($scripttimer_meantime - static::$scripttimer_start, 3);
 		if ($writetext) {
 			$backtrace = debug_backtrace();
-			$html = '<div style="color: orangered" title="'. $backtrace[0]['file'] .':'. $backtrace[0]['line'] .'"><b>Meantime #'. ++self::$scripttimer_meantimecount .', line '. $backtrace[0]['line'] .': '. $duration .''. (self::$scripttimer_lastmeantime ? ' ('. number_format($scripttimer_meantime - self::$scripttimer_lastmeantime, 3) .')' : '') .'</b></div>';
+			$html = '<div style="color: orangered" title="'. $backtrace[0]['file'] .':'. $backtrace[0]['line'] .'"><b>Meantime #'. ++static::$scripttimer_meantimecount .', line '. $backtrace[0]['line'] .': '. $duration .''. (static::$scripttimer_lastmeantime ? ' ('. number_format($scripttimer_meantime - static::$scripttimer_lastmeantime, 3) .')' : '') .'</b></div>';
 			if (PHP_SAPI == 'cli') {
 				echo strip_tags($html);
 			} else {
 				echo $html;
 			}
 		}
-		self::$scripttimer_lastmeantime = $scripttimer_meantime;
+		static::$scripttimer_lastmeantime = $scripttimer_meantime;
 		return $duration;
 	}
 	public static function scripttimer_stop($writetext = false) {
-		if (!self::$scripttimer_start) {
+		if (!static::$scripttimer_start) {
 			$html = '<div style="color: orangered"><b>Timer was not started!</b></div>';
 			if (PHP_SAPI == 'cli') {
 				echo strip_tags($html);
@@ -898,18 +898,18 @@ class datetime {
 			return null;
 		}
 		$scripttimer_end = microtime(true);
-		$duration = number_format($scripttimer_end - self::$scripttimer_start, 3);
+		$duration = number_format($scripttimer_end - static::$scripttimer_start, 3);
 		if ($writetext) {
 			$backtrace = debug_backtrace();
-			$html = '<div style="color: orangered" title="'. $backtrace[0]['file'] .':'. $backtrace[0]['line'] .'"><b>Full duration, line '. $backtrace[0]['line'] .': '. $duration .' seconds.'. (self::$scripttimer_meantimecount ? ' Meantimes average: '. number_format($duration / self::$scripttimer_meantimecount, 3) : '') .'</b></div>';
+			$html = '<div style="color: orangered" title="'. $backtrace[0]['file'] .':'. $backtrace[0]['line'] .'"><b>Full duration, line '. $backtrace[0]['line'] .': '. $duration .' seconds.'. (static::$scripttimer_meantimecount ? ' Meantimes average: '. number_format($duration / static::$scripttimer_meantimecount, 3) : '') .'</b></div>';
 			if (PHP_SAPI == 'cli') {
 				echo strip_tags($html);
 			} else {
 				echo $html;
 			}
 		}
-		self::$scripttimer_meantimecount = false;  //clear it
-		self::$scripttimer_lastmeantime = false;  //clear it
+		static::$scripttimer_meantimecount = false;  //clear it
+		static::$scripttimer_lastmeantime = false;  //clear it
 		return $duration;
 	}
 

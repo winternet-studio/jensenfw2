@@ -23,7 +23,7 @@ class security {
 			'lettersCleanLowerCase' => 'abcdefghjkmnpqrstuvwxyz',
 		];
 
-		if ($characterSets[$characters]) {
+		if (@$characterSets[$characters]) {
 			$characters = $characterSets[$characters];
 		}
 

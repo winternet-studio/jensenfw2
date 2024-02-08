@@ -42,10 +42,10 @@ class mail_bounce_rfc1892 {
 		$output['bounced_addresses'] = [];
 		$output['status_messages'] = [];
 		// Parse mail (taken from testdriver.php)
-		$raw_mail_cleaned = self::bouncehandler_initialize($raw_mail, 'string');  //Cleans the line-breaks
+		$raw_mail_cleaned = static::bouncehandler_initialize($raw_mail, 'string');  //Cleans the line-breaks
 		list($head, $body) = preg_split("/\r\n\r\n/", $raw_mail_cleaned, 2);
-		$head_hash = self::bouncehandler_parse_head($head);
-		if (self::is_RFC1892_multipart_report($head_hash) === TRUE) {
+		$head_hash = static::bouncehandler_parse_head($head);
+		if (static::is_RFC1892_multipart_report($head_hash) === TRUE) {
 			if ($verbose_mode) {
 				echo '<div>COMPLIANCY: RFC1892 multipart message = YES</div>';
 			}
@@ -58,17 +58,17 @@ class mail_bounce_rfc1892 {
 			return false;
 		}
 		$boundary = $head_hash['Content-type']['boundary'];
-		$mime_sections = self::parse_body_into_mime_sections($body, $boundary);
-		$rpt_hash = self::parse_machine_parsable_body_part($mime_sections['machine_parsable_body_part']);
+		$mime_sections = static::parse_body_into_mime_sections($body, $boundary);
+		$rpt_hash = static::parse_machine_parsable_body_part($mime_sections['machine_parsable_body_part']);
 		//Error status code AND Diagnostic-code
 		for($i=0; $i<count($rpt_hash['per_recipient']); $i++){
-			$curr_recipient = self::bouncehandler_get_recipient($rpt_hash['per_recipient'][$i]);
+			$curr_recipient = static::bouncehandler_get_recipient($rpt_hash['per_recipient'][$i]);
 			$curr_recipient = str_replace(['<', '>'], '', $curr_recipient);  //a small percentage of bounces have these characters around the address
 		    $scode = $rpt_hash['per_recipient'][$i]['Status'];  //Error status code
-		    $scode_status_messages = self::bouncehandler_fetch_status_messages($scode);
+		    $scode_status_messages = static::bouncehandler_fetch_status_messages($scode);
 		    $dcode = $rpt_hash['per_recipient'][$i]['Diagnostic-code']['text'];  //Diagnostic code
 			if ($dcode) {
-				$dcode_status_messages = self::bouncehandler_fetch_status_messages($dcode);
+				$dcode_status_messages = static::bouncehandler_fetch_status_messages($dcode);
 			}
 			// Add to output
 		    $output['bounced_addresses'][] = $curr_recipient;
@@ -96,7 +96,7 @@ class mail_bounce_rfc1892 {
 			}
 		}
 		//Get original To, From, and Subject
-		$head = self::get_head_from_returned_message_body_part($mime_sections);
+		$head = static::get_head_from_returned_message_body_part($mime_sections);
 		$output['original_from'] = $head['From'];
 		$output['original_to'] = $head['To'];
 		$output['original_subject'] = $head['Subject'];
@@ -149,7 +149,7 @@ class mail_bounce_rfc1892 {
 	public static function bouncehandler_parse_head($headers){
 		// Internal function
 	    if(!is_array($headers)) $headers = explode("\r\n", $headers);
-	    $hash = self::bouncehandler_standard_parser($headers);
+	    $hash = static::bouncehandler_standard_parser($headers);
 	    // get a little more complex
 	    $arrRec = explode('|', $hash['Received']);
 	    $hash['Received']= $arrRec;
@@ -208,9 +208,9 @@ class mail_bounce_rfc1892 {
 	public static function parse_machine_parsable_body_part($str){
 		// Internal function
 	    //Per-Message DSN fields
-	    $hash = self::bouncehandler_parse_dsn_fields($str);
-	    $hash['mime_header'] = self::bouncehandler_standard_parser($hash['mime_header']);
-	    $hash['per_message'] = self::bouncehandler_standard_parser($hash['per_message']);
+	    $hash = static::bouncehandler_parse_dsn_fields($str);
+	    $hash['mime_header'] = static::bouncehandler_standard_parser($hash['mime_header']);
+	    $hash['per_message'] = static::bouncehandler_standard_parser($hash['per_message']);
 	    if($hash['per_message']['X-postfix-sender']){
 	        $arr = explode (';', $hash['per_message']['X-postfix-sender']);
 	        $hash['per_message']['X-postfix-sender'] = [];
@@ -225,7 +225,7 @@ class mail_bounce_rfc1892 {
 	    }
 	    //Per-Recipient DSN fields
 	    for($i=0; $i<count($hash['per_recipient']); $i++){
-	        $temp = self::bouncehandler_standard_parser(explode("\r\n", $hash['per_recipient'][$i]));
+	        $temp = static::bouncehandler_standard_parser(explode("\r\n", $hash['per_recipient'][$i]));
 	        $arr = explode (';', $temp['Final-recipient']);
 	        $temp['Final-recipient'] = [];
 	        $temp['Final-recipient']['type'] = trim($arr[0]);
@@ -246,9 +246,9 @@ class mail_bounce_rfc1892 {
 	public static function get_head_from_returned_message_body_part($mime_sections){
 		// Internal function
 	    $temp = explode("\r\n\r\n", $mime_sections['returned_message_body_part']);
-	    $head = self::bouncehandler_standard_parser($temp[1]);
-	    $head['From'] = self::bouncehandler_extract_address($head['From']);
-	    $head['To'] = self::bouncehandler_extract_address($head['To']);
+	    $head = static::bouncehandler_standard_parser($temp[1]);
+	    $head['From'] = static::bouncehandler_extract_address($head['From']);
+	    $head['To'] = static::bouncehandler_extract_address($head['To']);
 	    return $head;
 	}
 
@@ -468,7 +468,7 @@ class mail_bounce_rfc1892 {
 		$status_code_subclasses['7.7']['descr'] =  "A transport system otherwise authorized to validate a message was unable to do so because the message was corrupted or altered.  This may be useful as a permanent, transient persistent, or successful delivery code.";
 		/* --- END OF ERROR CODES ---------------------------------------------------- */
 
-	    $ret = self::bouncehandler_format_status_code($code);
+	    $ret = static::bouncehandler_format_status_code($code);
 	    $arr = explode('.', $ret['code']);
 		if ($verbose_mode) {
 		    echo "<p><b>". $status_code_classes[$arr[0]]['title'] . "</b> - " .$status_code_classes[$arr[0]]['descr']. "  <b>". $status_code_subclasses[$arr[1].".".$arr[2]]['title'] . "</b> - " .$status_code_subclasses[$arr[1].".".$arr[2]]['descr']. "</p>";

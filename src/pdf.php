@@ -94,7 +94,7 @@ class pdf {
 			// xpdf doesn't support only extracting the ArtBox so do this fill-in by using pdfinfo to get the details and crop the image
 			if ($options['use_box'] === 'ArtBox') {
 				// Get the info about boxes as well as page size
-				if (!$options['xpdf_info_path']) {  //if the unofficial option has not been passed then just derive it from the `pdftopng` path
+				if (!@$options['xpdf_info_path']) {  //if the unofficial option has not been passed then just derive it from the `pdftopng` path
 					$options['xpdf_info_path'] = str_replace('pdftopng', 'pdfinfo', $options['xpdf_path']);
 				}
 				$cmd = $options['xpdf_info_path'] .' -box '. escapeshellarg($pdf_path) .' 2>&1';

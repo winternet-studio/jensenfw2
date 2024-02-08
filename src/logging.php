@@ -61,7 +61,7 @@ class logging {
 	 */
 	public static function log_action($action, $subaction = false, $primary_parms = [], $secondary_parms = false, $options = []) {
 		// Don't register duplicate entries if requested
-		if (is_numeric($options['duplicate_window'])) {
+		if (is_numeric(@$options['duplicate_window'])) {
 			if (@defined('YII_BEGIN_TIME') && PHP_SAPI != 'cli') {
 				\Yii::$app->session->open();  //ensure session has been started
 			}
@@ -71,7 +71,7 @@ class logging {
 				$_SESSION[$session_varname] = time();
 			} elseif ($_SESSION[$session_varname]) {
 				// Do NOT register the log entry
-				if ($options['reset_elapsed_time']) {
+				if (@$options['reset_elapsed_time']) {
 					// If logged again within the time window => update the timestamp to postpone another X seconds before registering again
 					$_SESSION[$session_varname] = time();
 				}
@@ -98,9 +98,9 @@ class logging {
 			}
 		}
 		$logSQL .= "log_ip = :ip, ";
-		$logSQL_vars['ip'] = ($_SERVER['HTTP_X_FORWARDED_FOR'] ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']);
+		$logSQL_vars['ip'] = (@$_SERVER['HTTP_X_FORWARDED_FOR'] ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']);
 		// Sometimes HTTP_X_FORWARDED_FOR can contain multiple addresses, eg. `212.98.86.98, 165.225.64.70`. Use the left-most one (according to wikipedia - I hope that's correct...!). See https://en.wikipedia.org/wiki/X-Forwarded-For#Format
-		if (strpos($logSQL_vars['ip'], ',') !== false) {
+		if ($logSQL_vars['ip'] && strpos($logSQL_vars['ip'], ',') !== false) {
 			$logSQL_vars['ip'] = explode(',', $logSQL_vars['ip']);
 			$logSQL_vars['ip'] = trim($logSQL_vars['ip'][0]);
 		}

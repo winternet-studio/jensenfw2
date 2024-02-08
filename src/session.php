@@ -35,19 +35,19 @@ class session {
 		// Check if a new value exists
 		$new_value = '-no-new-value-';  //first assume that there is no new value
 		foreach ($getpost_names as $curr_name) {  //loop through each possible name
-			$get_length  = strlen($_GET[$curr_name]);
-			$post_length = strlen($_POST[$curr_name]);
+			$get_length  = strlen( (string) @$_GET[$curr_name]);
+			$post_length = strlen( (string) @$_POST[$curr_name]);
 			if ($prioritize_get) {  //determine new value
 				if ($get_length > 0) {
-					$new_value = $_GET[$curr_name];
+					$new_value = @$_GET[$curr_name];
 				} elseif ($post_length > 0) {
-					$new_value = $_POST[$curr_name];
+					$new_value = @$_POST[$curr_name];
 				}
 			} else {
 				if ($post_length > 0) {
-					$new_value = $_POST[$curr_name];
+					$new_value = @$_POST[$curr_name];
 				} elseif ($get_length > 0) {
-					$new_value = $_GET[$curr_name];
+					$new_value = @$_GET[$curr_name];
 				}
 			}
 			if ($new_value != '-no-new-value-') {  //if we now have a new value, break the loop and skip checking the rest of the names

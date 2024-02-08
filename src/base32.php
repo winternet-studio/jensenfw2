@@ -174,7 +174,10 @@ class Base32Internal {
 	 * @param string $charset (optional) The character set to use
 	 * @see setCharset
 	 */
-	public function __construct($charset = self::csRFC3548) {
+	public function __construct($charset = null) {
+		if (!$charset) {
+			$charset = static::csRFC3548;
+		}
 		$this->setCharset($charset);
 	}
 
@@ -298,10 +301,10 @@ class Base32Internal {
 		$str = strtoupper($str);
 
 		// csSafe actually has to be able to consider extra characters
-		if ($this->_charset == self::csSafe) {
+		if ($this->_charset == static::csSafe) {
 			$str = str_replace('O','0',$str);
 			$str = str_replace(['I','L'],'1',$str);
-		} elseif ($this->_charset == self::csExtraSafe) {
+		} elseif ($this->_charset == static::csExtraSafe) {
 			$str = str_replace(['I','1'],'L',$str);
 		}
 
@@ -352,7 +355,10 @@ class Base32Internal {
 	 * @param string $charset The character set you want to use
 	 * @throws Exception
 	 */
-	public function setCharset($charset = self::csRFC3548) {
+	public function setCharset($charset = null) {
+		if (!$charset) {
+			$charset = static::csRFC3548;
+		}
 		if (strlen($charset) == 32) {
 			$this->_charset = strtoupper($charset);
 		} else {

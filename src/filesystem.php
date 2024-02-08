@@ -192,7 +192,7 @@ class filesystem {
 	public static function copy_file($source, $destination, $options = []) {
 		$result = copy($source, $destination);
 		if ($result) {
-			if ($options['keep_modification_time']) {  //source: https://stackoverflow.com/questions/4898534/php-copy-file-without-changing-the-last-modified-date#17893031
+			if (@$options['keep_modification_time']) {  //source: https://stackoverflow.com/questions/4898534/php-copy-file-without-changing-the-last-modified-date#17893031
 				$dt = filemtime($source);
 				if ($dt === false)  {
 					core::system_error('Failed to get source timestamp when copying file.', ['Source' => $source, 'Destination' => $destination]);
@@ -218,13 +218,13 @@ class filesystem {
 		if (file_exists($location)) {
 			if ($trashcan_folder) {
 				// Using trashcan feature
-				$trashcan_folder = self::cleanup_path($trashcan_folder);
+				$trashcan_folder = static::cleanup_path($trashcan_folder);
 				if (is_dir($trashcan_folder) || true) {
 					$pathinfo = pathinfo($location);
-					$dest_filename = self::make_unique_filename($pathinfo['basename'], $trashcan_folder);
+					$dest_filename = static::make_unique_filename($pathinfo['basename'], $trashcan_folder);
 					$dest_filepath = $trashcan_folder .'/'. $dest_filename;
 					$dest_filepath = str_replace('//', '/', $dest_filepath);
-					if (self::rename_move_file($location, $dest_filepath, $move_errmsg)) {
+					if (static::rename_move_file($location, $dest_filepath, $move_errmsg)) {
 						return true;
 					} else {
 						$err_msg_var = ['code' => 'move_to_trash_failed', 'desc' => 'File could not be deleted to trashcan.', 'parent_error' => $move_errmsg];
@@ -272,9 +272,9 @@ class filesystem {
 		foreach (scandir($path) as $file) {
 			$pathfile = rtrim($path, '/') .'/'. $file;
 			if (!is_readable($pathfile)) {
-				if ($options['error_on_unreadble'] == 2) {
+				if (@$options['error_on_unreadble'] == 2) {
 					core::system_error('Failed to read file/folder '. basename($pathfile) .' when iterating folder tree.', ['Path' => $path, 'File' => $pathfile]);
-				} elseif ($options['error_on_unreadble']) {
+				} elseif (@$options['error_on_unreadble']) {
 					core::system_error('Failed to read file/folder when iterating folder tree.', ['Path' => $path, 'File' => $pathfile]);
 				} else {
 					continue;
@@ -282,7 +282,7 @@ class filesystem {
 			}
 			if ($file != '.' && $file != '..') {
 				if (is_dir($pathfile)) {
-					self::iterate_folder_tree($pathfile, $callback_function, $options, true);
+					static::iterate_folder_tree($pathfile, $callback_function, $options, true);
 					$GLOBALS['jfw_iterated_paths'][] = $pathfile;
 				} else {
 					$callback_function($pathfile, $file);
@@ -323,7 +323,7 @@ class filesystem {
 							return false;
 						}
 					}
-					$r = self::copy_folder_tree($srcfile, $destfile, $arr_skip_matches);
+					$r = static::copy_folder_tree($srcfile, $destfile, $arr_skip_matches);
 					if (!$r) {
 						return false;
 					}
@@ -351,21 +351,21 @@ class filesystem {
 	public static function most_recent_files($path, $number_of_files = 10, $options = []) {
 		$latest_files = [];
 
-		self::iterate_folder_tree($path, function($fullpath, $filename) use (&$latest_files, &$number_of_files, &$trim_array) {
-			if ($options['min_size'] && filesize($fullpath) < $options['min_size']) {
+		static::iterate_folder_tree($path, function($fullpath, $filename) use (&$latest_files, &$number_of_files, &$trim_array) {
+			if (@$options['min_size'] && filesize($fullpath) < $options['min_size']) {
 				return;
 			}
 			$timestamp = filemtime($fullpath);
 
 			if (empty($latest_files)) {
-				if ($options['unix_timestamps']) {
+				if (@$options['unix_timestamps']) {
 					$latest_files[$fullpath] = $timestamp;
 				} else {
 					$latest_files[$fullpath] = gmdate('Y-m-d H:i:s', $timestamp);
 				}
 			} else {
 				if ($timestamp > current($latest_files)) {
-					if ($options['unix_timestamps']) {
+					if (@$options['unix_timestamps']) {
 						$latest_files[$fullpath] = $timestamp;
 					} else {
 						$latest_files[$fullpath] = gmdate('Y-m-d H:i:s', $timestamp);
@@ -377,7 +377,7 @@ class filesystem {
 					}
 				}
 			}
-		}, ['error_on_unreadble' => $options['error_on_unreadble']]);
+		}, ['error_on_unreadble' => @$options['error_on_unreadble']]);
 
 		return $latest_files;
 	}
@@ -472,7 +472,7 @@ class filesystem {
 					return false;
 				}
 			} elseif (is_dir($file)) {
-				$r = self::delete_folder_tree($file, [], $del_errmsg);
+				$r = static::delete_folder_tree($file, [], $del_errmsg);
 				if (!$r) {
 					$err_msg_var = ['code' => 'delete_folder_tree_failed', 'desc' => 'Could not delete child folder tree.', 'parent_error' => $del_errmsg, 'path' => $file];
 					return false;
@@ -501,7 +501,7 @@ class filesystem {
 			$folderobject = rtrim($folder, '/') .'/'. $object;
 			if ($object != '.' && $object != '..') {
 				if (filetype($folderobject) == 'dir') {
-					$r = self::delete_folder_tree($folderobject, $del_errmsg);
+					$r = static::delete_folder_tree($folderobject, $del_errmsg);
 					if (!$r) {
 						$err_msg_var = ['code' => 'folder_nonexist', 'desc' => 'Could not delete child folder tree.', 'parent_error' => $del_errmsg, 'path' => $folderobject];
 						return false;
@@ -534,8 +534,8 @@ class filesystem {
 	 */
 	public static function make_valid_filename($input, $options = []) {
 		// Replace spaces
-		if (!$options['skip_space_conversion']) {
-			if ($options['replace_space_with']) {
+		if (!@$options['skip_space_conversion']) {
+			if (@$options['replace_space_with']) {
 				$input = str_replace(' ', $options['replace_space_with'], $input);
 			} else {
 				$input = str_replace(' ', '_', $input);
@@ -566,11 +566,11 @@ class filesystem {
 	 * @return string
 	 */
 	public static function make_valid_filename_strict($input, $options = []) {
-		$options['allow_characters'] = (string) $options['allow_characters'];
+		$options['allow_characters'] = (string) @$options['allow_characters'];
 
 		// Get basename
 		$fileinfo = pathinfo($input);
-		if (!$options['assume_filename_only']) {
+		if (!@$options['assume_filename_only']) {
 			$extension = $fileinfo['extension'];
 			$basename = str_replace('.'.$extension, '', $fileinfo['basename']);  //my basename is NOT equal to PHP basename - I don't include the extension
 		} else {
@@ -579,8 +579,8 @@ class filesystem {
 		}
 
 		// Replace spaces
-		if (!$options['skip_space_conversion']) {
-			if ($options['replace_space_with']) {
+		if (!@$options['skip_space_conversion']) {
+			if (@$options['replace_space_with']) {
 				$basename = str_replace(' ', $options['replace_space_with'], $basename);
 			} else {
 				$basename = str_replace(' ', '_', $basename);
@@ -590,7 +590,7 @@ class filesystem {
 		// Replace special characters
 		$search  = ['æ' , 'Æ' , 'ø' , 'Ø' , 'å' , 'Å' , 'à', 'á', 'â', 'ã', 'ä', 'è', 'é', 'ê', 'ë', 'ì', 'í', 'î', 'ï', 'ò', 'ó', 'ô', 'õ', 'ö', 'ù', 'ú', 'û', 'ü', 'ý', 'À', 'Á', 'Â', 'Ã', 'Ä', 'È', 'É', 'Ê', 'Ë', 'Ì', 'Í', 'Î', 'Ï', 'Ò', 'Ó', 'Ô', 'Õ', 'Ö', 'Ù', 'Ú', 'Û', 'Ü', 'Ý', 'ß' , ''];
 		$replace = ['ae', 'AE', 'oe', 'OE', 'aa', 'AA', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'i', 'i', 'i', 'i', 'o', 'o', 'o', 'o', 'o', 'u', 'u', 'u', 'u', 'y', 'A', 'A', 'A', 'A', 'A', 'E', 'E', 'E', 'E', 'I', 'I', 'I', 'I', 'O', 'O', 'O', 'O', 'O', 'U', 'U', 'U', 'U', 'Y', 'ss', "'"];
-		if (!$options['skip_special_char_conversion']) {
+		if (!@$options['skip_special_char_conversion']) {
 			$basename = str_replace($search, $replace, $basename);
 			$extension = str_replace($search, $replace, $extension);
 
@@ -616,7 +616,7 @@ class filesystem {
 		$extension = str_replace($invalid_chars, '', $extension);
 
 		// Remove any other unknown non-ASCII characters
-		if (!$options['skip_removing_nonascii']) {
+		if (!@$options['skip_removing_nonascii']) {
 			$basename = preg_replace('/[^\x20-\x7E'. str_replace('/', "\\/", preg_quote($excl_regex . $options['allow_characters'])) .']/'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''),'', $basename);
 			$extension = preg_replace('/[^\x20-\x7E'. str_replace('/', "\\/", preg_quote($excl_regex . $options['allow_characters'])) .']/'.(mb_internal_encoding() == 'UTF-8' ? 'u' : ''),'', $extension);
 		}
@@ -659,7 +659,7 @@ class filesystem {
 
 		$filepath = preg_replace("/^([a-z]):([\\/])/i", '$1$2', $filepath);  //convert c:/folder/... to c/folder/...
 
-		$clean = self::make_valid_filename_strict($filepath, ['skip_space_conversion' => true, 'skip_special_char_conversion' => $options['skip_special_char_conversion'], 'allow_characters' => $options['allow_characters'] . $options['valid_folder_separators'], 'assume_filename_only' => true]);
+		$clean = static::make_valid_filename_strict($filepath, ['skip_space_conversion' => true, 'skip_special_char_conversion' => $options['skip_special_char_conversion'], 'allow_characters' => $options['allow_characters'] . $options['valid_folder_separators'], 'assume_filename_only' => true]);
 		return ($clean === $filepath ? true : false);
 	}
 
@@ -711,7 +711,7 @@ class filesystem {
 	 * @return string
 	 */
 	public static function make_unique_filename($filename, $basefolder, $is_dir = false, $forcedigits = false, $digits = 2) {
-		$basefolder = self::cleanup_path($basefolder);
+		$basefolder = static::cleanup_path($basefolder);
 		if ($basefolder[strlen($basefolder)-1] != '/') {  //add trailing slash if not present
 			$basefolder .= '/';
 		}
@@ -758,7 +758,7 @@ class filesystem {
 			return true;
 		}
 		$parent_folder = dirname($folder);
-		if (!self::require_folder_exist($parent_folder, $mode)) {
+		if (!static::require_folder_exist($parent_folder, $mode)) {
 			return false;
 		}
 		if ($mode) {
@@ -788,7 +788,7 @@ class filesystem {
 		if (!file_exists($filepath)) {  //crucial for security!
 			throw new \Exception('File to get MIME type for does not exist.');
 		}
-		if (!self::is_valid_filepath($filepath)) {  //crucial for security!
+		if (!static::is_valid_filepath($filepath)) {  //crucial for security!
 			throw new \Exception('File path contains invalid characters.');
 		}
 
@@ -825,7 +825,7 @@ class filesystem {
 			throw new \Exception('The method check_wrong_extension() is not yet supported on Windows.');
 		}
 
-		$fileinfo = self::get_mime_type($filepath);
+		$fileinfo = static::get_mime_type($filepath);
 
 		if ($fileinfo === 'unknown') {
 			// unknown file, assume it's correct
@@ -836,7 +836,7 @@ class filesystem {
 			$actual_extension = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
 		}
 		$actual_extension = strtolower($actual_extension);
-		$correct_extension = self::map_mime_type_to_extension()[$fileinfo['mimetype']];
+		$correct_extension = static::map_mime_type_to_extension()[$fileinfo['mimetype']];
 
 		if (!$correct_extension) {
 			// don't know what extension it should be according to its signature, so just assume it's correct
@@ -1006,7 +1006,7 @@ class filesystem {
 	public static function is_binary_file($file) {
 		$fp = fopen($file, 'r');
 		$d = fread($fp, 1000);
-		if (preg_match("|\\x00|", $d) || !preg_match('/\\.(php|phtml|js|txt|css|htm|html|xhtml|xml|xsl|xsd|txt|ini|sql|json|htaccess|htpasswd|asp|cgi|bat|log|vbs|csv|m3u)$/i', $file)) {  //NOTE: the first condition was not enough in case of a given PDF file I tried to upload
+		if (preg_match("|\\x00|", $d) || !preg_match('/\\.(php|phpcli|phtml|js|txt|css|htm|html|xhtml|xml|xsl|xsd|txt|md|ini|sql|json|yml|yaml|htaccess|htpasswd|asp|cgi|bat|log|vbs|csv|m3u)$/i', $file)) {  //NOTE: the first condition was not enough in case of a given PDF file I tried to upload
 			return true;
 		} else {
 			return false;
@@ -1040,7 +1040,7 @@ class filesystem {
 			    if ($file != "." and $file != "..") {
 			        $path = $dir."/".$file;
 			        if (is_dir($path))
-			            $size += folder_size($path);
+			            $size += static::folder_size($path);
 			        elseif (is_file($path))
 			            $size += filesize($path);
 			    }

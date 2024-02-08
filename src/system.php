@@ -106,7 +106,7 @@ class system {
 		core::require_database($cfg['db_server_id']);
 
 		// Clean up the buffer once per session
-		if (!$_SESSION['_jfw_cleaned_buffer']) {
+		if (!@$_SESSION['_jfw_cleaned_buffer']) {
 			$sql = "DELETE FROM `". $cfg['db_name'] ."`.`". $cfg['db_table_buffer'] ."` WHERE tmpd_date_expire IS NOT NULL AND tmpd_date_expire < UTC_TIMESTAMP()";
 			core::database_result($sql, false, 'Database query for cleaning temporary buffer table failed.');
 			$_SESSION['_jfw_cleaned_buffer'] = true;
@@ -194,22 +194,22 @@ class system {
 			'executed' => true,
 		];
 
-		if (is_numeric($options['delay_secs'])) {
+		if (is_numeric(@$options['delay_secs'])) {
 			$command = 'sleep '. $options['delay_secs'] .' && '. $command;
 		}
 
-		if ($options['niceness']) {
+		if (@$options['niceness']) {
 			$command = 'nice -'. (int) $options['niceness'] .' '. $command;
 		}
 
 		$return['command'] = $command;
 
-		if ($options['only_if_not_already_running']) {
+		if (@$options['only_if_not_already_running']) {
 			if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 				throw new \Exception('The method shell_command() with option only_if_not_already_running is not yet supported on Windows.');
 			}
 			$o = [];
-			if ($options['enable_pgrep_a']) {
+			if (@$options['enable_pgrep_a']) {
 				$pgrep_command = 'pgrep -fa';
 			} else {
 				$pgrep_command = 'pgrep -f';  //the "a" option is not available on AWS Amazon Linux
@@ -227,7 +227,7 @@ class system {
 			}
 		}
 
-		if ($options['background']) {
+		if (@$options['background']) {
 			if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 				throw new \Exception('The method shell_command() with option background=true is not yet supported on Windows.');
 /*
@@ -249,17 +249,17 @@ THIS DOESN'T WORK YET. IT EXECUTES BUT NOT IN THE BACKGROUND. USING output_file 
 			} else {
 				// Source: https://stackoverflow.com/questions/45953/php-execute-a-background-process
 				// Composer package: https://github.com/diversen/background-job
-				if ($options['output_file']) {
-					if ($options['append']) {
+				if (@$options['output_file']) {
+					if (@$options['append']) {
 						$redir = '>>';
 					} else {
 						$redir = '>';
 					}
-					if ($options['id']) {
+					if (@$options['id']) {
 						$options['id'] = preg_replace("/[^a-zA-Z0-9_\\-\\.]/", '', $options['id']);
 						$options['id'] .= ':';
 					}
-					if ($options['skip_exitcode']) {
+					if (@$options['skip_exitcode']) {
 						$command = sprintf("%s ". $redir ." %s 2>&1 & echo $!", $command, escapeshellarg($options['output_file']));
 					} else {
 						$command = sprintf("(%s; printf \"\\n". $options['id'] ."EXITCODE:$?\") ". $redir ." %s 2>&1 & echo $!", $command, escapeshellarg($options['output_file']));
@@ -349,7 +349,7 @@ THIS DOESN'T WORK YET. IT EXECUTES BUT NOT IN THE BACKGROUND. USING output_file 
 		}
 
 		$cmd = 'pgrep ';
-		if ($options['match_full_command_line']) {
+		if (@$options['match_full_command_line']) {
 			$cmd .= '-f ';
 		}
 		$cmd .= escapeshellcmd($process_pattern);
@@ -407,7 +407,7 @@ THIS DOESN'T WORK YET. IT EXECUTES BUT NOT IN THE BACKGROUND. USING output_file 
 					if (preg_match("/^(Hash|AuthorName|AuthorDate|AuthorDateRelative|Subject|Body):(.*)/", $line, $match)) {
 						$currentField = lcfirst($match[1]);
 					}
-					if ($currentField && trim($match[2])) {
+					if (@$currentField && trim($match[2])) {
 						if ($currentField === 'Body') {  //multiline field
 							$parsedFields[$currentField][] = trim($match[2]);
 						} else {
