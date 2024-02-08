@@ -71,7 +71,7 @@ class system_administration {
 	 *       user = dailybackup
 	 *       password = "thepasswordhere"
 	 *       ```
-	 *   - `mysq_dump_path` (req.) : path to folder to store the MySQL dumps (with or without ending slash), eg. `/home/myuser/backups/`
+	 *   - `mysql_dump_path` (req.) : path to folder to store the MySQL dumps (with or without ending slash), eg. `/home/myuser/backups/`
 	 *   - `databases` (req.) : array with databases to backup. Database name as key where its value is a subarray with these options:
 	 *      - `ignore_tables` (opt.) : array of tables to ignore and not back up
 	 *      Example:
@@ -91,6 +91,13 @@ class system_administration {
 	 *   - `post_to_url` (opt.) : URL to post the MySQL dump (after encryption has been done (if encryption is enabled)). See sample above for receiving PHP script.
 	 */
 	public function backup_mysql($options = []) {
+		// Backward compatibility for a typo in earlier versions (in LSTV+SwiftL)
+		if (array_key_exists('mysq_dump_path', $options) && !array_key_exists('mysql_dump_path', $options)) {
+			error_log('Please update configuration for \winternet\jensenfw2\system_administration::backup_mysql() to use parameter "mysql_dump_path" instead of "mysq_dump_path".');
+			$options['mysql_dump_path'] = $options['mysq_dump_path'];
+			unset($options['mysq_dump_path']);
+		}
+
 		$this->check_base_config();
 
 		if (!is_numeric(@$options['purge_after'])) {
@@ -101,7 +108,7 @@ class system_administration {
 		}
 
 		$this->check_path(@$options['mysql_config_file'], true);
-		$this->check_path(@$options['mysq_dump_path'], true);
+		$this->check_path(@$options['mysql_dump_path'], true);
 		if (@$options['publickey_path']) {
 			$this->check_path($options['publickey_path'], true);
 		}
@@ -133,10 +140,10 @@ class system_administration {
 				}
 			}
 			if (@$options['publickey_path']) {
-				$command .= " | openssl smime -encrypt -binary -text -aes256 -out ". filesystem::concat_path($options['mysq_dump_path'], $filename) ." -outform DER ". $options['publickey_path'];
+				$command .= " | openssl smime -encrypt -binary -text -aes256 -out ". filesystem::concat_path($options['mysql_dump_path'], $filename) ." -outform DER ". $options['publickey_path'];
 				// NOTE: to decrypt: openssl smime -decrypt -in database.sql.enc -binary -inform DEM -inkey mysqldump-secure.priv.pem -out database.sql
 			} else {
-				$command .= " > ". filesystem::concat_path($options['mysq_dump_path'], $filename);
+				$command .= " > ". filesystem::concat_path($options['mysql_dump_path'], $filename);
 			}
 			$cmdoutput = [];
 			exec($command, $cmdoutput, $returnstatus);
@@ -146,14 +153,14 @@ class system_administration {
 				if (!$this->_sent_error_notif) {
 					$this->notify_error('Please check the '. $this->system_name .' backup script '. __FILE__ .' - there might be errors. Return code was '. $returnstatus . PHP_EOL . PHP_EOL . print_r($cmdoutput, true));
 				}
-			} elseif (!file_exists(filesystem::concat_path($options['mysq_dump_path'], $filename)) || filesize(filesystem::concat_path($options['mysq_dump_path'], $filename)) < 10000) {
+			} elseif (!file_exists(filesystem::concat_path($options['mysql_dump_path'], $filename)) || filesize(filesystem::concat_path($options['mysql_dump_path'], $filename)) < 10000) {
 				echo '   PROBABLY FAILED! Email notif being sent...';
 				if (!$this->_sent_error_notif) {
-					$this->notify_error('Please check the '. $this->system_name .' backup script '. __FILE__ .' - there might be errors. Backup file '. filesystem::concat_path($options['mysq_dump_path'], $filename) .' is missing or seems too small. Return code was '. $returnstatus . PHP_EOL . PHP_EOL . print_r($cmdoutput, true));
+					$this->notify_error('Please check the '. $this->system_name .' backup script '. __FILE__ .' - there might be errors. Backup file '. filesystem::concat_path($options['mysql_dump_path'], $filename) .' is missing or seems too small. Return code was '. $returnstatus . PHP_EOL . PHP_EOL . print_r($cmdoutput, true));
 				}
 			} else {
 				// Gzip the file
-				$command = "gzip -f ". filesystem::concat_path($options['mysq_dump_path'], $filename);
+				$command = "gzip -f ". filesystem::concat_path($options['mysql_dump_path'], $filename);
 				$filename_gz = $filename .'.gz';
 				$cmdoutput = [];
 				exec($command, $cmdoutput, $returnstatus);
@@ -161,12 +168,12 @@ class system_administration {
 				echo '   Done!';
 
 				if (@$options['keep_monthly_backup']) {
-					if (!copy(filesystem::concat_path($options['mysq_dump_path'], $filename_gz), filesystem::concat_path($options['mysq_dump_path'], $filename_monthly) .'.gz')) {
+					if (!copy(filesystem::concat_path($options['mysql_dump_path'], $filename_gz), filesystem::concat_path($options['mysql_dump_path'], $filename_monthly) .'.gz')) {
 						$this->notify_error('Please check the '. $this->system_name .' backup script '. __FILE__ .' - Failed to copy the monthly backup.');
 					}
 				}
 				if (@$options['keep_annual_backup']) {
-					if (!copy(filesystem::concat_path($options['mysq_dump_path'], $filename_gz), filesystem::concat_path($options['mysq_dump_path'], $filename_annual) .'.gz')) {
+					if (!copy(filesystem::concat_path($options['mysql_dump_path'], $filename_gz), filesystem::concat_path($options['mysql_dump_path'], $filename_annual) .'.gz')) {
 						$this->notify_error('Please check the '. $this->system_name .' backup script '. __FILE__ .' - Failed to copy the annual backup.');
 					}
 				}
@@ -191,8 +198,8 @@ class system_administration {
 					curl_setopt($ch, CURLOPT_URL, $options['post_to_url']);
 					curl_setopt($ch, CURLOPT_POST, 1);
 					$fields = [];
-					$fields['f1'] = new \CurlFile(filesystem::concat_path($options['mysq_dump_path'], $filename_gz), 'application/octet-stream');
-					$fields['f1_hash'] = hash_file('sha256', filesystem::concat_path($options['mysq_dump_path'], $filename_gz));
+					$fields['f1'] = new \CurlFile(filesystem::concat_path($options['mysql_dump_path'], $filename_gz), 'application/octet-stream');
+					$fields['f1_hash'] = hash_file('sha256', filesystem::concat_path($options['mysql_dump_path'], $filename_gz));
 					$fields['t'] = time();
 					$fields['t_hash'] = hash('sha256', $fields['t'] .'FHeFzwCT8O96V4MpIjm');
 					curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
@@ -223,13 +230,13 @@ class system_administration {
 
 		$this->ln();
 
-		$files = filesystem::get_files($options['mysq_dump_path']);
+		$files = filesystem::get_files($options['mysql_dump_path']);
 		if (is_array($files)) {
 			$this->ln('Purging old backups');
 			$this->ln('-------------------');
 			foreach ($files as $file) {
 				if (preg_match('/^BACKUP_(\d{4}-\d{2}-\d{2})_\d{4}_('. implode('|', array_keys($options['databases'])) .')\.sql/', $file, $match)) {
-					$fullpathfile = filesystem::concat_path($options['mysq_dump_path'], $file);
+					$fullpathfile = filesystem::concat_path($options['mysql_dump_path'], $file);
 					$date = $match[1];
 					$age_days = round( (time() - strtotime($date)) / 60 / 60 / 24, 5);
 					if ($age_days > $options['purge_after']) {
@@ -354,9 +361,16 @@ class system_administration {
 	 *   - `max_hours_since_last_backup` (opt.) : Max age of latest backup we find before triggering an alert. Defaults to 48.
 	 */
 	public function check_mysql_backup($options) {
+		// Backward compatibility for a typo in earlier versions (in LSTV+SwiftL)
+		if (array_key_exists('mysq_dump_path', $options) && !array_key_exists('mysql_dump_path', $options)) {
+			error_log('Please update configuration for \winternet\jensenfw2\system_administration::check_mysql_backup() to use parameter "mysql_dump_path" instead of "mysq_dump_path".');
+			$options['mysql_dump_path'] = $options['mysq_dump_path'];
+			unset($options['mysq_dump_path']);
+		}
+
 		$this->check_base_config();
 
-		if (!$options['mysq_dump_path']) {
+		if (!$options['mysql_dump_path']) {
 			$this->system_error('MySQL dump path unknown for checking backup.');
 		}
 		if (!is_numeric(@$options['max_hours_since_last_backup'])) {
@@ -365,7 +379,7 @@ class system_administration {
 
 		$latest_backup_timestamp = 0;
 
-		$files = filesystem::get_files($options['mysq_dump_path']);
+		$files = filesystem::get_files($options['mysql_dump_path']);
 		foreach ($files as $file) {
 			if (preg_match("/BACKUP_(\\d\\d\\d\\d-\\d\\d-\\d\\d)_(\\d\\d)(\\d\\d)_.*". preg_quote(".sql.") ."/", $file, $match)) {
 				$timestamp = strtotime($match[1] .' '. $match[2] .':'. $match[3]);  //recreating yyyy-mm-dd hh:mm
