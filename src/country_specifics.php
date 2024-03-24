@@ -71,7 +71,7 @@ class country_specifics {
 	 * @return array
 	 */
 	public static function countries_requiring_state_province() {
-		return ['US','CA','AU','CN','MX','MY','IT'];  //currently not an exhaustive list
+		return ['US','CA','AU','CN','CZ','MX','MY','IT'];  //currently not an exhaustive list
 	}
 
 	/**
