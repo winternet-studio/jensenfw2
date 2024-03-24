@@ -391,7 +391,7 @@ THIS DOESN'T WORK YET. IT EXECUTES BUT NOT IN THE BACKGROUND. USING output_file 
 	/**
 	 * Parse winternet.no's Git log
 	 *
-	 * The logs are generated on each push and are stored on the Git server
+	 * The logs are generated on each push using the command `git log --max-count=300 --numstat --pretty=format:')=-=(%nHash:%h%nAuthorName:%an%nAuthorDate:%ai%nAuthorDateRelative:%ar%nSubject:%s%nBody:%b%n]--[' > gitcommits.log`
 	 */
 	public static function parse_winternet_git_log($string) {
 		$commits = explode(')=-=(', $string);

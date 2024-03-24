@@ -49,19 +49,19 @@ class core {
 		// Errors
 		$cfg['log_errors_to'] = 'database';  //'file' or 'database'
 		$cfg['errorlog_file'] = false;  //format: full path to file. Required if log_errors_to='file'
-		$cfg['errorlog_table'] = "`". $cfg['databases'][0]['db_name'] ."`.`system_ctl_errors`";  //format: databasename.tablename (SQL format). Required if log_errors_to='database'
+		$cfg['errorlog_table'] = "`system_ctl_errors`";  //format: `databasename`.`tablename` (SQL format). Required if log_errors_to='database'
 		$cfg['errorlog_userdata'] = null;  //function that returns an associative array with information about the logged in user. Keys: logged_in (true|false) (req.), userID, username, fullname, accesslevels, is_emulating, emulator_username
 		$cfg['errorlog_extra'] = null;  //function that returns an associative array with key/value pairs of extra data you want to log with each error, eg. session data
 		$cfg['custom_user_error_msgHTML'] = false;  //for making a custom error message. The tags %%timestamp%% and %%errormessage%% will be replaced with the actual value, the URL encoded timestamp and the actual error message respectively.
 
 		// System settings in database
-		$cfg['db_table_system_settings'] = $cfg['databases'][0]['db_name'] .".system_settings";   //databasename.tablename
+		$cfg['db_table_system_settings'] = '`system_settings`';   //`databasename`.`tablename`
 
 		// Translation
 		$cfg['translation_mode'] = 'inline';  //'database', 'file', 'inline' - designation of where text translations are to be found
 		$cfg['default_language'] = 'en';
 		$cfg['languages_available'] = ['en'];
-		$cfg['db_table_translations'] = $cfg['databases'][0]['db_name'] .'.system_translations';   //databasename.tablename
+		$cfg['db_table_translations'] = '`system_translations`';   //`databasename`.`tablename`
 		$cfg['missing_lang_log_mode'] = false;  //how should missing translation be logged? 'email', 'file', or false (if a *tag* is missing it will ALWAYS be notified by email)
 
 		// Other
