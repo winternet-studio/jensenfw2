@@ -121,6 +121,7 @@ class dump {
 	var $tableAtts				= 'border="1" cellpadding="2" cellspacing="0"';
 	var $tdAtts					= 'valign="top"';
 	var $titleText				= NULL;
+	var $cssEchoed = false;
 
 	var $query_tabSize			= 4;
 	var $query_expandFunctions	= false;
@@ -138,18 +139,16 @@ class dump {
 		Root function to output result with CSS formatting.
 	----------------------------------------------------------------------*/
 
-	function dumpInternal($input, $return = false) {
-
-		global $phpDumpCSS;
+	function dumpInternal($input, $return = false, $topLevel = 2) {
 
 		$output = NULL;
 
-		if(!isset($phpDumpCSS)) {
+		if (!$this->cssEchoed) {
 			$output .= $this->css();
-			$phpDumpCSS = true;
+			$this->cssEchoed = true;
 		}
 
-		$output .= '<div id="phpdump">'. static::get_code_reference(true, $return, 2) . $this->getDump($input) .'</div><div style="clear: both;"></div>';
+		$output .= '<div id="phpdump">'. static::get_code_reference(true, $return, $topLevel) . $this->getDump($input) .'</div><div style="clear: both;"></div>';
 
 		if($return)
 			return $output;
@@ -184,7 +183,11 @@ class dump {
 
 		$this->query_expandFunctions = $expandFunctions;
 
-		$output = $this->css();
+		$output = '';
+		if (!$this->cssEchoed) {
+			$output .= $this->css();
+			$this->cssEchoed = true;
+		}
 
 		$output .= '<div id="phpdump">'. static::get_code_reference(true, $return, 2) . $this->getDump($input, 'query') .'</div><div style="clear: both;"></div>';
 
@@ -196,11 +199,25 @@ class dump {
 	}
 
 	function dumpTable($input, $return = false, $options = []) {
+		$output = '';
 
-		$output  = '<div id="phpdump">';
+		if (!$this->cssEchoed) {
+			$output .= $this->css();
+			$this->cssEchoed = true;
+		}
+
+		$output .= '<div id="phpdump">';
 		$output .= static::get_code_reference(true, $return, 2);
 
-		if (is_array($input) && is_array(current($input))) {
+		if (is_array($input)) {
+			if (!is_array(current($input))) {
+				$output = 'EMPTY TABLE / EMPTY ARRAY';
+				if ($return) {
+					return $this->dumpInternal($output, $return, 3);
+				} else {
+					echo $this->dumpInternal($output, $return, 3);
+				}
+			}
 			$skipColumns = [];
 			if (!empty($options['skipColumns']) && is_array($options['skipColumns'])) {
 				$skipColumns = $options['skipColumns'];
@@ -208,7 +225,7 @@ class dump {
 
 			ob_start();
 ?>
-<table>
+<table style="width: auto"><!-- to override the one they for a strange reason have set in CSS selector div#phpdump table -->
 <tr class="names">
 <?php
 			$columnNames = [];
