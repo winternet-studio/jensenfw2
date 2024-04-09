@@ -830,6 +830,60 @@ class datetime {
 	}
 
 	/**
+	 * Get the quarter of a given date
+	 */
+	public static function get_quarter($date = null) {
+		if (!$date) {
+			$date = new \DateTime('now');
+		} elseif (is_string($date)) {
+			$date = new \DateTime($date);
+		}
+
+		return ceil($date->format('n') / 3);
+	}
+
+	/**
+	 * @param string $period : Currently only supporters `quarter`. TODO: implement `halfyear`
+	 * @param DateTime $as_of_date : Specify as of which date if not current date/time
+	 * @return array : Object with properties being a DateTime object (only the date is relevant, not the time)
+	 */
+	public static function get_previous_period_dates($period, \DateTime $as_of_date = null) {
+		if (!$as_of_date) {
+			$as_of_date = new \DateTime('now');
+		} elseif (!($as_of_date instanceof \DateTimeImmutable)) {
+			$as_of_date = \DateTimeImmutable::createFromMutable($as_of_date);
+		}
+
+		if ($period == 'quarter') {
+			$current_quarter = static::get_quarter($as_of_date);
+
+			if ($current_quarter == 1) {
+				// Previous quarter ends in December of the previous year
+				$start = $as_of_date->modify('first day of October last year');
+				$end = $as_of_date->modify('last day of December last year');
+				$period_number  = 4;
+			} else {
+				// Previous quarter ends in the month before the current quarter's start month
+				$month = $as_of_date->format('n');
+				$months_since_previous_quarter = $month % 3;
+				if ($months_since_previous_quarter == 0) $months_since_previous_quarter = 3;
+
+				$start = $as_of_date->modify('first day of '. ($months_since_previous_quarter + 2) .' months ago');
+				$end = $as_of_date->modify('last day of '. $months_since_previous_quarter .' months ago');
+				$period_number = $current_quarter - 1;
+			}
+		} else {
+			core::system_error('Calculating dates for this perioud has not yet been implemented.', ['Period' => $period]);
+		}
+
+		return (object) [
+			'start_date' => $start,
+			'end_date' => $end,
+			'period_number' => $period_number,
+		];
+	}
+
+	/**
 	 * @param string $period : eg. `6h` or `14d`
 	 * @param array $options : Available options:
 	 *   - `timezone` : set timezone, eg. `Europe/Copenhagen`. Defaults to system timezone.

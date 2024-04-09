@@ -1,7 +1,7 @@
 <?php
 use PHPUnit\Framework\TestCase;
 use winternet\jensenfw2\datetime;
- 
+
 final class datetimeTest extends TestCase {
 	public function testFormatLocal() {
 		$result = datetime::format_local(new \DateTime('2020-05-08 14:23:05'), 'EEEE, d. MMMM', 'da_DK');
@@ -151,6 +151,83 @@ final class datetimeTest extends TestCase {
 		$this->assertSame('18-22. okt. 2020', datetime::format_timeperiod_local('2020-10-18 05:00:00', '2020-10-22 05:00:00', 'da_DK', ['input_timezone' => 'America/Los_Angeles', 'output_timezone' => 'UTC']));
 		$this->assertSame('17-21. okt. 2020', datetime::format_timeperiod_local('2020-10-18 05:00:00', '2020-10-22 05:00:00', 'da_DK', ['output_timezone' => 'America/Los_Angeles']));
 		$this->assertSame('19-23. okt. 2020', datetime::format_timeperiod_local('2020-10-18 15:00:00', '2020-10-22 15:00:00', 'da_DK', ['input_timezone' => 'America/Los_Angeles', 'output_timezone' => 'Australia/Brisbane']));
+	}
+
+	public function testGetQuarter() {
+		$this->assertEquals(1, datetime::get_quarter('2023-01-01'));
+		$this->assertEquals(1, datetime::get_quarter('2023-01-05'));
+		$this->assertEquals(1, datetime::get_quarter('2023-03-31'));
+		$this->assertEquals(2, datetime::get_quarter('2023-04-01'));
+		$this->assertEquals(2, datetime::get_quarter('2023-04-15'));
+		$this->assertEquals(2, datetime::get_quarter('2023-06-30'));
+		$this->assertEquals(3, datetime::get_quarter('2023-07-01'));
+		$this->assertEquals(3, datetime::get_quarter('2023-07-30'));
+		$this->assertEquals(3, datetime::get_quarter('2023-09-30'));
+		$this->assertEquals(4, datetime::get_quarter('2023-10-01'));
+		$this->assertEquals(4, datetime::get_quarter('2023-11-01'));
+		$this->assertEquals(4, datetime::get_quarter('2023-12-31'));
+	}
+
+	public function testGetPreviousPeriodDates() {
+		$result = datetime::get_previous_period_dates('quarter', new \DateTime('2023-01-01'));
+		$this->assertEquals(new \DateTime('2022-10-01 00:00:00'), $result->start_date);
+		$this->assertEquals(new \DateTime('2022-12-31 00:00:00'), $result->end_date);
+		$this->assertEquals(4, $result->period_number);
+
+		$result = datetime::get_previous_period_dates('quarter', new \DateTime('2023-01-05'));
+		$this->assertEquals(new \DateTime('2022-10-01 00:00:00'), $result->start_date);
+		$this->assertEquals(new \DateTime('2022-12-31 00:00:00'), $result->end_date);
+		$this->assertEquals(4, $result->period_number);
+
+		$result = datetime::get_previous_period_dates('quarter', new \DateTime('2023-03-31'));
+		$this->assertEquals(new \DateTime('2022-10-01 00:00:00'), $result->start_date);
+		$this->assertEquals(new \DateTime('2022-12-31 00:00:00'), $result->end_date);
+		$this->assertEquals(4, $result->period_number);
+
+		$result = datetime::get_previous_period_dates('quarter', new \DateTime('2023-04-01'));
+		$this->assertEquals(new \DateTime('2023-01-01 00:00:00'), $result->start_date);
+		$this->assertEquals(new \DateTime('2023-03-31 00:00:00'), $result->end_date);
+		$this->assertEquals(1, $result->period_number);
+
+		$result = datetime::get_previous_period_dates('quarter', new \DateTime('2023-04-15'));
+		$this->assertEquals(new \DateTime('2023-01-01 00:00:00'), $result->start_date);
+		$this->assertEquals(new \DateTime('2023-03-31 00:00:00'), $result->end_date);
+		$this->assertEquals(1, $result->period_number);
+
+		$result = datetime::get_previous_period_dates('quarter', new \DateTime('2023-06-30'));
+		$this->assertEquals(new \DateTime('2023-01-01 00:00:00'), $result->start_date);
+		$this->assertEquals(new \DateTime('2023-03-31 00:00:00'), $result->end_date);
+		$this->assertEquals(1, $result->period_number);
+
+		$result = datetime::get_previous_period_dates('quarter', new \DateTime('2023-07-01'));
+		$this->assertEquals(new \DateTime('2023-04-01 00:00:00'), $result->start_date);
+		$this->assertEquals(new \DateTime('2023-06-30 00:00:00'), $result->end_date);
+		$this->assertEquals(2, $result->period_number);
+
+		$result = datetime::get_previous_period_dates('quarter', new \DateTime('2023-07-30'));
+		$this->assertEquals(new \DateTime('2023-04-01 00:00:00'), $result->start_date);
+		$this->assertEquals(new \DateTime('2023-06-30 00:00:00'), $result->end_date);
+		$this->assertEquals(2, $result->period_number);
+
+		$result = datetime::get_previous_period_dates('quarter', new \DateTime('2023-09-30'));
+		$this->assertEquals(new \DateTime('2023-04-01 00:00:00'), $result->start_date);
+		$this->assertEquals(new \DateTime('2023-06-30 00:00:00'), $result->end_date);
+		$this->assertEquals(2, $result->period_number);
+
+		$result = datetime::get_previous_period_dates('quarter', new \DateTime('2023-10-01'));
+		$this->assertEquals(new \DateTime('2023-07-01 00:00:00'), $result->start_date);
+		$this->assertEquals(new \DateTime('2023-09-30 00:00:00'), $result->end_date);
+		$this->assertEquals(3, $result->period_number);
+
+		$result = datetime::get_previous_period_dates('quarter', new \DateTime('2023-10-26'));
+		$this->assertEquals(new \DateTime('2023-07-01 00:00:00'), $result->start_date);
+		$this->assertEquals(new \DateTime('2023-09-30 00:00:00'), $result->end_date);
+		$this->assertEquals(3, $result->period_number);
+
+		$result = datetime::get_previous_period_dates('quarter', new \DateTime('2023-12-31'));
+		$this->assertEquals(new \DateTime('2023-07-01 00:00:00'), $result->start_date);
+		$this->assertEquals(new \DateTime('2023-09-30 00:00:00'), $result->end_date);
+		$this->assertEquals(3, $result->period_number);
 	}
 
 	public function testPeriodToDatetime() {

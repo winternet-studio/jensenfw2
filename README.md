@@ -136,6 +136,8 @@ Tests
 Before running tests with the command `phpunit`, you should start the internal web server used for the tests in `networkTest.php`.
 To do so run the command `php -S localhost:8018 -t tests/webserver_docroot`.
 
+Run specific test: `phpunit tests/datetimeTest.php`
+
 Other notes
 -----------
 
