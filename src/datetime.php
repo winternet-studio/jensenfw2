@@ -849,7 +849,7 @@ class datetime {
 	 */
 	public static function get_previous_period_dates($period, \DateTime $as_of_date = null) {
 		if (!$as_of_date) {
-			$as_of_date = new \DateTime('now');
+			$as_of_date = new \DateTimeImmutable('today');
 		} elseif (!($as_of_date instanceof \DateTimeImmutable)) {
 			$as_of_date = \DateTimeImmutable::createFromMutable($as_of_date);
 		}
