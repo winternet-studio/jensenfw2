@@ -63,6 +63,12 @@ class dump {
 		return $dump->dumpq($input, $return, $expandFunctions);
 	}
 
+	/**
+	 * @param array $input : Array of arrays, or array of objects
+	 * @param array $options : Available options:
+	 *   - `skipColumns` : array of "column" names to skip
+	 *   - `subArraysAsJson` : set true to write values, that are arrays, as JSON, ie. nicely print a 3rd level of data
+	 */
 	public static function table($input, $return = true, $options = []) {
 		if ($return === null) $return = true;  //use default when set to null
 		$dump = new static();
@@ -210,7 +216,9 @@ class dump {
 		$output .= static::get_code_reference(true, $return, 2);
 
 		if (is_array($input)) {
-			if (!is_array(current($input))) {
+			if (is_object(current($input))) {
+				// continue, handle this below
+			} elseif (!is_array(current($input))) {
 				$output = 'EMPTY TABLE / EMPTY ARRAY';
 				if ($return) {
 					return $this->dumpInternal($output, $return, 3);
@@ -230,6 +238,9 @@ class dump {
 <?php
 			$columnNames = [];
 			foreach ($input as $row) {
+				if (is_object($row)) {
+					$row = (array) $row;
+				}
 				foreach ($row as $key => $value) {
 					if (!in_array($key, $columnNames) && !in_array($key, $skipColumns)) {
 ?>
@@ -243,13 +254,30 @@ class dump {
 </tr>
 <?php
 			foreach ($input as $values) {
+				if (is_object($values)) {
+					$values = (array) $values;
+				}
 ?>
 <tr>
 <?php
 				foreach ($columnNames as $columnName) {
 					if (in_array($columnName, $skipColumns)) continue;
 ?>
-	<td<?= (array_key_exists($columnName, $values) && is_numeric($values[$columnName]) && stripos($columnName, 'amount') !== false ? ' class="is-amount-column"' : '') ?>><?= (array_key_exists($columnName, $values) ? $this->getDump($values[$columnName]) : '') ?></td>
+	<td<?= (is_numeric(@$values[$columnName]) && stripos($columnName, 'amount') !== false ? ' class="is-amount-column"' : '') ?>>
+<?php
+					if (array_key_exists($columnName, $values)) {
+						if (!empty($options['subArraysAsJson']) && is_array($values[$columnName])) {
+							$value = preg_replace('/^.+\n|\n.+$/', '', json_encode($values[$columnName], JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));  //removes first and last line
+							$value = preg_replace('/^ {4}/m', '', $value);  //remove leading 4 spaces from each line
+							$value = preg_replace('/"([^"]*)":/U', '$1:', $value);  //remove quotes around key
+							$value = preg_replace('/: "(.*)",?$/m', ': $1', $value);  //remove quotes around value
+							echo '<pre>'. htmlentities($value) .'</pre>';
+						} else {
+							echo $this->getDump($values[$columnName]);
+						}
+					}
+?>
+	</td>
 <?php
 				}
 ?>
