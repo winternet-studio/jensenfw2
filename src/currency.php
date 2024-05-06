@@ -127,4 +127,19 @@ class currency {
 			core::system_error('No other currency conversion methods currently implemented.');
 		}
 	}
+
+	/**
+	 * Get number of decimals used in currency
+	 *
+	 * Source: https://docs.adyen.com/development-resources/currency-codes/ and https://docs.mollie.com/payments/migrating-v1-to-v2
+	 */
+	public static function decimals($currency) {
+		$non_standard = ['JPY' => 3, 'BHD' => 3];
+		if ($currency === 'return_nonstandard') {
+			return $non_standard;
+		} else {
+			return $non_standard[$currency] ?? 2;
+		}
+	}
+
 }
