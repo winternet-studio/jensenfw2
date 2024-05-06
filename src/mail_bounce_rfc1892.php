@@ -12,6 +12,8 @@
  *          But it had crazy fallback methods that were so loose that it caught wrong email addresses
  *          and reported them as being failed recipients. So I gave up switching to that library - also
  *          since this code with a few fixes seem to still work fine. -Allan
+ * As of 2024 this seems to be the latest version of the library: https://github.com/zoonru/PHP-Bounce-Handler
+ *          But I don't know yet if it's better than the above and/or mine below...
  */
 
 namespace winternet\jensenfw2;

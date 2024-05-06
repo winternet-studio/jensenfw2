@@ -1065,7 +1065,7 @@ class mail {
 			//NOTE: removes existing <a href="mailto:..."></a> tags and leaves just the email address (code between the opening and closing tag is discarded)
 			$html = preg_replace("|<a href=[\"']?mailto:([^\"' ]+)[\"']?[^>]*>(.*)</a>|siU", '$1', $html);
 		}
-		return preg_replace_callback('|\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b|i', function($matches) {
+		return preg_replace_callback('|\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b|i', function($matches) use (&$options) {
 			return \winternet\jensenfw2\mail::scrample_email_addressHTML($matches[0], $options);
 		}, $html);
 	}
