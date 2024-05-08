@@ -20,7 +20,7 @@ class session {
 	 * @param mixed $default_value : Set default value the very first time we deal with this variable (opt.)
 	 * @param boolean $prioritize_get : Normally a value sent by POST is preferred over GET, unless you set this to true (opt.)
 	 */
-	public static function setting($name, $default_value = false, $prioritize_get = false) {
+	public static function setting($name, $default_value = null, $prioritize_get = false) {
 		// This is a rewrite of the old session_setting() from the old JensenFW
 
 		// Get primary name (variable name) and make array holding all possible GET and POST names
@@ -70,13 +70,13 @@ class session {
 			$_SESSION[$primary_name] = null;
 		} elseif ($new_value != '-no-new-value-') {  //assign the new value
 			$_SESSION[$primary_name] = $new_value;
-		} elseif (strlen($default_value) > 0 && !$is_set) {  //set default value the very first time we deal with this variable
+		} elseif (isset($default_value) && !$is_set) {  //set default value the very first time we deal with this variable
 			$_SESSION[$primary_name] = $default_value;
 		} else {
 			//no new value and no default value has been set, make no changes
 		}
 
-		return $_SESSION[$primary_name];
+		return $_SESSION[$primary_name] ?? null;
 	}
 
 }

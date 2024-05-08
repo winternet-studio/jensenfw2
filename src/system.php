@@ -407,7 +407,7 @@ THIS DOESN'T WORK YET. IT EXECUTES BUT NOT IN THE BACKGROUND. USING output_file 
 					if (preg_match("/^(Hash|AuthorName|AuthorDate|AuthorDateRelative|Subject|Body):(.*)/", $line, $match)) {
 						$currentField = lcfirst($match[1]);
 					}
-					if (@$currentField && trim($match[2])) {
+					if (@$currentField && trim($match[2] ?? '')) {
 						if ($currentField === 'Body') {  //multiline field
 							$parsedFields[$currentField][] = trim($match[2]);
 						} else {
