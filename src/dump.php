@@ -266,7 +266,9 @@ class dump {
 	<td<?= (is_numeric(@$values[$columnName]) && stripos($columnName, 'amount') !== false ? ' class="is-amount-column"' : '') ?>>
 <?php
 					if (array_key_exists($columnName, $values)) {
-						if (!empty($options['subArraysAsJson']) && is_array($values[$columnName])) {
+						if (!empty($options['columnCallbacks'][$columnName]) && is_callable($options['columnCallbacks'][$columnName])) {
+							echo $options['columnCallbacks'][$columnName]($values[$columnName], $values);
+						} elseif (!empty($options['subArraysAsJson']) && is_array($values[$columnName])) {
 							$value = preg_replace('/^.+\n|\n.+$/', '', json_encode($values[$columnName], JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));  //removes first and last line
 							$value = preg_replace('/^ {4}/m', '', $value);  //remove leading 4 spaces from each line
 							$value = preg_replace('/"([^"]*)":/U', '$1:', $value);  //remove quotes around key
