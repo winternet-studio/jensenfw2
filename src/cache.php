@@ -12,6 +12,8 @@ class cache {
 	public $file_path;
 	public $file_prefix;
 
+	protected static $in_memory = [];
+
 	public function __construct($file_path, $file_prefix = '', $options = []) {
 		$this->file_path = rtrim($file_path, '/');
 		$this->file_prefix = $file_prefix;
@@ -55,6 +57,22 @@ class cache {
 
 	public function get_full_filepath($key) {
 		return $this->file_path .'/'. $this->file_prefix .'_'. filesystem::make_valid_filename($key) .'.phpser';
+	}
+
+	/**
+	 * Cache just in memory (in an array)
+	 *
+	 * @param string|integer|array $key
+	 * @param callable $callable : Function that returns the value to be cached if it wasn't cached already
+	 */
+	public static function get_or_set_in_memory($key, $callable) {
+		if (is_array($key)) {
+			$key = json_encode($key, JSON_THROW_ON_ERROR);
+		}
+		if (!array_key_exists($key, static::$in_memory)) {
+			static::$in_memory[$key] = $callable();
+		}
+		return static::$in_memory[$key];
 	}
 
 }
