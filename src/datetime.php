@@ -6,9 +6,12 @@
 namespace winternet\jensenfw2;
 
 class datetime {
+	public static $scripttimer_loop_start = null;
+	public static $scripttimer_loop_meantimecount = null;
+	public static $scripttimer_loop_lastmeantime = null;
 	public static $scripttimer_start = null;
-	public static $scripttimer_meantimecount = null;
-	public static $scripttimer_lastmeantime = null;
+	public static $scripttimer_current_loop = [];
+	public static $scripttimer_table = [];
 
 	public static $_formatters = [];
 	public static $_defaultLocale = null;
@@ -914,11 +917,19 @@ class datetime {
 	}
 
 	public static function scripttimer_start() {
-		static::$scripttimer_start = microtime(true);
-		return static::$scripttimer_start;
-	}
-	public static function scripttimer_meantime($writetext = false) {
+		static::$scripttimer_current_loop = [];
+
+		static::$scripttimer_loop_start = microtime(true);
 		if (!static::$scripttimer_start) {
+			static::$scripttimer_start = static::$scripttimer_loop_start;
+		}
+		return static::$scripttimer_loop_start;
+	}
+	/**
+	 * @param string|number $reference : Reference to the point in the code, usually line number using `__LINE__`
+	 */
+	public static function scripttimer_meantime($reference = null, $writetext = false) {
+		if (!static::$scripttimer_loop_start) {
 			$html = '<div style="color: orangered"><b>Timer was not started!</b></div>';
 			if (PHP_SAPI == 'cli') {
 				echo strip_tags($html);
@@ -928,21 +939,28 @@ class datetime {
 			return;
 		}
 		$scripttimer_meantime = microtime(true);
-		$duration = number_format($scripttimer_meantime - static::$scripttimer_start, 3);
+		$duration = number_format($scripttimer_meantime - static::$scripttimer_loop_start, 3);
 		if ($writetext) {
 			$backtrace = debug_backtrace();
-			$html = '<div style="color: orangered" title="'. $backtrace[0]['file'] .':'. $backtrace[0]['line'] .'"><b>Meantime #'. ++static::$scripttimer_meantimecount .', line '. $backtrace[0]['line'] .': '. $duration .''. (static::$scripttimer_lastmeantime ? ' ('. number_format($scripttimer_meantime - static::$scripttimer_lastmeantime, 3) .')' : '') .'</b></div>';
+			$html = '<div style="color: orangered" title="'. $backtrace[0]['file'] .':'. $backtrace[0]['line'] .'"><b>Meantime #'. ++static::$scripttimer_loop_meantimecount .', line '. $backtrace[0]['line'] .': '. $duration .''. (static::$scripttimer_loop_lastmeantime ? ' ('. number_format($scripttimer_meantime - static::$scripttimer_loop_lastmeantime, 3) .')' : '') .'</b></div>';
 			if (PHP_SAPI == 'cli') {
 				echo strip_tags($html);
 			} else {
 				echo $html;
 			}
 		}
-		static::$scripttimer_lastmeantime = $scripttimer_meantime;
+		static::$scripttimer_loop_lastmeantime = $scripttimer_meantime;
+
+		if (isset($reference)) {
+			static::$scripttimer_current_loop[$reference] = $duration;
+		} else {
+			static::$scripttimer_current_loop[] = $duration;
+		}
+
 		return $duration;
 	}
 	public static function scripttimer_stop($writetext = false) {
-		if (!static::$scripttimer_start) {
+		if (!static::$scripttimer_loop_start) {
 			$html = '<div style="color: orangered"><b>Timer was not started!</b></div>';
 			if (PHP_SAPI == 'cli') {
 				echo strip_tags($html);
@@ -952,19 +970,80 @@ class datetime {
 			return null;
 		}
 		$scripttimer_end = microtime(true);
-		$duration = number_format($scripttimer_end - static::$scripttimer_start, 3);
+		$duration = number_format($scripttimer_end - static::$scripttimer_loop_start, 3);
 		if ($writetext) {
 			$backtrace = debug_backtrace();
-			$html = '<div style="color: orangered" title="'. $backtrace[0]['file'] .':'. $backtrace[0]['line'] .'"><b>Full duration, line '. $backtrace[0]['line'] .': '. $duration .' seconds.'. (static::$scripttimer_meantimecount ? ' Meantimes average: '. number_format($duration / static::$scripttimer_meantimecount, 3) : '') .'</b></div>';
+			$html = '<div style="color: orangered" title="'. $backtrace[0]['file'] .':'. $backtrace[0]['line'] .'"><b>Full duration, line '. $backtrace[0]['line'] .': '. $duration .' seconds.'. (static::$scripttimer_loop_meantimecount ? ' Meantimes average: '. number_format($duration / static::$scripttimer_loop_meantimecount, 3) : '') .'</b></div>';
 			if (PHP_SAPI == 'cli') {
 				echo strip_tags($html);
 			} else {
 				echo $html;
 			}
 		}
-		static::$scripttimer_meantimecount = false;  //clear it
-		static::$scripttimer_lastmeantime = false;  //clear it
+		static::$scripttimer_loop_meantimecount = false;  //clear it
+		static::$scripttimer_loop_lastmeantime = false;  //clear it
+
+		static::$scripttimer_current_loop['End'] = $duration;
+		static::$scripttimer_table[] = static::$scripttimer_current_loop;
+
 		return $duration;
+	}
+
+	public static function scripttimer_report($write_to_file = null) {
+		$total_duration = number_format(microtime(true) - static::$scripttimer_start, 3);
+		ob_start();
+?>
+<h1>Performance Report</h1>
+<?= date('Y-m-d H:i:s') ?>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<table class="table table-striped table-bordered table-sm">
+<tr>
+<?php
+		$shortest_loop = null;
+		$longest_loop = 0;
+		foreach (current(static::$scripttimer_table) as $ref => $duration) {
+?>
+	<th><?= $ref ?></th>
+<?php
+			if ($duration > $longest_loop) {
+				$longest_loop = $duration;
+			}
+			if ($shortest_loop === null || $duration < $shortest_loop) {
+				$shortest_loop = $duration;
+			}
+		}
+?>
+</tr>
+<?php
+		$loop = 0;
+		foreach (static::$scripttimer_table as $datapoints) {
+			$loop++;
+?>
+<tr title="Loop #<?= $loop ?>">
+<?php
+			$prev_duration = 0;
+			foreach ($datapoints as $notused => $duration) {
+				$percentage = round(($duration - $prev_duration) / $longest_loop * 100);
+?>
+	<td title="Duration: <?= $duration - $prev_duration ?>"><?= $duration ?><br><div style="width: <?= $percentage ?>px; height: 8px; background-color: #ff9019; display: inline-block"></div></td>
+<?php
+				$prev_duration = $duration;
+			}
+?>
+</tr>
+<?php
+		}
+?>
+</table>
+<div>Shortest Loop Duration: <?= $shortest_loop ?> secs</div>
+<div>Longest Loop Duration: <?= $longest_loop ?> secs</div>
+<div>Total Duration: <?= $total_duration ?> secs</div>
+<?php
+		$html = ob_get_clean();
+		if ($write_to_file) {
+			file_put_contents($write_to_file, $html);
+		}
+		return $html;
 	}
 
 
