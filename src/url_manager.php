@@ -8,9 +8,9 @@ namespace winternet\jensenfw2;
  *
  * ```
  * $url = url_manager::instance();
- * $url->add_url('^create$', 'create.php');
- * $url->add_url('^buy-gifts$', 'buygifts.php');
- * $url->add_url('^create/book$', 'book.php');
+ * $url->add_url('create', 'create.php');  // leading ^ and trailing $ is automatically added to the pattern
+ * $url->add_url('buy-gifts', 'buygifts.php');
+ * $url->add_url('create/book', 'book.php');
  * $url->run();
  * ```
  *
@@ -26,8 +26,11 @@ namespace winternet\jensenfw2;
  * </IfModule>
  * ```
  *
+ * The path to urlhandler.php in RewriteRule must be absolute or relative. If you have this in a subfolder folder you could use relative path like this: `./urlhandler.php`.
+ *
  * Within the destination script you can use these calls:
  *
+ * - `url_manager::instance()->get_param()`
  * - `url_manager::uri()`
  */
 class url_manager {
@@ -42,14 +45,29 @@ class url_manager {
 	public $options = [];
 
 	protected static $instance;
-	public static function instance() {
+	/**
+	 * @param array $options : See the constructor
+	 */
+	public static function instance($options = []) {
 		if (!static::$instance) {
-			static::$instance = new static();
+			static::$instance = new static($options);
 		}
 		return static::$instance;
 	}
 
+	/**
+	 * @param array $options : Available options:
+	 *   - `subdirectory` : Set a subdirectory relative to the document that all destination file paths will reference to. Must begin with slash (/). The URL patterns must then also be relative to this path (without leading slash). Trailing slash doesn't matter.
+	 */
 	public function __construct($options = []) {
+		// Clean up
+		if (!empty($options['subdirectory'])) {
+			$options['subdirectory'] = rtrim($options['subdirectory'], '/');
+			if (substr($options['subdirectory'], 0, 1) !== '/') {
+				core::system_error('Subdirectory for url_manager must begin with a slash.');
+			}
+		}
+
 		$this->options = $options;
 
 		// $this->options['debug'] = true;
@@ -110,10 +128,10 @@ class url_manager {
 					}
 				}
 				if (empty($options['return'])) {
-					require($this->doc_root .'/'. $rule['destination']);
+					require($this->get_destination_path() .'/'. $rule['destination']);
 					return;  //stop after finding first matching rule
 				} else {
-					return $this->doc_root .'/'. $rule['destination'];
+					return $this->get_destination_path() .'/'. $rule['destination'];
 				}
 			} elseif (!empty($this->options['debug'])) {
 				echo '<div style="color: red">NO MATCH: '. htmlentities($rule['pattern']) .'</div>';
@@ -141,6 +159,17 @@ class url_manager {
 		} else {
 			return @$this->params[$name_or_number];
 		}
+	}
+
+	/**
+	 * @return string : No trailing slash
+	 */
+	public function get_destination_path() {
+		$path = $this->doc_root;
+		if (!empty($this->options['subdirectory'])) {
+			$path .= $this->options['subdirectory'];
+		}
+		return $path;
 	}
 
 	// --------------------------------------------
