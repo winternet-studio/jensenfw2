@@ -430,8 +430,12 @@ class filesystem {
 				$original_file = str_replace($match[1], '', $meta_file);
 				$timestamp = $match[2] .'-'. $match[3] .'-'. $match[4] .' '. $match[5] .':'. $match[6];
 				if (time() > strtotime($timestamp)) {
-					@unlink($original_file);
-					@unlink($meta_file);
+					if (!unlink($folder .'/'. $original_file)) {
+						core::notify_webmaster('admin', 'Unable to delete temporary file on server', 'The jensenfw2 framework function filesystem::cleanup_shortlived_files() is unable to delete the file '. $folder .'/'. $original_file);
+					}
+					if (!unlink($folder .'/'. $meta_file)) {
+						core::notify_webmaster('admin', 'Unable to delete temporary file on server', 'The jensenfw2 framework function filesystem::cleanup_shortlived_files() is unable to delete the file '. $folder .'/'. $meta_file);
+					}
 				}
 			}
 		}
