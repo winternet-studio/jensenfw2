@@ -3,6 +3,9 @@ JensenFramework 2
 
 Many PHP classes and methods for doing common tasks.
 
+A Javascript library with some of the same methods exists as well: https://github.com/winternet-studio/jensen-js-essentials.
+
+
 Installation
 ------------
 
