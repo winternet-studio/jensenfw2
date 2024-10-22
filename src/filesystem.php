@@ -389,7 +389,7 @@ class filesystem {
 	 * is `processed-livestream-2020-10-31.json` the second file will be `processed-livestream-2020-10-31.EXPIRE20210301.json`
 	 *
 	 * Expired files will only be deleted as new files are written though as there of course is no separate continual process to delete them.
-	 * 
+	 *
 	 * @param string $expiration : The expiration date (UTC) of this value in MySQL format (yyyy-mm-dd or yyyy-mm-dd hh:mm:ss)
 	 *   - or number of hours to expire (eg. 6 hours: `6h`)
 	 *   - or days to expire (eg. 14 days: `14d`)
@@ -775,6 +775,34 @@ class filesystem {
 		} else {
 			return true;
 		}
+	}
+
+	/**
+	 * Automatically determine a folder to use for caching
+	 */
+	public static function get_automatic_cache_folder($options = []) {
+		if (@defined('YII_BEGIN_TIME')) {
+			if (!empty($options['subfolder'])) {
+				$path = \Yii::getAlias('@runtime') . DIRECTORY_SEPARATOR;
+				$preferred_path = $path . $options['subfolder'] . DIRECTORY_SEPARATOR;
+				if ((is_dir($preferred_path) && is_writable($preferred_path)) || mkdir($preferred_path)) {
+					$path = $preferred_path;
+				}
+			} else {
+				$path = \Yii::getAlias('@runtime') . DIRECTORY_SEPARATOR;
+				if (!is_dir($path)) {
+					// Attempt to create it, but we don't check if it succeeded because we anyday don't know what to do if it failed...
+					mkdir($path);
+				}
+				// NOTE: We also currently don't use is_writable($path) because we don't know what to do if it's not writable...
+			}
+		} else {
+			$parent_info = debug_backtrace();
+			$path = dirname($parent_info[0]['file']) . DIRECTORY_SEPARATOR;
+
+			// Or if this is not writable, should we try to see if __DIR__ is writable?
+		}
+		return $path;
 	}
 
 	/**

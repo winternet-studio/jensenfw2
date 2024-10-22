@@ -120,6 +120,8 @@ class system {
 	/**
 	 * Run a function but only if the minimum time since call time it was called has passed
 	 *
+	 * For caching a given value for a certain time use [[cache::simple_get_or_set()]] instead.
+	 *
 	 * @param string $condition : The minimum time between the execution of the function expressed as either...
 	 *   - number of hours (eg. 6 hours: `6h`)
 	 *   - days (eg. 14 days: `14d`)
@@ -131,24 +133,14 @@ class system {
 	 */
 	public static function minimum_time_between($condition, $key, $callback, $path = null) {
 		if ($path === null) {
-			// Defaults if nothing specified
-			if (@defined('YII_BEGIN_TIME')) {
-				$path = \Yii::getAlias('@runtime') . DIRECTORY_SEPARATOR;
-				$preferred_path = $path .'jfw2_min_time_betwn'. DIRECTORY_SEPARATOR;
-				if ((is_dir($preferred_path) && is_writable($preferred_path)) || mkdir($preferred_path)) {
-					$path = $preferred_path;
-				}
-			} else {
-				$parent_info = debug_backtrace();
-				$path = dirname($parent_info[0]['file']) . DIRECTORY_SEPARATOR;
-			}
+			$path = filesystem::get_automatic_cache_folder(['subfolder' => 'jfw2_min_time_betwn']);
 		}
 		$path_exists = file_exists($path);
 		if ($path_exists) {
 			$filepath = rtrim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $key .'.log';
 			filesystem::cleanup_shortlived_files($filepath);
 		}
-		if (!$path_exists || !file_exists($filepath)) {  //if path doesn't exist, ALWAYS run the function! Cannot just terminate and notifying webmaster might not be 100% stable I guess...
+		if (!$path_exists || !file_exists($filepath)) {  //if path doesn't exist, ALWAYS run the function! Cannot just terminate, and notifying webmaster might not be 100% stable I guess...
 			$data = $callback();
 			if ($path_exists) {
 				filesystem::save_shortlived_file($filepath, date('Y-m-d H:i:sO') ."\n". (is_string($data) ? $data : json_encode($data)), $condition);
