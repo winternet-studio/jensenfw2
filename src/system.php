@@ -140,7 +140,7 @@ class system {
 			$filepath = rtrim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $key .'.log';
 			filesystem::cleanup_shortlived_files($filepath);
 		}
-		if (!$path_exists || !file_exists($filepath)) {  //if path doesn't exist, ALWAYS run the function! Cannot just terminate, and notifying webmaster might not be 100% stable I guess...
+		if (!$path_exists || !filesystem::shortlived_file_exists($filepath)) {  // 1) if path doesn't exist, ALWAYS run the function! Cannot just terminate, and notifying webmaster might not be 100% stable I guess... 2) Cannot do a simple check of existence - in case the deletion fails - so therefore use shortlived_file_exists()
 			$data = $callback();
 			if ($path_exists) {
 				filesystem::save_shortlived_file($filepath, date('Y-m-d H:i:sO') ."\n". (is_string($data) ? $data : json_encode($data)), $condition);

@@ -101,7 +101,7 @@ class cache {
 			$filepath = rtrim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $key .'.log';
 			filesystem::cleanup_shortlived_files($filepath);
 		}
-		if (!$path_exists || !file_exists($filepath)) {  //if path doesn't exist, ALWAYS run the function! Cannot just terminate, and notifying webmaster might not be 100% stable I guess...
+		if (!$path_exists || !filesystem::shortlived_file_exists($filepath)) {  // 1) if path doesn't exist, ALWAYS run the function! Cannot just terminate, and notifying webmaster might not be 100% stable I guess... 2) Cannot do a simple check of existence - in case the deletion fails - so therefore use shortlived_file_exists()
 			$value = $callback();
 			$cached_at = gmdate('Y-m-d H:i:s') .'z';
 			if ($path_exists) {

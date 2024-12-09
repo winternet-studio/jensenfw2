@@ -12,6 +12,8 @@ final class filesystemTest extends TestCase {
 		$timestamp = date('YmdHi', time()+7*24*3600);
 		$this->assertTrue(file_exists('temp-shortlived.json'));
 		$this->assertTrue(file_exists('temp-shortlived.EXPIRE'. $timestamp .'.json'));
+		$this->assertTrue(filesystem::shortlived_file_exists('temp-shortlived.json'));
+
 
 		unlink('temp-shortlived.json');
 		unlink('temp-shortlived.EXPIRE'. $timestamp .'.json');
@@ -39,9 +41,14 @@ final class filesystemTest extends TestCase {
 		$timestamp = date('YmdHi', time()+7*24*3600);
 		$this->assertTrue(file_exists('temp-shortlived-noext'));
 		$this->assertTrue(file_exists('temp-shortlived-noext.EXPIRE'. $timestamp));
+		$this->assertTrue(filesystem::shortlived_file_exists('temp-shortlived-noext'));
 
 		unlink('temp-shortlived-noext');
 		unlink('temp-shortlived-noext.EXPIRE'. $timestamp);
+
+
+		// Test non-existing file
+		$this->assertFalse(filesystem::shortlived_file_exists('nonexisting-shortlived.txt'));
 	}
 
 	public function testShortenPath() {

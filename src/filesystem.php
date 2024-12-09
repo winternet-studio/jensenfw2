@@ -398,13 +398,19 @@ class filesystem {
 		// First cleanup expired files from earlier runs
 		static::cleanup_shortlived_files($file);
 
-		// NOTE: we currently don't check that the file doesn't exist from before and has another "expire" meta file
+		$current = static::shortlived_file_exists($file, true);
 
 		$pathinfo = pathinfo($file);
 
 		$bytes = file_put_contents($file, $content);
 		if ($bytes === false) {
 			core::system_error('Failed to save short-lived file.', ['File' => $file]);
+		}
+
+		if (is_object($current) && $current->meta_file) {
+			if (!unlink($pathinfo['dirname'] .'/'. $current->meta_file)) {
+				core::system_error('Failed to save short-lived file because old meta file could not be deleted.', ['File' => $file, 'Meta file' => $current->meta_file]);
+			}
 		}
 
 		$metadata_file = $pathinfo['dirname'] .'/'. $pathinfo['filename'] .'.EXPIRE'. (datetime::period_to_datetime($expiration_date))->format('YmdHi') . (@$pathinfo['extension'] ? '.' : '') . @$pathinfo['extension'];
@@ -420,7 +426,7 @@ class filesystem {
 	 *
 	 * This method works on the premises of [save_shortlived_file()].
 	 *
-	 * @param string $folder_or_file : Folder (or file in whos folder) we'll deleted expired files
+	 * @param string $folder_or_file : Folder (or file in whose folder) we'll deleted expired files
 	 */
 	public static function cleanup_shortlived_files($folder_or_file) {
 		$folder = pathinfo($folder_or_file, PATHINFO_DIRNAME);
@@ -438,6 +444,47 @@ class filesystem {
 					}
 				}
 			}
+		}
+	}
+
+	/**
+	 * Check if shortlived file exists and is valid
+	 *
+	 * Normally it should be deleted when it has expired, but in case deletion fails we want to check the timestamp as well.
+	 */
+	public static function shortlived_file_exists($filepath, $verbose = false) {
+		if (!file_exists($filepath)) {
+			return false;
+		} else {
+			$pathinfo = pathinfo($filepath);
+			$folder = $pathinfo['dirname'];
+			$files = static::get_files($folder);
+			foreach ($files as $meta_file) {
+				if (preg_match("/". preg_quote($pathinfo['filename']) ."(\\.EXPIRE(\\d{4})(\\d{2})(\\d{2})(\\d{2})(\\d{2}))(\\.". preg_quote((string) @$pathinfo['extension']) ."|$)/", $meta_file, $match)) {
+					// Check if date has passed
+					$timestamp = $match[2] .'-'. $match[3] .'-'. $match[4] .' '. $match[5] .':'. $match[6];
+					if (time() > strtotime($timestamp)) {
+						if ($verbose) {
+							return (object) [
+								'exists' => false,
+								'meta_file' => $meta_file,
+							];
+						} else {
+							return false;
+						}
+					} else {
+						if ($verbose) {
+							return (object) [
+								'exists' => true,
+								'meta_file' => $meta_file,
+							];
+						} else {
+							return true;
+						}
+					}
+				}
+			}
+			return false;
 		}
 	}
 
