@@ -110,13 +110,13 @@ final class url_managerTest extends TestCase {
 		$handler = new url_manager(['subdirectory' => '/mysubdir']);
 		$handler->add_url('create', 'create.php');
 		$result = $handler->run($test);
-		$this->assertSame('/www/create.php', $result);
+		$this->assertSame('/www/mysubdir/create.php', $result);
 
 		$_SERVER['REQUEST_URI'] = '/mysubdir/create';
 		$handler = new url_manager(['subdirectory' => '/mysubdir/']);  //with trailing slash
 		$handler->add_url('create', 'create.php');
 		$result = $handler->run($test);
-		$this->assertSame('/www/create.php', $result);
+		$this->assertSame('/www/mysubdir/create.php', $result);
 	}
 
 }
