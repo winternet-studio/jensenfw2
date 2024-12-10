@@ -591,7 +591,7 @@ class core {
 		// Use different mechanism in a Yii application that uses the winternet\yii2\SystemError module
 		if (defined('YII_BEGIN_TIME') && \Yii::$app->system && get_class(\Yii::$app->system) == 'winternet\yii2\SystemError') {
 			static::$system_error_in_process = false;  //again allow new errors to occur
- 			\Yii::$app->system->error($msg, $varinfo, ['silent' => $silent, 'register' => $register, 'notify' => $notify, 'terminate' => $terminate, 'severe' => $severe, 'expire' => $expire]);
+			\Yii::$app->system->error($msg, $varinfo, ['silent' => $silent, 'register' => $register, 'notify' => $notify, 'terminate' => $terminate, 'severe' => $severe, 'expire' => $expire]);
 			return;
 		}
 
@@ -1033,6 +1033,47 @@ class core {
 			}
 			return false;  //if we get this far the key/value pair does not exist
 		}
+	}
+
+	/**
+	 * Insert a value in specific position in array
+	 *
+	 * @param array $array
+	 * @param integer|string|array $after : Value or key after which to insert $value (set integer `0` to insert at the beginning)
+	 * @param mixed $value : Scalar value if $array is numeric, array with key and value to be inserted if $array is associative
+	 * @return array
+	 */
+	public static function array_insert_after(array $array, $after, $value) {
+		if (0 == $after) {
+			$position = 0;
+		} else {
+			if (is_array($value)) {
+				// $array is associative
+				$keys = array_keys($array);
+				$position = array_search($after, $keys, true);
+			} else {
+				// $array is numeric
+				$position = array_search($after, $array, true);
+			}
+		}
+		if ($position === false) {
+			$preceding = $array;
+			$subsequent = [];
+		} elseif ($position === 0) {
+			$preceding = [];
+			$subsequent = $array;
+		} else {
+			$position++;
+
+			$preceding = array_slice($array, 0, $position, true);
+			$subsequent = array_slice($array, $position, null, true);
+		}
+
+		if (!is_array($value)) {
+			$value = [$value];
+		}
+
+		return array_merge($preceding, $value, $subsequent);
 	}
 
 	public static function txt($tag, $default, $other = null) {

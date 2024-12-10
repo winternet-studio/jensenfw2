@@ -21,6 +21,45 @@ final class coreTest extends TestCase {
 		$this->assertFalse(core::is_integer('1a'));
 	}
 
+	public function testArrayInsertAfter() {
+		// Numeric array
+		$array  = ['a', 'b', 'c', 'd'];
+		$expect = ['a', 'b', 'e', 'c', 'd'];
+		$result = core::array_insert_after($array, 'b', 'e');
+		$this->assertEquals($expect, $result);
+
+		// Insert in the beginning
+		$array  = ['a', 'b', 'c', 'd'];
+		$expect = ['e', 'a', 'b', 'c', 'd'];
+		$result = core::array_insert_after($array, 0, 'e');
+		$this->assertEquals($expect, $result);
+
+		// The "after" value doesn't exist
+		$array  = ['a', 'b', 'c', 'd'];
+		$expect = ['a', 'b', 'c', 'd', 'e'];
+		$result = core::array_insert_after($array, 'x', 'e');
+		$this->assertEquals($expect, $result);
+
+
+		// Associative array
+		$array  = ['a' => 'John', 'b' => 'Michael', 'c' => 'Maria', 'd' => 'Christina'];
+		$expect = ['a' => 'John', 'b' => 'Michael', 'e' => 'Linda', 'c' => 'Maria', 'd' => 'Christina'];
+		$result = core::array_insert_after($array, 'b', ['e' => 'Linda']);
+		$this->assertEquals($expect, $result);
+
+		// Insert in the beginning
+		$array  = ['a' => 'John', 'b' => 'Michael', 'c' => 'Maria', 'd' => 'Christina'];
+		$expect = ['d' => 'Christina', 'a' => 'John', 'b' => 'Michael', 'e' => 'Linda', 'c' => 'Maria'];
+		$result = core::array_insert_after($array, 0, ['e' => 'Linda']);
+		$this->assertEquals($expect, $result);
+
+		// The "after" value doesn't exist
+		$array  = ['a' => 'John', 'b' => 'Michael', 'c' => 'Maria', 'd' => 'Christina'];
+		$expect = ['a' => 'John', 'b' => 'Michael', 'c' => 'Maria', 'd' => 'Christina', 'e' => 'Linda'];
+		$result = core::array_insert_after($array, 'x', ['e' => 'Linda']);
+		$this->assertEquals($expect, $result);
+	}
+
 	public function testTxtDb() {
 		$GLOBALS['_override_current_language'] = 'en';
 		$this->assertSame('Text in English', core::txtdb('EN=Text in English ,,, ES=Text in Spanish'));
