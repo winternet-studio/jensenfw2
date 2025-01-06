@@ -111,6 +111,48 @@ final class formatTest extends TestCase {
 		$this->assertEquals(format::to_yaml(['details' => ['name' => 'John "Doe" Johnson', 'age' => 45]], ['enclose_strings' => true]), "details:\n  name: John \"Doe\" Johnson\n  age: 45");
 		$this->assertEquals(format::to_yaml([4, 8, 15]), "- 4\n- 8\n- 15");
 		$this->assertEquals(format::to_yaml((object) ['name' => 'John', 'age' => 8]), "name: John\nage: 8");
+
+		$complex = [  //can probably be simplified and still test the same things
+			'Children' => [
+				265781 => [
+					'Updated' => [
+						'lastname' => (object) [
+							'old' => 'Mia',
+							'new' => 'Dorthe',
+						],
+					],
+					'Updated Premium' => [
+						'premOnly' => (object) [
+							'old' => '0.00',
+							'new' => '884.00',
+						],
+						'proc_fee' => (object) [
+							'old' => '0.00',
+							'new' => '35.36',
+						],
+						'total_amount' => (object) [
+							'old' => '0.00',
+							'new' => '919.36',
+						],
+					],
+				],
+				265782 => [
+					'Added' => [
+						'Fullname' => 'Johnson',
+						'Date of Birth' => '2001-01-06',
+						'PID' => 265782,
+					],
+				],
+				265778 => [
+					'Deleted' => [
+						'Fullname' => 'Smith',
+						'Date of Birth' => '2001-01-06',
+						'PID' => 265778,
+					],
+				],
+			],
+		];
+		$this->assertEquals(format::to_yaml($complex), "Children:\n  265781:\n    Updated:\n      lastname:\n        old: Mia\n        new: Dorthe\n    Updated Premium:\n      premOnly:\n        old: 0.00\n        new: 884.00\n      proc_fee:\n        old: 0.00\n        new: 35.36\n      total_amount:\n        old: 0.00\n        new: 919.36\n  265782:\n    Added:\n      Fullname: Johnson\n      Date of Birth: 2001-01-06\n      PID: 265782\n  265778:\n    Deleted:\n      Fullname: Smith\n      Date of Birth: 2001-01-06\n      PID: 265778");
 	}
 
 }

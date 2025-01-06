@@ -609,7 +609,7 @@ class format {
 				// Handle associative arrays
 				return implode("\n", array_map(function ($key) use ($variable, $options, $spaces, $level) {
 					$value = $variable[$key];
-					$formattedValue = is_array($value) ? "\n" . static::to_yaml($value, $options, $level + 1) : ' ' . static::to_yaml($value, $options, 0);
+					$formattedValue = is_array($value) || is_object($value) ? "\n" . static::to_yaml($value, $options, $level + 1) : ' ' . static::to_yaml($value, $options, 0);
 					return "{$spaces}{$key}:{$formattedValue}";
 				}, array_keys($variable)));
 			} else {
