@@ -60,6 +60,40 @@ final class coreTest extends TestCase {
 		$this->assertEquals($expect, $result);
 	}
 
+	public function testIsArrayAssoc() {
+		$array  = ['Denver', 'San Francisco', 'Orlando'];
+		$result = core::is_array_assoc($array);
+		$this->assertFalse($result);
+
+		$array  = [0 => 'Denver', 1 => 'San Francisco', 2 => 'Orlando'];
+		$result = core::is_array_assoc($array);
+		$this->assertFalse($result);
+
+		$array  = [0 => 'Denver', 1 => 'San Francisco', 2 => 'Orlando'];
+		$result = core::is_array_assoc($array, ['require_strings' => true]);
+		$this->assertFalse($result);
+
+		$array  = [1 => 'Denver', 2 => 'San Francisco', 3 => 'Orlando'];  //not starting at zero
+		$result = core::is_array_assoc($array);
+		$this->assertTrue($result);
+
+		$array  = [0 => 'Denver', 1 => 'San Francisco', 5 => 'Orlando'];  //non-sequential numeric indexes
+		$result = core::is_array_assoc($array);
+		$this->assertTrue($result);
+
+		$array  = [0 => 'Denver', 1 => 'San Francisco', 5 => 'Orlando'];  //require strings
+		$result = core::is_array_assoc($array, ['require_strings' => true]);
+		$this->assertFalse($result);
+
+		$array  = ['city' => 'Denver', 'state' => 'CO'];
+		$result = core::is_array_assoc($array);
+		$this->assertTrue($result);
+
+		$array  = ['city' => 'Denver', 'state' => 'CO'];
+		$result = core::is_array_assoc($array, ['require_strings' => true]);
+		$this->assertTrue($result);
+	}
+
 	public function testTxtDb() {
 		$GLOBALS['_override_current_language'] = 'en';
 		$this->assertSame('Text in English', core::txtdb('EN=Text in English ,,, ES=Text in Spanish'));

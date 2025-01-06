@@ -587,4 +587,48 @@ class format {
 		}
 		return base64_decode($data);
 	}
+
+	/**
+	 * Simple conversion of basic variables to YAML, with customizable options
+	 *
+	 * For more advanced conversion use proper libraries.
+	 *
+	 * @param {object} options : Available options:
+	 *   - `indent` : Custom number of spaces as indentation. Default: 2
+	 *   - `enclose_strings` : Set true to enclose string with "" (except if string itself contains a ") so you know it's a string and not a number or boolean
+	 */
+	public static function to_yaml($variable, $options = [], $level = 0) {
+		$indent = $options['indent'] ?? 2; // Number of spaces for YAML indentation
+		$spaces = str_repeat(' ', $indent * $level);
+
+		if (is_object($variable)) {
+			$variable = (array) $variable;
+		}
+		if (is_array($variable)) {
+			if (core::is_array_assoc($variable)) {
+				// Handle associative arrays
+				return implode("\n", array_map(function ($key) use ($variable, $options, $spaces, $level) {
+					$value = $variable[$key];
+					$formattedValue = is_array($value) ? "\n" . static::to_yaml($value, $options, $level + 1) : ' ' . static::to_yaml($value, $options, 0);
+					return "{$spaces}{$key}:{$formattedValue}";
+				}, array_keys($variable)));
+			} else {
+				// Handle indexed arrays
+				return implode("\n", array_map(function ($item) use ($options, $level, $spaces) {
+					return "{$spaces}- " . trim(static::to_yaml($item, $options, $level + 1));
+				}, $variable));
+			}
+		} elseif (is_string($variable)) {
+			// Handle strings
+			if (!empty($options['enclose_strings']) && strpos($variable, '"') === false) {
+				return '"' . $variable . '"';
+			} else {
+				return $variable;
+			}
+		} else {
+			// Handle other primitive values
+			return json_encode($variable);
+		}
+	}
+
 }

@@ -1076,6 +1076,20 @@ class core {
 		return array_merge($preceding, $value, $subsequent);
 	}
 
+	/**
+	 * @param array $options : Available options:
+	 *   - `require_strings` : set true to require string keys/indexes (only first key is checked). If this is not set *ANY* array that does not have exact sequential numeric indexes is considered an associative array.
+	 */
+	public static function is_array_assoc(array $array, $options = []) {
+		$is_assoc = array_keys($array) !== range(0, count($array) - 1);
+		if ($is_assoc && !empty($options['require_strings'])) {
+			if (!is_string(array_key_first($array))) {
+				return false;
+			}
+		}
+		return $is_assoc;
+	}
+
 	public static function txt($tag, $default, $other = null) {
 		if (defined('YII_BEGIN_TIME')) {
 			// Can't do translation here as it won't be picked up by the text collector. Must be done manually where the text is used.

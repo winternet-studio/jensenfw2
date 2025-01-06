@@ -100,4 +100,17 @@ final class formatTest extends TestCase {
 
 		$this->assertSame($binary, format::base64_decode_url(format::base64_encode_url($binary)));
 	}
+
+	public function testToYaml() {
+		$this->assertEquals(format::to_yaml(['details' => ['name' => 'John', 'age' => 45]]), "details:\n  name: John\n  age: 45");
+		$this->assertEquals(format::to_yaml(null), 'null');
+		$this->assertEquals(format::to_yaml(false), 'false');
+		$this->assertEquals(format::to_yaml(''), '');
+		$this->assertEquals(format::to_yaml('John'), 'John');
+		$this->assertEquals(format::to_yaml(['details' => ['name' => 'John', 'age' => 45]], ['enclose_strings' => true]), "details:\n  name: \"John\"\n  age: 45");
+		$this->assertEquals(format::to_yaml(['details' => ['name' => 'John "Doe" Johnson', 'age' => 45]], ['enclose_strings' => true]), "details:\n  name: John \"Doe\" Johnson\n  age: 45");
+		$this->assertEquals(format::to_yaml([4, 8, 15]), "- 4\n- 8\n- 15");
+		$this->assertEquals(format::to_yaml((object) ['name' => 'John', 'age' => 8]), "name: John\nage: 8");
+	}
+
 }
