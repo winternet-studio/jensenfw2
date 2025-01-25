@@ -115,6 +115,7 @@ class core {
 		if (!@$GLOBALS['_jfw_db_connection'.$server_id]) {  //don't open the database if it is already open
 			$cfg = static::get_class_defaults(__CLASS__, 'databases');
 			$GLOBALS['_jfw_db_connection'.$server_id] = mysqli_connect($cfg[$serverID]['db_host'], $cfg[$serverID]['db_user'], $cfg[$serverID]['db_pw'], $cfg[$serverID]['db_name'], $cfg[$serverID]['db_port']);
+			$GLOBALS['_jfw_db_name'.$server_id] = $cfg[$serverID]['db_name'];
 			if (!$GLOBALS['_jfw_db_connection'.$server_id]) {
 				static::system_error('Could not connect to the database.', ['MySQL error' => mysqli_connect_error(), 'MySQL error no.' => mysqli_connect_errno()], ['xsevere' => 'CRITICAL ERROR']);
 			}
@@ -338,6 +339,12 @@ class core {
 			static::system_error('Database connection was not found in SQL escaping function.', ['Argument' => print_r($str, true)], ['xnotify' => 'developer']);
 		}
 		return mysqli_real_escape_string($GLOBALS['_jfw_db_connection'], (string) $str);  //cast numbers as strings
+	}
+
+	public static function get_default_database_name($serverID = 0) {
+		$serverID = (int) $serverID;  //convert empty strings to 0
+		$server_id = ($serverID == 0 ? '' : $serverID);
+		return @$GLOBALS['_jfw_db_name'.$server_id];
 	}
 
 	//////////////////////////// Hook/plugin system ////////////////////////////
