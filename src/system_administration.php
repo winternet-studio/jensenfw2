@@ -634,11 +634,12 @@ class system_administration {
 
 		// source: http://stackoverflow.com/questions/1463987/execute-sql-query-from-sql-file
 		$errors = false;
+		$partcounter = 0;
 		foreach ($dump_parts as $tkey => $curr_part) {
 			if ($curr_part) {
 				$firstline = substr($curr_part, 0, strpos($curr_part, "\n"));
 				if ($hasValues = strpos($firstline, ' VALUES (')) {
-					if ($options['where_condition']) {
+					if (@$options['where_condition']) {
 						// include the beginning of VALUES so we see at least the first of the specific records we are downloading
 						$firstline = substr($firstline, 0, $hasValues + 100);
 					} else {
