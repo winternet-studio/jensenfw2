@@ -52,6 +52,60 @@ class filesystem {
 		}
 	}
 
+	public static function file_put_contents_with_lock($file, $contents, $flags = 0) {
+		return file_put_contents($file, $contents, $flags | LOCK_EX);
+	}
+
+	public static function file_get_contents_with_lock($file, $options = []) {
+		if (!file_exists($file)) {
+			if (!empty($options['null_on_error'])) {
+				return null;
+			} else {
+				throw new \Exception('File does not exist.');
+			}
+		}
+
+		$handle = fopen($file, 'r');
+		if (!$handle) {
+			if (!empty($options['null_on_error'])) {
+				return null;
+			} else {
+				throw new \Exception('Unable to open file for reading.');
+			}
+		}
+
+		if (!flock($handle, LOCK_SH)) {  //try to acquire a shared lock
+			fclose($handle);
+			if (!empty($options['null_on_error'])) {
+				return null;
+			} else {
+				throw new \Exception('Unable to lock file for reading.');
+			}
+		}
+
+		$filesize = filesize($file);
+		if ($filesize === 0) {
+			flock($handle, LOCK_UN);
+			fclose($handle);
+			return '';  //return empty string if file is empty
+		}
+
+		$content = fread($handle, $filesize);
+		if ($content === false) {
+			flock($handle, LOCK_UN);
+			fclose($handle);
+			if (!empty($options['null_on_error'])) {
+				return null;
+			} else {
+				throw new \Exception('Failed to read from file.');
+			}
+		}
+
+		flock($handle, LOCK_UN);  //release the lock
+		fclose($handle);
+		return $content;
+	}
+
 	/**
 	 * Add contents to file, but prepending instead of appending it
 	 *
