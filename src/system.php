@@ -67,6 +67,7 @@ class system {
 	 * @param string|integer $key : Number or string with the key
 	 * @param string|integer $value : Number or string with the value to store
 	 * @param string $expiration : The expiration date (UTC) of this value in MySQL format (yyyy-mm-dd or yyyy-mm-dd hh:mm:ss)
+	 *   - or number of minutes to expire (eg. 5 mins: `5min`)
 	 *   - or number of hours to expire (eg. 6 hours: `6h`)
 	 *   - or days to expire (eg. 14 days: `14d`)
 	 *   - or `NOW` in order to delete a buffer value before current expiration (when overwriting an existing one)
@@ -123,7 +124,8 @@ class system {
 	 * For caching a given value for a certain time use [[cache::simple_get_or_set()]] instead.
 	 *
 	 * @param string $condition : The minimum time between the execution of the function expressed as either...
-	 *   - number of hours (eg. 6 hours: `6h`)
+	 *   - minutes (eg. 5 mins: `5min`)
+	 *   - hours (eg. 6 hours: `6h`)
 	 *   - days (eg. 14 days: `14d`)
 	 * @param string|integer $key : A string or number identifying this specific action. Must be safe for use in a file name.
 	 * @param callable $callback : Function that is to be run. Anything it returns will be stored in the file keeping track of the time.

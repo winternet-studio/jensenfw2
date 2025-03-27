@@ -4,12 +4,15 @@ use winternet\jensenfw2\filesystem;
  
 final class filesystemTest extends TestCase {
 	public function testSaveShortlivedFile() {
+
+		filesystem::cleanup_shortlived_files('./');
+
 		// Test without path
+		$timestamp = gmdate('YmdHis', time()+7*24*3600);
 		@unlink('temp-shortlived.json');
-		@unlink('temp-shortlived.EXPIRE'. date('YmdHi', time()+7*24*3600) .'.json');
+		@unlink('temp-shortlived.EXPIRE'. $timestamp .'.json');
 
 		$result = filesystem::save_shortlived_file('temp-shortlived.json', 'temporary file', '7d');
-		$timestamp = date('YmdHi', time()+7*24*3600);
 		$this->assertTrue(file_exists('temp-shortlived.json'));
 		$this->assertTrue(file_exists('temp-shortlived.EXPIRE'. $timestamp .'.json'));
 		$this->assertTrue(filesystem::shortlived_file_exists('temp-shortlived.json'));
@@ -22,10 +25,10 @@ final class filesystemTest extends TestCase {
 		// Test with path
 		$path = dirname(__DIR__);
 		@unlink($path .'/temp-expiring-file.json');
-		@unlink($path .'/temp-expiring-file.EXPIRE'. date('YmdHi', time()+7*24*3600) .'.json');
+		@unlink($path .'/temp-expiring-file.EXPIRE'. gmdate('YmdHis', time()+7*24*3600) .'.json');
 
 		$result = filesystem::save_shortlived_file($path .'/temp-expiring-file.json', 'temporary file', '7d');
-		$timestamp = date('YmdHi', time()+7*24*3600);
+		$timestamp = gmdate('YmdHis', time()+7*24*3600);
 		$this->assertTrue(file_exists($path .'/temp-expiring-file.json'));
 		$this->assertTrue(file_exists($path .'/temp-expiring-file.EXPIRE'. $timestamp .'.json'));
 
@@ -35,10 +38,10 @@ final class filesystemTest extends TestCase {
 
 		// Test without extension
 		@unlink('temp-shortlived-noext');
-		@unlink('temp-shortlived-noext.EXPIRE'. date('YmdHi', time()+7*24*3600) .'.json');
+		@unlink('temp-shortlived-noext.EXPIRE'. gmdate('YmdHis', time()+7*24*3600) .'.json');
 
 		$result = filesystem::save_shortlived_file('temp-shortlived-noext', 'temporary file', '7d');
-		$timestamp = date('YmdHi', time()+7*24*3600);
+		$timestamp = gmdate('YmdHis', time()+7*24*3600);
 		$this->assertTrue(file_exists('temp-shortlived-noext'));
 		$this->assertTrue(file_exists('temp-shortlived-noext.EXPIRE'. $timestamp));
 		$this->assertTrue(filesystem::shortlived_file_exists('temp-shortlived-noext'));
@@ -49,6 +52,15 @@ final class filesystemTest extends TestCase {
 
 		// Test non-existing file
 		$this->assertFalse(filesystem::shortlived_file_exists('nonexisting-shortlived.txt'));
+
+
+		// Test with specific timestamp
+		$timestamp = '2045-03-27 20:11:03';
+		$result = filesystem::save_shortlived_file('temp-shortlived-fixed.json', 'temporary file', $timestamp);
+		$this->assertTrue(file_exists('temp-shortlived-fixed.json'));
+		$this->assertTrue(file_exists('temp-shortlived-fixed.EXPIRE'. date('YmdHis', strtotime($timestamp)) .'.json'));
+		$this->assertTrue(filesystem::shortlived_file_exists('temp-shortlived-fixed.json'));
+
 	}
 
 	public function testShortenPath() {

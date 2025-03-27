@@ -440,11 +440,12 @@ class filesystem {
 	 * Save a file that will be short-lived, ie. expire and be deleted after a given period of time
 	 *
 	 * Causes an extra file to be created having it's expiration date appended to the filename, eg. if original filename
-	 * is `processed-livestream-2020-10-31.json` the second file will be `processed-livestream-2020-10-31.EXPIRE20210301.json`
+	 * is `processed-livestream-2020-10-31.json` the second file will be `processed-livestream-2020-10-31.EXPIRE20210301015500.json` (expire timestamp is UTC)
 	 *
 	 * Expired files will only be deleted as new files are written though as there of course is no separate continual process to delete them.
 	 *
 	 * @param string $expiration : The expiration date (UTC) of this value in MySQL format (yyyy-mm-dd or yyyy-mm-dd hh:mm:ss)
+	 *   - or minutes to expire (eg. 5 minutes: `5min`)
 	 *   - or number of hours to expire (eg. 6 hours: `6h`)
 	 *   - or days to expire (eg. 14 days: `14d`)
 	 */
@@ -467,8 +468,13 @@ class filesystem {
 			}
 		}
 
-		$metadata_file = $pathinfo['dirname'] .'/'. $pathinfo['filename'] .'.EXPIRE'. (datetime::period_to_datetime($expiration_date))->format('YmdHi') . (@$pathinfo['extension'] ? '.' : '') . @$pathinfo['extension'];
-		if (!file_put_contents($metadata_file, $bytes .'|'. date('Y-m-d H:i:s'))) {
+		if (preg_match("/^\\d+[a-zA-Z]+$/", $expiration_date)) {
+			$expiration_date = (datetime::period_to_datetime($expiration_date, ['timezone' => 'UTC']))->format('YmdHis');
+		} else {
+			$expiration_date = date('YmdHis', strtotime($expiration_date));
+		}
+		$metadata_file = $pathinfo['dirname'] .'/'. $pathinfo['filename'] .'.EXPIRE'. $expiration_date . (@$pathinfo['extension'] ? '.' : '') . @$pathinfo['extension'];
+		if (!file_put_contents($metadata_file, $bytes .'|'. gmdate('Y-m-d H:i:s') .'z')) {
 			core::system_error('Failed to save file with metadata for short-lived file.', ['File' => $metadata_file]);
 		}
 
@@ -480,16 +486,18 @@ class filesystem {
 	 *
 	 * This method works on the premises of [save_shortlived_file()].
 	 *
+	 * NOTE: The optional match for seconds (also in shortlived_file_exists()) is from back from before 2025-03 when we didn't have "minutes" granularity in our time period and were only storing hours and minutes in the filename. Can be removed when eventually all systems may have been updated in maybe 5-10 years...!!
+	 *
 	 * @param string $folder_or_file : Folder (or file in whose folder) we'll deleted expired files
 	 */
 	public static function cleanup_shortlived_files($folder_or_file) {
 		$folder = pathinfo($folder_or_file, PATHINFO_DIRNAME);
 		$files = static::get_files($folder);
 		foreach ($files as $meta_file) {
-			if (preg_match("/(\\.EXPIRE(\\d{4})(\\d{2})(\\d{2})(\\d{2})(\\d{2}))(\\.|$)/", $meta_file, $match)) {
+			if (preg_match("/(\\.EXPIRE(\\d{4})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})?)(\\.|$)/", $meta_file, $match)) {
 				$original_file = str_replace($match[1], '', $meta_file);
-				$timestamp = $match[2] .'-'. $match[3] .'-'. $match[4] .' '. $match[5] .':'. $match[6];
-				if (time() > strtotime($timestamp)) {
+				$timestamp = $match[2] .'-'. $match[3] .'-'. $match[4] .' '. $match[5] .':'. $match[6] .':'. (empty($match[7]) ? '00' : $match[7]);
+				if (time() > strtotime($timestamp .' UTC')) {
 					if (!unlink($folder .'/'. $original_file)) {
 						core::notify_webmaster('admin', 'Unable to delete temporary file on server', 'The jensenfw2 framework function filesystem::cleanup_shortlived_files() is unable to delete the file '. $folder .'/'. $original_file);
 					}
@@ -514,10 +522,10 @@ class filesystem {
 			$folder = $pathinfo['dirname'];
 			$files = static::get_files($folder);
 			foreach ($files as $meta_file) {
-				if (preg_match("/". preg_quote($pathinfo['filename']) ."(\\.EXPIRE(\\d{4})(\\d{2})(\\d{2})(\\d{2})(\\d{2}))(\\.". preg_quote((string) @$pathinfo['extension']) ."|$)/", $meta_file, $match)) {
+				if (preg_match("/". preg_quote($pathinfo['filename']) ."(\\.EXPIRE(\\d{4})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})?)(\\.". preg_quote((string) @$pathinfo['extension']) ."|$)/", $meta_file, $match)) {
 					// Check if date has passed
-					$timestamp = $match[2] .'-'. $match[3] .'-'. $match[4] .' '. $match[5] .':'. $match[6];
-					if (time() > strtotime($timestamp)) {
+					$timestamp = $match[2] .'-'. $match[3] .'-'. $match[4] .' '. $match[5] .':'. $match[6] .':'. (empty($match[7]) ? '00' : $match[7]);
+					if (time() > strtotime($timestamp .' UTC')) {
 						if ($verbose) {
 							return (object) [
 								'exists' => false,

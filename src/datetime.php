@@ -887,13 +887,13 @@ class datetime {
 	}
 
 	/**
-	 * @param string $period : eg. `6h` or `14d`
+	 * @param string $period : eg. `5min` or `6h` or `14d`
 	 * @param array $options : Available options:
 	 *   - `timezone` : set timezone, eg. `Europe/Copenhagen`. Defaults to system timezone.
 	 *   - `null_on_fail` : set true to return null if `$period` doesn't hold the right format
 	 */
 	public static function period_to_datetime($period, $options = []) {
-		if (preg_match('/^(\\d+)(h|d)$/i', $period, $match)) {
+		if (preg_match('/^(\\d+)(h|d|min)$/i', $period, $match)) {
 			if (@$options['timezone']) {
 				$options['timezone'] = new \DateTimeZone($options['timezone']);
 			}
@@ -903,6 +903,9 @@ class datetime {
 				break;
 			case 'd':
 				return new \DateTime('+'. $match[1] .' days', @$options['timezone']);
+				break;
+			case 'min':
+				return new \DateTime('+'. $match[1] .' minutes', @$options['timezone']);
 				break;
 			default:
 				core::system_error('Undefined unit for converting period to date/time.', ['Unit' => $unit]);
