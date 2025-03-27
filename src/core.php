@@ -537,22 +537,22 @@ class core {
 		}
 
 		// Override any other settings if global settings has been set
-		if (static::$globaldata['errors_global_xsevere']) static::$globaldata['errors_global_xsevere'] = strtoupper(static::$globaldata['errors_global_xsevere']);
-		if (static::$globaldata['errors_global_xnotify'] == true) static::$globaldata['errors_global_xnotify'] = 'developer';  //this ONLY happens if one mistakenly set notify to true instead of one of the values! This is a safety against that.
+		if (@static::$globaldata['errors_global_xsevere']) static::$globaldata['errors_global_xsevere'] = strtoupper(static::$globaldata['errors_global_xsevere']);
+		if (@static::$globaldata['errors_global_xnotify'] == true) static::$globaldata['errors_global_xnotify'] = 'developer';  //this ONLY happens if one mistakenly set notify to true instead of one of the values! This is a safety against that.
 		//
 		if (array_key_exists('errors_global_xsilent', static::$globaldata)) $silent = static::$globaldata['errors_global_xsilent'];
 		if (array_key_exists('errors_global_xregister', static::$globaldata)) $register = static::$globaldata['errors_global_xregister'];
 		if (array_key_exists('errors_global_xnotify', static::$globaldata) && (static::$globaldata['errors_global_xnotify'] == 'developer' || static::$globaldata['errors_global_xnotify'] == 'sysadmin' || static::$globaldata['errors_global_xnotify'] === false)) $notify = static::$globaldata['errors_global_xnotify'];
 		if (array_key_exists('errors_global_xterminate', static::$globaldata)) $terminate = static::$globaldata['errors_global_xterminate'];
-		if (static::$globaldata['errors_global_xsevere'] == 'WARNING' || static::$globaldata['errors_global_xsevere'] == 'ERROR' || static::$globaldata['errors_global_xsevere'] == 'CRITICAL ERROR') $severe = static::$globaldata['errors_global_xsevere'];
+		if (@static::$globaldata['errors_global_xsevere'] == 'WARNING' || @static::$globaldata['errors_global_xsevere'] == 'ERROR' || @static::$globaldata['errors_global_xsevere'] == 'CRITICAL ERROR') $severe = static::$globaldata['errors_global_xsevere'];
 		if (array_key_exists('errors_global_xexpire', static::$globaldata)) $expire = static::$globaldata['errors_global_xexpire'];
 
 		// Automated directives
 		//    don't register errors caused by robots (they are usually trying to access a non-existing URL)
-		if (is_object(static::$globaldata['statistics']) && static::$globaldata['statistics']->skip_useragent) {
+		if (is_object(@static::$globaldata['statistics']) && static::$globaldata['statistics']->skip_useragent) {
 			$is_robot = true;
 		}
-		if ($is_robot) {
+		if (!empty($is_robot)) {
 			$register = false;
 			$silent = false;
 			$terminate = true;
