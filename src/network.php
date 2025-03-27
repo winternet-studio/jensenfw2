@@ -6,6 +6,8 @@
 namespace winternet\jensenfw2;
 
 class network {
+	public static $curl = null;
+
 	public static function class_defaults() {
 		$cfg = [];
 
@@ -20,23 +22,25 @@ class network {
 	/**
 	 * Perform an HTTP request
 	 *
+	 * @param array|string $data : Usually an array of data, but can also be a string
 	 * @param array $options : Available options:
 	 *   - `headers`
 	 *   - `send_json` : set true to indicate that request body should be JSON
 	 *   - `curl_options`
 	 *   - `debug`
-	 *   - `parse_json`
-	 *   - `return_all`
+	 *   - `parse_json` : set a truthy value to parse response as JSON to an array, or set string `object` to parse to an object.
+	 *   - `return_all` : set a truthy value to return object with all headers, bodies, etc. Set string `force` to return normally instead of throwing exception when HTTP response code is >=400.
 	 *
+	 * @throws HttpRequestException
 	 * @return string|object
 	 */
 	public static function http_request($method, $url, $data = [], $options = []) {
-		global $ch;
-		if (!$ch) {
-			$ch = curl_init();
+		if (!static::$curl) {
+			static::$curl = curl_init();
+		} else {
+			curl_reset(static::$curl);
 		}
 		if (!is_array($data) && !$data) $data = [];
-		if (!is_array($data)) throw new \Exception('Data argument is not an array.');
 
 		if (!empty($options['send_json'])) {
 			@$options['headers']['Content-Type'] = 'application/json';
@@ -53,54 +57,62 @@ class network {
 		}
 
 		if (in_array($method, ['GET', 'HEAD'], true)) {
-			curl_setopt($ch, CURLOPT_POST, 0);
+			curl_setopt(static::$curl, CURLOPT_POST, 0);
 			if (!empty($data)) {
-				$url .= '?'. http_build_query($data);
+				if (is_string($data)) {
+					$url .= '?'. $data;
+				} else {
+					$url .= '?'. http_build_query($data);
+				}
 			}
 		} else {
-			curl_setopt($ch, CURLOPT_POST, 1);
-			if ($content_type == 'application/json') {
-				curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+			curl_setopt(static::$curl, CURLOPT_POST, 1);
+			if (is_string($data)) {
+				curl_setopt(static::$curl, CURLOPT_POSTFIELDS, $data);
 			} else {
-				curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+				if ($content_type == 'application/json') {
+					curl_setopt(static::$curl, CURLOPT_POSTFIELDS, json_encode($data));
+				} else {
+					curl_setopt(static::$curl, CURLOPT_POSTFIELDS, http_build_query($data));
+				}
 			}
 		}
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_USERAGENT, 'JensenFW2 winternet.no');  //set a default one since many servers/firewalls now require a user agent
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		// curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		// curl_setopt($ch, CURLOPT_TIMEOUT, 7);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+		curl_setopt(static::$curl, CURLOPT_URL, $url);
+		curl_setopt(static::$curl, CURLOPT_USERAGENT, 'JensenFW2 winternet.no');  //set a default one since many servers/firewalls now require a user agent
+		curl_setopt(static::$curl, CURLOPT_RETURNTRANSFER, true);
+		// curl_setopt(static::$curl, CURLOPT_SSL_VERIFYPEER, false);
+		// curl_setopt(static::$curl, CURLOPT_TIMEOUT, 7);
+		curl_setopt(static::$curl, CURLOPT_FOLLOWLOCATION, true);
 		if (is_array(@$options['curl_options'])) {
 			foreach ($options['curl_options'] as $curlopt => $value) {
-				curl_setopt($ch, $curlopt, $value);
+				curl_setopt(static::$curl, $curlopt, $value);
 			}
 		}
 		if (@$options['debug'] || @$options['return_all']) {
-			curl_setopt($ch, CURLINFO_HEADER_OUT, true);  //request headers
-			curl_setopt($ch, CURLOPT_HEADER, true);  //response headers
+			curl_setopt(static::$curl, CURLINFO_HEADER_OUT, true);  //request headers
+			curl_setopt(static::$curl, CURLOPT_HEADER, true);  //response headers
 		}
-		$rsp = curl_exec($ch);
-		$transfer_info = curl_getinfo($ch);
+		$rsp = curl_exec(static::$curl);
+		$transfer_info = curl_getinfo(static::$curl);
 		if (@$options['debug'] || @$options['return_all']) {
-			$requestHeaders = curl_getinfo($ch, CURLINFO_HEADER_OUT);
-			$headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+			$requestHeaders = curl_getinfo(static::$curl, CURLINFO_HEADER_OUT);
+			$headerSize = curl_getinfo(static::$curl, CURLINFO_HEADER_SIZE);
 			$responseHeaders = substr($rsp, 0, $headerSize);
 			$rsp = substr($rsp, $headerSize);
 			if (@$options['debug']) {
 				file_put_contents(__DIR__ .'/last-curl-request.log', '--------'. gmdate('Y-m-d H:i:s') .' UTC ** '. $method .' '. $url . PHP_EOL . PHP_EOL .'REQUEST HEADERS:'. PHP_EOL . $requestHeaders . PHP_EOL . PHP_EOL .'REQUEST BODY:'. PHP_EOL . json_encode($data, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES) . PHP_EOL . PHP_EOL .'RESPONSE HEADERS:'. PHP_EOL . $responseHeaders . PHP_EOL . PHP_EOL .'RESPONSE BODY:'. PHP_EOL . $rsp . PHP_EOL);
 			}
 		}
-		if (curl_errno($ch) || $transfer_info['http_code'] >= 400) {
-			throw new \Exception('Request for fetching URL failed: '. curl_error($ch) .'<br><pre>'. htmlentities(trim($rsp)) .'<br><br><span style="color:#aaaaaa">'. var_export($transfer_info, true) .'</span>');
-			// system_error('Request for fetching URL failed.', array('Req.info' => print_r($transfer_info, true), 'cURL error' => curl_error($ch), 'cURL error no.' => curl_errno($ch), 'Response body' => $rsp) );
+		if (curl_errno(static::$curl) || (@$options['return_all'] !== 'force' && $transfer_info['http_code'] >= 400)) {
+			throw new HttpRequestException('Request for fetching URL failed with HTTP code '. $transfer_info['http_code'] . (curl_error(static::$curl) ? ' and error message "'. curl_error(static::$curl) .'"' : '') .'.', $transfer_info['http_code'] ?? 1031, $rsp, $transfer_info);
+			// system_error('Request for fetching URL failed.', ['Req.info' => print_r($transfer_info, true), 'cURL error' => curl_error(static::$curl), 'cURL error no.' => curl_errno(static::$curl), 'Response body' => $rsp]);
 		}
 
 		// Parse returned JSON string
 		if (@$options['parse_json']) {
 			$response = json_decode($rsp, ($options['parse_json'] === 'object' ? false : true));
 			if ($response === null) {
-				throw new \Exception('Failed to parse response: '. $rsp);
+				throw new HttpRequestException('Failed to parse JSON response.', 1032, $rsp, $transfer_info);
 			}
 		}
 
@@ -111,6 +123,7 @@ class network {
 					'headers_raw' => $requestHeaders,
 				],
 				'response' => (object) [
+					'http_code' => $transfer_info['http_code'],
 					'headers' => static::parse_header($responseHeaders, false),
 					'headers_raw' => $responseHeaders,
 					'body' => $rsp,
@@ -785,4 +798,24 @@ class network {
 		flush();            // Unless both are called !
 		ob_end_clean();
 	}
+}
+
+class HttpRequestException extends \Exception {
+
+	/**
+	 * @var string
+	 */
+	public $response;
+
+	/**
+	 * @var array
+	 */
+	public $transferInfo;
+
+	public function __construct($message = '', $code = 0, $response = null, $transferInfo = null, $previous = null) {
+		$this->response = $response;
+		$this->transferInfo = $transferInfo;
+		parent::__construct($message, $code, $previous);
+	}
+
 }
