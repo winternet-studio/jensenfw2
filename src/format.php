@@ -318,6 +318,56 @@ class format {
 	}
 
 	/**
+	 * Split full person name into first, middle, last, and suffix
+	 *
+	 * @return object
+	 */
+	public static function split_person_name($full_name) {
+		// Trim and split the name by spaces
+		$parts = preg_split('/\s+/', trim($full_name));
+
+		$first_name = $parts[0] ?? '';  // first word is usually the first name
+		$middle_name = null;
+		$last_name = null;
+		$suffix = null;
+
+		// List of common suffixes, both with and without a dot
+		$suffixes = ['Jr.', 'Sr.', 'II', 'III', 'IV', 'V', 'Jr', 'Sr'];
+
+		// Handling names with more than two words
+		if (count($parts) > 2) {
+		    // List of common surname prefixes (compound last names)
+		    $compound_surname_prefixes = ['de', 'van', 'von', 'del', 'di', 'da', 'le', 'la'];
+
+			// Check if last part is a known suffix (including versions without a dot)
+			if (in_array(end($parts), $suffixes)) {
+				$suffix = array_pop($parts);  // remove the suffix
+			}
+
+			// Reverse traverse to find compound surname starting from the end
+			$last_name_parts = [];
+			while (!empty($parts) && (count($last_name_parts) === 0 || in_array(strtolower(end($parts)), $compound_surname_prefixes))) {
+				array_unshift($last_name_parts, array_pop($parts));
+			}
+			$last_name = implode(' ', $last_name_parts);
+
+			// Remaining words are the middle name
+			$middle_name = implode(' ', array_slice($parts, 1));
+		} elseif (count($parts) === 2) {
+			$last_name = $parts[1];  // standard first + last name case
+		}
+
+		return (object) [
+			'first' => $first_name,
+			'middle' => $middle_name,
+			'last' => $last_name,
+			'suffix' => $suffix,
+			'first_name' => $first_name . ($middle_name ? ' '. $middle_name : ''),
+			'last_name' => $last_name . ($suffix ? ' '. $suffix : ''),
+		];
+	}
+
+	/**
 	 * Unicode compatible version of the native PHP function str_pad()
 	 *
 	 * @see https://stackoverflow.com/a/27194169/2404541

@@ -36,6 +36,23 @@ final class formatTest extends TestCase {
 		$this->assertSame('John Doe', format::fix_wrong_title_case('JOhn doe', 30));
 	}
 
+	public function testSplitPersonName() {
+		$names = [
+			'John Doe' =>                    (object) ['first' => 'John',     'middle' => null,      'last' => 'Doe',           'suffix' => null,  'first_name' => 'John',             'last_name' => 'Doe'],
+			'Jane Ann Smith' =>              (object) ['first' => 'Jane',     'middle' => 'Ann',     'last' => 'Smith',         'suffix' => null,  'first_name' => 'Jane Ann',         'last_name' => 'Smith'],
+			'Carlos Miguel de la Cruz' =>    (object) ['first' => 'Carlos',   'middle' => 'Miguel',  'last' => 'de la Cruz',    'suffix' => null,  'first_name' => 'Carlos Miguel',    'last_name' => 'de la Cruz'],
+			'Marie van Beethoven' =>         (object) ['first' => 'Marie',    'middle' => null,      'last' => 'van Beethoven', 'suffix' => null,  'first_name' => 'Marie',            'last_name' => 'van Beethoven'],
+			'Leonardo da Vinci' =>           (object) ['first' => 'Leonardo', 'middle' => null,      'last' => 'da Vinci',      'suffix' => null,  'first_name' => 'Leonardo',         'last_name' => 'da Vinci'],
+			'Wolfgang Amadeus Mozart Jr.' => (object) ['first' => 'Wolfgang', 'middle' => 'Amadeus', 'last' => 'Mozart',        'suffix' => 'Jr.', 'first_name' => 'Wolfgang Amadeus', 'last_name' => 'Mozart Jr.'],
+			'William Henry Gates III' =>     (object) ['first' => 'William',  'middle' => 'Henry',   'last' => 'Gates',         'suffix' => 'III', 'first_name' => 'William Henry',    'last_name' => 'Gates III'],
+			'James Brown Sr' =>              (object) ['first' => 'James',    'middle' => null,      'last' => 'Brown',         'suffix' => 'Sr',  'first_name' => 'James',            'last_name' => 'Brown Sr'],
+		];
+
+		foreach ($names as $fullname => $expected) {
+			$this->assertEquals($expected, format::split_person_name($fullname));
+		}
+	}
+
 	public function testMbStrPad() {
 		$this->assertSame('BAAZ😃😃😃😃😃😃', format::mb_str_pad('BAAZ', 10, '😃'));
 		$this->assertSame('BAAZàèòàèò', format::mb_str_pad('BAAZ', 10, 'àèò'));
