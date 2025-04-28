@@ -465,6 +465,11 @@ THIS DOESN'T WORK YET. IT EXECUTES BUT NOT IN THE BACKGROUND. USING output_file 
 			}
 		}, $message);
 
+		// Make first letter after color upper-case
+		$message = preg_replace_callback("/^([^:]+:\\s)(\\w)/", function($matches) {
+			return $matches[1] . ucfirst($matches[2]);
+		}, $message);
+
 		$message = trim($message);
 
 		// Extra stuff
