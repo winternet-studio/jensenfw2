@@ -59,11 +59,11 @@ class currency {
 			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 			$xmlStr = curl_exec($ch);
 			try {
+				$from_rate = $to_rate = false;
 				$xml = simplexml_load_string($xmlStr);
 				if ($xml === false) {
 					//use fallback below
 				} else {
-					$from_rate = $to_rate = false;
 					if ($from_currency == 'EUR') $from_rate = 1;
 					if ($to_currency == 'EUR') $to_rate = 1;
 					$json = json_decode(json_encode($xml), true);
