@@ -22,15 +22,28 @@ class database {
 			'columns' => [],
 		];
 
-		if ($information_schema_output) {
-			$columns = $information_schema_output;
+		if ($options['information_schema_output'] ?? null) {
+			$columns = $options['information_schema_output'];
 		} else {
-			core::require_database($options['server_id'] ?? 0);
-			if (empty($options['database'])) {
-				$options['database'] = core::get_default_database_name($options['server_id'] ?? 0);
+			$sql = "SELECT * FROM information_schema.columns WHERE table_schema = :dbname AND table_name = :tblname";
+			// $sql = "DESCRIBE `". str_replace('`', '', $table) ."`";  //doesn't provide enough details (eg. missing comment - but is also harder to parse)
+			if (@defined('YII_BEGIN_TIME')) {
+				// Using Yii framework
+				if (empty($options['database'])) {
+					if (preg_match("/dbname=([^;]*)/", \Yii::$app->db->dsn, $matches)) {
+						$options['database'] = $matches[1];
+					} else {
+						core::system_error('Could not determine default database name. Please set it specifically.');
+					}
+				}
+				$columns = \Yii::$app->db->createCommand($sql, ['dbname' => $options['database'], 'tblname' => $table])->queryAll();
+			} else {
+				core::require_database($options['server_id'] ?? 0);
+				if (empty($options['database'])) {
+					$options['database'] = core::get_default_database_name($options['server_id'] ?? 0);
+				}
+				$columns = core::database_result(core::prepare_sql($sql, ['dbname' => $options['database'], 'tblname' => $table], ':'));
 			}
-			$columns = core::database_result(core::prepare_sql("SELECT * FROM information_schema.columns WHERE table_schema = ?dbname AND table_name = ?tblname", ['dbname' => $options['database'], 'tblname' => $table]));
-			// $columns = core::database_result("DESCRIBE `". str_replace('`', '', $table) ."`");  //doesn't provide enough details (eg. missing comment - but is also harder to parse)
 		}
 
 		foreach ($columns as $column) {
