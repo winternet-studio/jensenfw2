@@ -805,17 +805,25 @@ class HttpRequestException extends \Exception {
 	/**
 	 * @var string
 	 */
-	public $response;
+	protected $response;
 
 	/**
 	 * @var array
 	 */
-	public $transferInfo;
+	protected $transferInfo;
 
 	public function __construct($message = '', $code = 0, $response = null, $transferInfo = null, $previous = null) {
 		$this->response = $response;
 		$this->transferInfo = $transferInfo;
 		parent::__construct($message, $code, $previous);
+	}
+
+	public function getResponse() {
+		return $this->response;
+	}
+
+	public function getTransferInfo() {
+		return $this->transferInfo;
 	}
 
 }
