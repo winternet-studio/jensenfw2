@@ -411,18 +411,18 @@ class dump {
 	----------------------------------------------------------------------*/
 
 	function is_query($input) {
-		if (!$input) return false;
-
-		$matches[] = '/^SELECT.*FROM.*/is';
-		$matches[] = '/^INSERT INTO.*VALUES.*/is';
-		$matches[] = '/^UPDATE.*SET.*/is';
-		$matches[] = '/^DELETE FROM.*WHERE.*/is';
-
 		$result = false;
 
-		foreach ($matches as $key => $value) {
-			if (!$result)
-				$result = preg_match($value, trim($input));
+		if (is_string($input)) {
+			$matches[] = '/^SELECT.*FROM.*/is';
+			$matches[] = '/^INSERT INTO.*VALUES.*/is';
+			$matches[] = '/^UPDATE.*SET.*/is';
+			$matches[] = '/^DELETE FROM.*WHERE.*/is';
+			foreach ($matches as $key => $value) {
+				if (!$result) {
+					$result = preg_match($value, trim($input));
+				}
+			}
 		}
 
 		return $result;
