@@ -24,12 +24,12 @@ class network {
 	 *
 	 * @param array|string $data : Usually an array of data, but can also be a string
 	 * @param array $options : Available options:
-	 *   - `headers`
-	 *   - `send_json` : set true to indicate that request body should be JSON
-	 *   - `curl_options`
-	 *   - `debug`
-	 *   - `parse_json` : set a truthy value to parse response as JSON to an array, or set string `object` to parse to an object.
-	 *   - `return_all` : set a truthy value to return object with all headers, bodies, etc. Set string `force` to return normally instead of throwing exception when HTTP response code is >=400.
+	 *   - `headers` : array with keys being header name and values being the header's value
+	 *   - `send_json` : set truthy value to indicate that request body should be JSON
+	 *   - `curl_options` : array with keys being the curl option constant and values being the option's value
+	 *   - `debug` : set truthy value to log all requests to `last-curl-request.log` in this folder
+	 *   - `parse_json` : set truthy value to parse response as JSON to an array, or set string `object` to parse to an object.
+	 *   - `return_all` : set truthy value to return object with all headers, bodies, etc. Set string `force` to return normally instead of throwing exception when HTTP response code is >=400.
 	 *
 	 * @throws HttpRequestException
 	 * @return string|object
