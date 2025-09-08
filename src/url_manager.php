@@ -30,7 +30,7 @@ namespace winternet\jensenfw2;
  *
  * Within the destination script you can use these calls:
  *
- * - `url_manager::instance()->get_param()`
+ * - `url_manager::param()`
  * - `url_manager::uri()`
  */
 class url_manager {
@@ -193,7 +193,7 @@ class url_manager {
 }
 
 /*
-// file_put_contents('url_manager.log', date('Y-m-d H:i:s') ."\t". $_SERVER['REMOTE_ADDR'] ."\t". $_SERVER['REQUEST_URI'] ."\r\n", FILE_APPEND);
+// file_put_contents('url_manager.log', date('Y-m-d H:i:sO') ."\t". $_SERVER['REMOTE_ADDR'] ."\t". $_SERVER['REQUEST_URI'] ."\n", FILE_APPEND);
 
 SPECIAL EXAMPLES to maybe take ideas from:
 } elseif (preg_match("|^get-tunnel-cmd|", $uri, $match)) { //SSH tunnel
@@ -227,8 +227,8 @@ setTimeout(function() {
 }
 
 function logentry_misc($operation = false) {
-	$operation = date('Y-m-d H:i') ."\t". $_SERVER['REMOTE_ADDR'] ."\t". $operation ."\t". $_SERVER['HTTP_REFERER'] ."\t". $_SERVER['HTTP_USER_AGENT'] ."\t". $_SESSION['QUERY_STRING'];
+	$operation = date('Y-m-d H:iO') ."\t". $_SERVER['REMOTE_ADDR'] ."\t". $operation ."\t". $_SERVER['HTTP_REFERER'] ."\t". $_SERVER['HTTP_USER_AGENT'] ."\t". $_SESSION['QUERY_STRING'];
 	$fp = fopen('visits_special.log', 'a');
-	fwrite($fp, $operation ."\r\n");
+	fwrite($fp, $operation ."\n");
 }
 */
