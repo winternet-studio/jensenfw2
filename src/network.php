@@ -733,7 +733,7 @@ class network {
 			if (@$options['return_status']) {
 				return 'prohibit';
 			} else {
-				core::system_error($err_msg, ['Resource' => $resource_id, 'Variation key' => $options['variation_key'], 'Time period' => $timeperiod .' '. $timeperiod_unit, 'Allowed hits' => $allowed_hits, 'Actual hits' => $actual_hits]);
+				core::system_error($err_msg, ['Resource' => $resource_id, 'Variation key' => @$options['variation_key'], 'Time period' => $timeperiod .' '. $timeperiod_unit, 'Allowed hits' => $allowed_hits, 'Actual hits' => $actual_hits]);
 			}
 		}
 
