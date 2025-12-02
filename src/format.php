@@ -336,8 +336,8 @@ class format {
 
 		// Handling names with more than two words
 		if (count($parts) > 2) {
-		    // List of common surname prefixes (compound last names)
-		    $compound_surname_prefixes = ['de', 'van', 'von', 'del', 'di', 'da', 'le', 'la'];
+			// List of common surname prefixes (compound last names)
+			$compound_surname_prefixes = ['de', 'van', 'von', 'del', 'di', 'da', 'le', 'la'];
 
 			// Check if last part is a known suffix (including versions without a dot)
 			if (in_array(end($parts), $suffixes)) {
@@ -490,11 +490,11 @@ class format {
 		return $output;
 	}
 
-    /**
-     * Extract tags, which might be nested, from a string
-     *
-     * Example: `This is a {leftOrRight,select,left{left} right{right}} page` becomes:
-     * ```
+	/**
+	 * Extract tags, which might be nested, from a string
+	 *
+	 * Example: `This is a {leftOrRight,select,left{left} right{right}} page` becomes:
+	 * ```
 	 * [
 	 *   "This is a ",
 	 *   [
@@ -504,20 +504,20 @@ class format {
 	 *   ],
 	 *   " page"
 	 * ]
-     * ```
-     *
+	 * ```
+	 *
 	 * Originally copied from Yii2 \yii\i18n\MessageFormatter::tokenizePattern()
 	 *
-     * @param string $pattern : Pattern to tokenize
-     * @param array $options : Available options
-     *   - `open` : character designating tag open. Default is `{`
-     *   - `close` : character designating tag close. Default is `}`
-     *   - `field_separator` : character separating the fields in a tag. Default is `,`. Set to false to not split string into fields.
-     *   - `recursive` : set true to parse nested tags as well
-     *   - `charset` : character set to use. Default is `UTF-8`
-     *
-     * @return array|boolean : Array of tokens, or false on failure
-     */
+	 * @param string $pattern : Pattern to tokenize
+	 * @param array $options : Available options
+	 *   - `open` : character designating tag open. Default is `{`
+	 *   - `close` : character designating tag close. Default is `}`
+	 *   - `field_separator` : character separating the fields in a tag. Default is `,`. Set to false to not split string into fields.
+	 *   - `recursive` : set true to parse nested tags as well
+	 *   - `charset` : character set to use. Default is `UTF-8`
+	 *
+	 * @return array|boolean : Array of tokens, or false on failure
+	 */
 	public static function extract_tags($pattern, $options = []) {
 		$defaults = [
 			'open' => '{',
