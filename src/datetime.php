@@ -850,7 +850,7 @@ class datetime {
 	 * @param DateTime $as_of_date : Specify as of which date if not current date/time
 	 * @return array : Object with properties being a DateTime object (only the date is relevant, not the time)
 	 */
-	public static function get_previous_period_dates($period, \DateTime $as_of_date = null) {
+	public static function get_previous_period_dates($period, ?\DateTime $as_of_date = null) {
 		if (!$as_of_date) {
 			$as_of_date = new \DateTimeImmutable('today');
 		} elseif (!($as_of_date instanceof \DateTimeImmutable)) {

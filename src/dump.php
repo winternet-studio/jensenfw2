@@ -805,15 +805,15 @@ class dump {
 
 		switch($type) {
 
-			case 'string';
+			case 'string':
 				$subType = $this->subTypeString($input);
 				break;
 
-			case 'integer';
+			case 'integer':
 				$subType = $this->subTypeInteger($input);
 				break;
 
-			case 'boolean';
+			case 'boolean':
 				if($input)
 					$input = 'True';
 				else
@@ -821,11 +821,11 @@ class dump {
 				$class .= ' '.strtolower($input);
 				break;
 
-			case 'null';
+			case 'null':
 				$input = 'null';
 				break;
 
-			case 'other';
+			case 'other':
 				ob_start();
 					var_dump($input);
 					$input = ob_get_contents();
