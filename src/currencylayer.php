@@ -26,7 +26,7 @@ class currencylayer {
 		$ch = curl_init($url);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		$json = curl_exec($ch);
-		curl_close($ch);
+		unset($ch);
 
 		$output = [
 			'exch_rates' => json_decode($json, true),

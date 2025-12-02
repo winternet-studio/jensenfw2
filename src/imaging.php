@@ -349,8 +349,8 @@ class imaging {
 				} else {
 					$err_msg[] = 'Output file extension '. $dest_ext .' is not supported.';
 				}
-				imagedestroy($img_src);
-				imagedestroy($img_dst);
+				$img_src = null;
+				$img_dst = null;
 			}
 		}
 

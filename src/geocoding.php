@@ -339,7 +339,7 @@ class geocoding {
 				}
 			}
 
-			curl_close($ch);
+			unset($ch);
 
 			if (!$skip_database && $country_iso) {
 				$sql = "REPLACE INTO ". $tablename ." SET maxmipctry_ip = '". core::sql_esc($ip) ."', maxmipctry_country_iso = '". core::sql_esc($country_iso) ."', maxmipctry_continent = '". core::sql_esc($continent_code) ."'";

@@ -220,7 +220,7 @@ class system_administration {
 						echo '   (Failed URL POSTING)';
 						$this->notify_error('Backup made but it could not be POSTed to the URL'. PHP_EOL . PHP_EOL . print_r($transfer_info, true) . PHP_EOL . ($curl_errno ? $curl_errno .': '. $curl_error : '') . PHP_EOL . PHP_EOL . $response);
 					}
-					curl_close($ch);
+					unset($ch);
 				}
 			}
 		}
@@ -607,7 +607,7 @@ class system_administration {
 			echo '<div class="alert alert-danger">cURL info:<pre>'. json_encode(curl_getinfo($ch), JSON_PRETTY_PRINT) .'</pre></div>';
 		}
 
-		curl_close($ch);
+		unset($ch);
 
 		$link = $this->connect_database($options);
 

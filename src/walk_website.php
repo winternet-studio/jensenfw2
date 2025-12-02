@@ -76,7 +76,7 @@ class walk_website {
 		}
 	}
 	public function __destruct() {
-		curl_close($this->ch);
+		unset($this->ch);
 	}
 
 	protected function fetch_page_oldformat($url, $arr_post_variables = [], $raw_post = false, $extraheaders = false) {

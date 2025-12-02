@@ -217,7 +217,7 @@ class network {
 		}
 
 		$response = curl_exec($ch);
-		curl_close($ch);
+		unset($ch);
 		return $response;
 	}
 
@@ -232,7 +232,7 @@ class network {
 		curl_setopt($ch, CURLOPT_NOBODY, true);
 		curl_exec($ch);
 		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		curl_close($ch);
+		unset($ch);
 		// $http_code >= 400 -> not found, $http_code = 200 -> found.
 		if ($http_code >= 400) {
 			return false;
