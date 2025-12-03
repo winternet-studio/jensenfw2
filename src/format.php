@@ -9,21 +9,48 @@ class format {
 	/**
 	 * Convert HTML to plain text
 	 */
-	public static function html_to_text($html, $extract_urls = true) {
+	public static function html_to_text($html, $options = []) {
+		if (!is_array($options)) {
+			// Backward compatibility for when second argument was just $extract_urls with default of true (changed 2025-12)
+			$options = ['extract_urls' => $options];
+		}
+		$options = array_merge([
+			'extract_urls' => true,
+			'collapse_html_whitespace' => false,
+			'remove_multiple_spaces' => false,
+		], $options);
+
 		$text = $html;
-		$text = html_entity_decode($text);  //reverse HTML entities
+		if (!empty($options['collapse_html_whitespace'])) {
+			$text = trim($text);
+			$text = preg_replace_callback('/>(.*?)</s', function($matches) {
+				// $matches[1] = content between tags
+				$content = trim($matches[1], " \t");
+				return '>'. $content .'<';
+			}, $text);
+		}
+		$text = html_entity_decode($text, ENT_QUOTES|ENT_HTML5, 'UTF-8');  //reverse HTML entities
 		$text = str_replace("\r", '', $text);  //first remove all newlines (source is text and therefore newlines are not considered)
 		$text = str_replace("\n", '', $text);
-		$text = str_replace('<br/>', "\r\n", $text);  //then convert the real newlines (<br/> tags) to actual newlines
+		$text = str_replace('<!--PLAINTEXT:br-->', "\r\n", $text);  //special tag that can be used to indicate a line-break
+		$text = preg_replace('#<br\s*/?>#i', "\n", $text);  //then convert the real newlines (<br> tags) to actual newlines
 		$text = str_replace('<p'  , "\r\n\r\n<p", $text);
-		if ($extract_urls) {  //could be improved to only extract it when it's not already in the visible text
+		if (!empty($options['extract_urls'])) {  //could be improved to only extract it when it's not already in the visible text
 			$search = "|(href=\"(.*)\".*>)(.*)</a>|siU". core::$preg_u;
 			$replace = "\\1\\3 (\\2)";
 			$text = preg_replace($search, $replace, $text);
 			$text = str_replace('mailto:', '', $text);
 		}
 		$text = strip_tags($text);  //strip all other tags
-		$text = str_replace("\r\n\r\n\r\n\r\n", "\r\n\r\n", $text);  //remove exceeding amounts of newlines
+		$text = preg_replace("/(\r?\n){3,}/", "\r\n\r\n", $text);  //remove excess amounts of newlines
+		if (!empty($options['trim_lines'])) {
+			// Trim each line
+			$text = implode("\r\n", array_map('trim', explode("\r\n", $text)));
+		}
+		if (!empty($options['remove_multiple_spaces'])) {
+			// Collapse multiple spaces/tabs into single space
+			$text = preg_replace('/[ \t]+/', ' ', $text);
+		}
 		$text = trim($text);
 		if (0) {  //for debugging
 			$text = str_replace("\r", '\r', $text);
