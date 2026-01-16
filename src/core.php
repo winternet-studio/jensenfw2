@@ -1253,6 +1253,7 @@ class core {
 	 * @param array $options : Options available:
 	 *	- `querystring_only` : only generate the query string (excluding path and `?`)
 	 *	- `varname` : use this name for the query string variable containing one-time values (instead of the default `1`)
+	 *	- `keep` : set `none` to remove all, or array with list of variables to keep
 	 * @return string : URL
 	 */
 	public static function page_url($array = [], $options = []) {
@@ -1269,6 +1270,21 @@ class core {
 
 		$qs = $_GET;
 
+		// Handle "keep" option: array = keep these, anything else truthy = remove all
+		if (!empty($options)) {
+			if (is_array($options['keep'])) {
+				$keep_list = $options['keep'];
+				foreach ($qs as $key => $val) {
+					if (!in_array($key, $keep_list)) {
+						unset($qs[$key]);
+					}
+				}
+			} else {
+				$qs = [];
+			}
+		}
+
+		// Remove one-time variables from previous request
 		if (@$qs[$onetime_varname]) {
 			foreach (explode('.', $qs[$onetime_varname]) as $onetimevar) {
 				unset($qs[$onetimevar]);
