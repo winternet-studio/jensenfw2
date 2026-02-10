@@ -152,6 +152,7 @@ class logging {
 		$fields = array_keys($array);
 
 		$table_name = str_replace('`', '', $table_name);
+		$date_added_column = $options['date_added_column'] ?? 'date_added';
 
 		if (false && @defined('YII_BEGIN_TIME')) {
 			throw new \Exception('The Yii method has not yet been implemented.');
@@ -173,7 +174,7 @@ class logging {
 			if (!$table_found) {
 				$create_tableSQL = "CREATE TABLE `". $table_name ."` (
 					`logID` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-					`date_added` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+					`". $date_added_column ."` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 					PRIMARY KEY (`logID`)
 				)";
 				core::database_result(['server_id' => $cfg['db_server_id'], $create_tableSQL], false, 'Database query failed for creating logging table.');
@@ -206,7 +207,7 @@ class logging {
 
 			$insertSQL = "INSERT INTO `". $table_name ."` SET ";
 			if (!@$options['use_db_timezone']) {
-				$insertSQL .= "date_added = UTC_TIMESTAMP(), ";
+				$insertSQL .= "`". $date_added_column ."` = UTC_TIMESTAMP(), ";
 			}
 			$insert_params = [];
 			$counter = 0;
