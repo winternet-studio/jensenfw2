@@ -1,6 +1,5 @@
 <?php
 use PHPUnit\Framework\TestCase;
-use DMS\PHPUnitExtensions\ArraySubset\Assert;
 use winternet\jensenfw2\walk_website;
 
 final class walk_websiteTest extends TestCase {
@@ -37,7 +36,7 @@ final class walk_websiteTest extends TestCase {
 		];
 
 		$result = $walk->get_form_details($html_forms);
-		Assert::assertArraySubset($result, $firstForm, true);
+		$this->assertArraySubsetCompatible($result, $firstForm);
 
 
 		$secondForm = [
@@ -55,20 +54,32 @@ final class walk_websiteTest extends TestCase {
 		];
 
 		$result = $walk->get_form_details($html_forms, 2);
-		Assert::assertArraySubset($result, $secondForm, true);
+		$this->assertArraySubsetCompatible($result, $secondForm);
 
 		$result = $walk->get_form_details($html_forms, ['name' => 'form2']);
-		Assert::assertArraySubset($result, $secondForm, true);
+		$this->assertArraySubsetCompatible($result, $secondForm);
 
 		$result = $walk->get_form_details($html_forms, ['id' => 'formid2']);
-		Assert::assertArraySubset($result, $secondForm, true);
+		$this->assertArraySubsetCompatible($result, $secondForm);
 
 
 		$allFormFields = array_merge($firstForm['formfields'], $secondForm['formfields']);
 
 		$result = $walk->get_form_details($html_forms, '*');
-		Assert::assertArraySubset($result, [
+		$this->assertArraySubsetCompatible($result, [
 			'formfields' => $allFormFields,
-		], true);
+		]);
+	}
+
+	public function assertArraySubsetCompatible($subset, $array) {
+		foreach ($subset as $key => $value) {
+			$this->assertArrayHasKey($key, $array);
+			if (is_array($value)) {
+				$this->assertIsArray($array[$key]);
+				$this->assertArraySubsetCompatible($value, $array[$key]);
+			} else {
+				$this->assertSame($value, $array[$key]);
+			}
+		}
 	}
 }

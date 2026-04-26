@@ -13,9 +13,9 @@
         "php": ">=5.3.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "9",
-        "dms/phpunit-arraysubset-asserts": "dev-master"
+        "phpunit/phpunit": "^12.0"
     },
+    "prefer-stable": true,
     "autoload": {
         "psr-4": {
             "winternet\\jensenfw2\\": "src/"
