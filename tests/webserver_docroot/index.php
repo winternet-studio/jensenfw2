@@ -16,6 +16,21 @@ if (!empty(apache_request_headers()['Content-Type'])) {
 		echo 'JSONINPUT='. file_get_contents('php://input');
 	}
 }
+if (isset($_GET['retry_failures'])) {
+	$retryKey = preg_replace('/[^a-z0-9_-]/i', '_', @$_GET['retry_key'] ?: 'default');
+	$counterFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'jensenfw2_http_retry_' . $retryKey;
+	$attempt = (is_file($counterFile) ? (int) file_get_contents($counterFile) : 0) + 1;
+	file_put_contents($counterFile, (string) $attempt);
+
+	header('Content-Type: application/json');
+	if ($attempt <= (int) $_GET['retry_failures']) {
+		http_response_code(500);
+		echo json_encode(['attempt' => $attempt, 'ok' => false]);
+	} else {
+		echo json_encode(['attempt' => $attempt, 'ok' => true]);
+	}
+	exit;
+}
 if (!empty($_GET['return_json'])) {
 	header('Content-Type: application/json');
 	echo json_encode(['someproperty' => 'somevalue']);

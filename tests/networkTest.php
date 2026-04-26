@@ -105,4 +105,32 @@ final class networkTest extends TestCase {
 		$this->assertEquals('Important Value', $response->request->headers['my-own-header']);
 		$this->assertEquals('application/json', $response->response->headers['content-type']);
 	}
+
+	public function testHttpRequestRetriesFailedResponses() {
+		if (!$this->isWebServerRunning()) {
+			$this->markTestSkipped('Webserver is not running. See README.md.');
+		}
+
+		$retryKey = 'retry_' . getmypid() . '_' . str_replace('.', '_', uniqid('', true));
+		$counterFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'jensenfw2_http_retry_' . $retryKey;
+		@unlink($counterFile);
+
+		try {
+			$started = microtime(true);
+			$response = network::http_request('GET', 'http://'. static::$host .':'. static::$port .'/index.php', [
+				'retry_failures' => '2',
+				'retry_key' => $retryKey,
+			], [
+				'parse_json' => true,
+				'retries' => 2,
+				'retry_delay_ms' => 50,
+			]);
+
+			$this->assertEquals(['attempt' => 3, 'ok' => true], $response);
+			$this->assertSame('3', file_get_contents($counterFile));
+			$this->assertGreaterThanOrEqual(0.1, microtime(true) - $started);
+		} finally {
+			@unlink($counterFile);
+		}
+	}
 }

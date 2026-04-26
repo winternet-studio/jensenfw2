@@ -30,6 +30,8 @@ class network {
 	 *   - `debug` : set truthy value to log all requests to `last-curl-request.log` in this folder
 	 *   - `parse_json` : set truthy value to parse response as JSON to an array, or set string `object` to parse to an object.
 	 *   - `return_all` : set truthy value to return object with all headers, bodies, etc. Set string `force` to return normally instead of throwing exception when HTTP response code is >=400.
+	 *   - `retries` : number of times to retry the request after a failure before throwing exception. Default 0.
+	 *   - `retry_delay_ms` : milliseconds to wait before each retry when `retries` is used (1000 ms = 1 sec). Default 0.
 	 *
 	 * @throws HttpRequestException
 	 * @return string|object
@@ -92,19 +94,31 @@ class network {
 			curl_setopt(static::$curl, CURLINFO_HEADER_OUT, true);  //request headers
 			curl_setopt(static::$curl, CURLOPT_HEADER, true);  //response headers
 		}
-		$rsp = curl_exec(static::$curl);
-		$transfer_info = curl_getinfo(static::$curl);
-		if (@$options['debug'] || @$options['return_all']) {
-			$requestHeaders = curl_getinfo(static::$curl, CURLINFO_HEADER_OUT);
-			$headerSize = curl_getinfo(static::$curl, CURLINFO_HEADER_SIZE);
-			$responseHeaders = substr($rsp, 0, $headerSize);
-			$rsp = substr($rsp, $headerSize);
-			if (@$options['debug']) {
-				file_put_contents(__DIR__ .'/last-curl-request.log', '--------'. gmdate('Y-m-d H:i:s') .' UTC ** '. $method .' '. $url . PHP_EOL . PHP_EOL .'REQUEST HEADERS:'. PHP_EOL . $requestHeaders . PHP_EOL . PHP_EOL .'REQUEST BODY:'. PHP_EOL . json_encode($data, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES) . PHP_EOL . PHP_EOL .'RESPONSE HEADERS:'. PHP_EOL . $responseHeaders . PHP_EOL . PHP_EOL .'RESPONSE BODY:'. PHP_EOL . $rsp . PHP_EOL);
+		$retries = max(0, (int) ($options['retries'] ?? 0));
+		$retry_delay_ms = max(0, (int) ($options['retry_delay_ms'] ?? 0));
+		$attempt = 0;
+		do {
+			$attempt++;
+			$rsp = curl_exec(static::$curl);
+			$transfer_info = curl_getinfo(static::$curl);
+			$curl_errno = curl_errno(static::$curl);
+			$curl_error = curl_error(static::$curl);
+			if (@$options['debug'] || @$options['return_all']) {
+				$requestHeaders = curl_getinfo(static::$curl, CURLINFO_HEADER_OUT);
+				$headerSize = curl_getinfo(static::$curl, CURLINFO_HEADER_SIZE);
+				$responseHeaders = substr($rsp, 0, $headerSize);
+				$rsp = substr($rsp, $headerSize);
+				if (@$options['debug']) {
+					file_put_contents(__DIR__ .'/last-curl-request.log', '--------'. gmdate('Y-m-d H:i:s') .' UTC ** '. $method .' '. $url . PHP_EOL . PHP_EOL .'REQUEST HEADERS:'. PHP_EOL . $requestHeaders . PHP_EOL . PHP_EOL .'REQUEST BODY:'. PHP_EOL . json_encode($data, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES) . PHP_EOL . PHP_EOL .'RESPONSE HEADERS:'. PHP_EOL . $responseHeaders . PHP_EOL . PHP_EOL .'RESPONSE BODY:'. PHP_EOL . $rsp . PHP_EOL);
+				}
 			}
-		}
-		if (curl_errno(static::$curl) || (@$options['return_all'] !== 'force' && $transfer_info['http_code'] >= 400)) {
-			throw new HttpRequestException('Request for fetching URL failed with HTTP code '. $transfer_info['http_code'] . (curl_error(static::$curl) ? ' and error message "'. curl_error(static::$curl) .'"' : '') .'.', $transfer_info['http_code'] ?? 1031, $rsp, $transfer_info);
+			$request_failed = ($curl_errno || (@$options['return_all'] !== 'force' && $transfer_info['http_code'] >= 400));
+			if ($request_failed && $attempt <= $retries && $retry_delay_ms > 0) {
+				usleep($retry_delay_ms * 1000);
+			}
+		} while ($request_failed && $attempt <= $retries);
+		if ($request_failed) {
+			throw new HttpRequestException('Request for fetching URL failed with HTTP code '. $transfer_info['http_code'] . ($curl_error ? ' and error message "'. $curl_error .'"' : '') .'.', $transfer_info['http_code'] ?? 1031, $rsp, $transfer_info);
 			// system_error('Request for fetching URL failed.', ['Req.info' => print_r($transfer_info, true), 'cURL error' => curl_error(static::$curl), 'cURL error no.' => curl_errno(static::$curl), 'Response body' => $rsp]);
 		}
 
