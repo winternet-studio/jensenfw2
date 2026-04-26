@@ -3,6 +3,26 @@ use PHPUnit\Framework\TestCase;
 use winternet\jensenfw2\filesystem;
  
 final class filesystemTest extends TestCase {
+	protected function setUp(): void {
+		$this->cleanupShortlivedTestFiles();
+	}
+
+	protected function tearDown(): void {
+		$this->cleanupShortlivedTestFiles();
+	}
+
+	private function cleanupShortlivedTestFiles(): void {
+		$path = dirname(__DIR__);
+		foreach ([
+			'temp-shortlived*',
+			$path .'/temp-expiring-file*',
+		] as $pattern) {
+			foreach (glob($pattern) ?: [] as $file) {
+				@unlink($file);
+			}
+		}
+	}
+
 	public function testSaveShortlivedFile() {
 
 		filesystem::cleanup_shortlived_files('./');
