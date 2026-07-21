@@ -598,7 +598,7 @@ class system_administration {
 		curl_setopt($ch, CURLOPT_POST, 1);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postfields));
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-		curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0 JensenFW2');  // Some firewalls might block request without a user agent
+		curl_setopt($ch, CURLOPT_USERAGENT, 'winternet.no JensenFW2');  // Some firewalls might block request without a user agent (Simply.com now rejects real browser user agents)
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 		curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 		$dump = curl_exec($ch);
