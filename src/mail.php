@@ -14,7 +14,7 @@ class mail {
 		$cfg['only_enforce_for_other_domains'] = true;  //True = the mailer will allow to use any email address for the above domain as actual sender, but always use the above address for any other domain. False = always use the above address (only effective if above is set)
 
 		// Alternative mailers
-		$cfg['use_mailer'] = false;  //Options: 'swiftmailer' or false (= using standard mail() function)
+		$cfg['use_mailer'] = false;  //Options: 'swiftmailer', 'url' or false (= using standard mail() function)
 
 		// Swift Mailer options
 		$cfg['swiftmailer_path'] = '';  //full path to composer autoload (if using composer), or the include file like this: '.../swift_required.php'
@@ -24,6 +24,26 @@ class mail {
 		$cfg['swift_pass'] = '';
 		$cfg['swift_encryption'] = false;  //'ssl', 'tls' or false (server must support the encryption if used - check with stream_get_transports() )
 		$cfg['swift_fail_log'] = false;  //file to which email addresses which fail will be logged (set to false to disable logging)
+
+		// URL mailer options (if 'use_mailer'='url'): instead of sending the email directly, its details are POSTed to a remote URL which is then responsible for actually sending it
+		$cfg['url_mailer_endpoint'] = false;  //URL to POST the email details to
+		$cfg['url_mailer_field_names'] = [  //POST field names to use, in case the remote script expects other names than these defaults
+			'subject' => 'subject',
+			'body' => 'body',
+			'isHtml' => 'isHtml',
+			'to' => 'to',
+			'toName' => 'toName',
+			'toHash' => 'toHash',
+			'cc' => 'cc',
+			'bcc' => 'bcc',
+			'replyTo' => 'replyTo',
+			'fromEmail' => 'fromEmail',
+			'fromName' => 'fromName',
+			'attachFiles' => 'attachFiles',
+		];
+		$cfg['url_mailer_extra_fields'] = [];  //additional constant POST fields to always send, eg. ['src' => 'my-app.php'] or ['skipFooter' => 1]
+		$cfg['url_mailer_to_hash_salt'] = false;  //if set, a `toHash` POST field is added with value hash('sha512', $to_email . this salt)
+		$cfg['url_mailer_curl_options'] = [];  //additional cURL options (as accepted by network::http_request()'s `curl_options`), eg. [CURLOPT_TIMEOUT => 10]
 
 		// Debugging options
 		$cfg['sending_enabled'] = true;  //the global variable $GLOBALS['always_send_email'] can be used to override a value of false here
@@ -239,6 +259,8 @@ class mail {
 			}
 		}
 
+		$success_recip_count = null;  //only set to an actual count when Swift Mailer is used
+
 		if ($cfg['sending_enabled'] || @$GLOBALS['always_send_email']) {
 
 			if ($cfg['use_mailer'] == 'swiftmailer') {
@@ -434,6 +456,167 @@ class mail {
 				unset($transport);
 				unset($headers);
 				unset($message);
+
+			} elseif ($cfg['use_mailer'] == 'url') {
+				//==============================================================================
+				//     URL mailer (POST the email details to a remote URL which sends the actual email)
+				//==============================================================================
+				if (!$cfg['url_mailer_endpoint']) {
+					core::system_error('Missing URL mailer endpoint configuration for sending email.');
+				}
+
+				$fields = $cfg['url_mailer_field_names'];
+
+				// Normalize recipients into a plain list (most URL mailer endpoints only accept one primary recipient per request, so we make one request per recipient)
+				$url_recipients = [];
+				if (!empty($arr_recipients_log)) {
+					foreach ($arr_recipients_log as $r) {
+						$r_email = key($r);
+						$url_recipients[] = ['email' => $r_email, 'name' => $r[$r_email]];
+					}
+				} else {
+					foreach ($arr_recipients as $r_email) {
+						$url_recipients[] = ['email' => $r_email, 'name' => ''];
+					}
+				}
+
+				// Prepare file attachments (base64-encoded, since they have to travel over HTTP POST)
+				$eff_attached_files = [];
+				$url_attach_files = [];
+				foreach ($options['attach_files'] as $attmfile) {
+					if (is_array($attmfile) && array_key_exists('filename', $attmfile) && array_key_exists('content', $attmfile)) {
+						if (!$attmfile['filename']) {
+							core::system_error('Missing file name for inline attached file.', ['File' => print_r($attmfile, true) ]);
+						}
+						$url_attach_files[] = ['name' => $attmfile['filename'], 'contentBase64' => base64_encode($attmfile['content'])];
+						$eff_attached_files[] = $attmfile['filename'];
+					} else {
+						$filename = basename($attmfile);
+						if (is_file($attmfile)) {
+							$url_attach_files[] = ['name' => $filename, 'contentBase64' => base64_encode(file_get_contents($attmfile))];
+							$eff_attached_files[] = $filename;
+						} else {
+							// Write in message that we could not find the file
+							$femailbody = "WARNING: The file ". $filename ." should have been attached to this mail but could not be found. Please contact sender if you need this file.\r\n\r\n". $femailbody;
+							if ($htmlbody) {
+								$htmlbody = "<p>WARNING: The file <b>". $filename ."</b> should have been attached to this mail but could not be found. Please contact sender if you need this file.</p>\r\n\r\n". $htmlbody;
+							}
+							$eff_attached_files[] = 'MISSING:'. $filename;
+						}
+					}
+				}
+
+				// Prepare CC/BCC as plain strings (for the POST fields as well as for later display/logging)
+				if (!empty($options['cc'])) {
+					if (is_string($options['cc'])) {
+						$str_cc =& $options['cc'];
+					} else {
+						$str_cc = [];
+						foreach ($options['cc'] as $ckey => $cvalue) {
+							$str_cc[] = is_numeric($ckey) ? $cvalue : '"'. $cvalue .'" <'. $ckey .'>';
+						}
+						$str_cc = implode(', ', $str_cc);
+					}
+				}
+				if (!empty($options['bcc'])) {
+					if (is_string($options['bcc'])) {
+						$str_bcc =& $options['bcc'];
+					} else {
+						$str_bcc = [];
+						foreach ($options['bcc'] as $ckey => $cvalue) {
+							$str_bcc[] = is_numeric($ckey) ? $cvalue : '"'. $cvalue .'" <'. $ckey .'>';
+						}
+						$str_bcc = implode(', ', $str_bcc);
+					}
+				}
+
+				// Make one request per recipient
+				$http_options = [];
+				if (!empty($cfg['url_mailer_curl_options'])) {
+					$http_options['curl_options'] = $cfg['url_mailer_curl_options'];
+				}
+
+				$url_mailer_responses = [];
+				$url_mailer_failed = false;
+				foreach ($url_recipients as $recip_index => $url_recip) {
+					$post_data = [];
+					$post_data[$fields['subject']] = $fsubj;
+					$post_data[$fields['body']] = ($htmlbody ?: $femailbody);
+					$post_data[$fields['isHtml']] = $htmlbody ? 1 : 0;
+					$post_data[$fields['to']] = $url_recip['email'];
+					if ($url_recip['name']) {
+						$post_data[$fields['toName']] = $url_recip['name'];
+					}
+					if ($cfg['url_mailer_to_hash_salt']) {
+						$post_data[$fields['toHash']] = hash('sha512', $url_recip['email'] . $cfg['url_mailer_to_hash_salt']);
+					}
+					// Since endpoint only accepts one main recipient per request, we only put CC/BCC on the first one in case there are multiple main recipients
+					if ($recip_index === 0) {
+						if (@$str_cc) {
+							$post_data[$fields['cc']] = $str_cc;
+						}
+						if (@$str_bcc) {
+							$post_data[$fields['bcc']] = $str_bcc;
+						}
+					}
+					if (isset($options['reply_to'])) {
+						$post_data[$fields['replyTo']] = $options['reply_to'];
+					}
+					$post_data[$fields['fromEmail']] = $fromemail;
+					if ($fromname) {
+						$post_data[$fields['fromName']] = $fromname;
+					}
+					if (!empty($url_attach_files)) {
+						$post_data[$fields['attachFiles']] = $url_attach_files;
+					}
+					foreach ($options['extra_headers'] as $cheader_name => $cheader_value) {
+						$post_data[$cheader_name] = $cheader_value;
+					}
+					if (!empty($cfg['url_mailer_extra_fields'])) {
+						$post_data = array_merge($post_data, $cfg['url_mailer_extra_fields']);
+					}
+
+					if (@$options['enable_debugging']) {
+						echo '<pre>';
+						echo 'URL mailer endpoint: '. htmlentities($cfg['url_mailer_endpoint']) ."\n";
+						echo 'POST data: '. htmlentities(print_r($post_data, true));
+						echo '</pre>';
+					}
+
+					try {
+						$response = network::http_request('POST', $cfg['url_mailer_endpoint'], $post_data, $http_options);
+					} catch (HttpRequestException $e) {
+						$response = $e->getResponse();
+						$url_mailer_failed = true;
+					}
+					$url_mailer_responses[] = $response;
+
+					$decoded = json_decode((string) $response, true);
+					if (is_array($decoded) && @$decoded['status'] == 'error') {
+						$url_mailer_failed = true;
+					}
+
+					if (@$options['enable_debugging']) {
+						echo '<pre>Response: '. htmlentities((string) $response) .'</pre>';
+					}
+				}
+				$mailresult = implode(' | ', $url_mailer_responses);
+
+				// Error handling
+				if ($url_mailer_failed) {
+					$log  = "=======================================\r\n";
+					$log .= date('Y-m-d H:i:s') .":\r\n\r\n";
+					$log .= implode("\r\n", $url_mailer_responses) ."\r\n\r\n";
+					$log .= 'Subj: '. $fsubj ."\r\n\r\n";
+					if ($cfg['call_url_on_error']) {
+						try {
+							network::http_request('POST', $cfg['call_url_on_error'], ['mailsubj' => 'Email error at '. @$_SERVER['HTTP_HOST'] . @$_SERVER['REQUEST_URI'], 'mailbody' => $log]);
+						} catch (HttpRequestException $e) {
+							// Ignore - we are already handling an error, don't want to risk an endless loop or additional noise if this notification also fails
+						}
+					}
+					core::system_error('Sorry, an error occured while trying to send the email.', ['Response' => $mailresult], ['xnotify' => false]);  //avoid endless loop
+				}
 
 			} else {
 				//==============================================================================
