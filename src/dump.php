@@ -24,6 +24,7 @@ Improvements added by WinterNet Studio (from http://www.reallyshiny.com/articles
 		Dump::var(input, return);
 		Dump::simple(input, return);
 		Dump::sql(input, return, expandFunctions);
+		Dump::json(input, return);
 
 	The Dump::sql() function will force SQL query output. The expandFunctions
 	argument will open up and indent all function brackets, when set to
@@ -63,6 +64,13 @@ class dump {
 		return $dump->dumpq($input, $return, $expandFunctions);
 	}
 
+	public static function json($input, $return = true) {
+		if ($return === null) $return = true;  //use default when set to null
+		if (($output = static::dump_cli_json($input)) !== false) return $output;
+		$dump = new static();
+		return $dump->dumpJson($input, $return);
+	}
+
 	/**
 	 * @param array $input : Array of arrays, or array of objects
 	 * @param array $options : Available options:
@@ -93,6 +101,16 @@ class dump {
 			$dump = preg_replace("/string\\((\\d+)\\) (\")(.*)(\")/", $indent ."$2\033[92m$3\033[0m$4 \033[90m$1\033[0m", $dump);
 			$footer = "\033[93m-----------------------------------------------------------------------------------------------\033[0m". PHP_EOL;
 			return $header . $dump . $footer;
+		}
+		return false;
+	}
+
+	public static function dump_cli_json($input) {
+		if (PHP_SAPI == 'cli') {
+			$header = "------------------------------------------------- ". str_pad(static::get_code_reference(false, true, 2) ." --- ". gmdate('H:i:s') ."z ", 38, '-') ."-------". PHP_EOL;
+			$json = json_encode($input, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . PHP_EOL;
+			$footer = "-----------------------------------------------------------------------------------------------". PHP_EOL;
+			return $header . $json . $footer;
 		}
 		return false;
 	}
@@ -202,6 +220,67 @@ class dump {
 		else
 			echo $output;
 
+	}
+
+	/*----------------------------------------------------------------------
+		dumpJson(variable) : JSON Output
+		Root function to output result as a pretty printed JSON structure.
+	----------------------------------------------------------------------*/
+
+	function dumpJson($input, $return = false) {
+
+		$output = '';
+		if (!$this->cssEchoed) {
+			$output .= $this->css();
+			$this->cssEchoed = true;
+		}
+
+		$json = json_encode($input, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+		$output .= '<div id="phpdump">'. static::get_code_reference(true, $return, 2);
+
+		$output .= '<table '. $this->tableAtts .' class="json">';
+		$output .= '<thead>';
+			$output .= '<tr class="json title">';
+				$output .= '<th><span>JSON</span></th>';
+			$output .= '</tr>';
+		$output .= '</thead>';
+		$output .= '<tbody>';
+			$output .= '<tr><td '. $this->tdAtts .'><pre>'. $this->syntaxHighlightJson($json) .'</pre></td></tr>';
+		$output .= '</tbody>';
+		$output .= '</table>';
+
+		$output .= '</div><div style="clear: both;"></div>';
+
+		if ($return) {
+			return $output;
+		} else {
+			echo $output;
+		}
+	}
+
+	/*----------------------------------------------------------------------
+		syntaxHighlightJson(json) : Simple color-code of a JSON string
+	----------------------------------------------------------------------*/
+
+	function syntaxHighlightJson($json) {
+		$json = str_replace(['&', '<', '>'], ['&amp;', '&lt;', '&gt;'], $json);  //don't use htmlentities() as it would also escape quotes needed for the regex below
+		return preg_replace_callback('/("(\\\\u[a-zA-Z0-9]{4}|\\\\[^u]|[^\\\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/', function ($matches) {
+			$match = $matches[0];
+			if ($match[0] === '"') {
+				preg_match('/^(".*")(\s*:)?$/s', $match, $parts);  //split off the trailing colon (if it's a key) from the quoted part
+				$class = !empty($parts[2]) ? 'json-key' : 'json-string';
+				$inner = substr($parts[1], 1, -1);  //strip the surrounding quotes, they get their own (gray) span below
+				return '<span class="json-quote">"</span><span class="'. $class .'">'. $inner .'</span><span class="json-quote">"</span>'. ($parts[2] ?? '');
+			} elseif (preg_match('/^(true|false)$/', $match)) {
+				$class = 'json-boolean';
+			} elseif ($match === 'null') {
+				$class = 'json-null';
+			} else {
+				$class = 'json-number';
+			}
+			return '<span class="'. $class .'">'. $match .'</span>';
+		}, $json);
 	}
 
 	function dumpTable($input, $return = false, $options = []) {
@@ -1175,6 +1254,46 @@ class dump {
 
 				div#phpdump table.stream tr.stream {
 					background-color: #883694;
+				}
+
+				/* JSON Formatting */
+
+				div#phpdump table.json {
+					border-color: #00897B;
+				}
+
+				div#phpdump table.json tr.json {
+					background-color: #00897B;
+				}
+
+				div#phpdump table.json pre {
+					font-family: Consolas, Monaco, "Courier New", monospace;
+				}
+
+				div#phpdump table.json span.json-quote {
+					color: #b0b0b0;
+				}
+
+				div#phpdump table.json span.json-key {
+					color: #828282;
+					font-weight: bold;
+				}
+
+				div#phpdump table.json span.json-string {
+					color: #067D17;
+				}
+
+				div#phpdump table.json span.json-number {
+					color: #1750EB;
+				}
+
+				div#phpdump table.json span.json-boolean {
+					color: #CC0000;
+					font-weight: bold;
+				}
+
+				div#phpdump table.json span.json-null {
+					color: #999999;
 				}
 
 				/* Query Formatting */
