@@ -10,7 +10,8 @@ class logging {
 		$cfg = [];
 
 		$corecfg = core::get_class_defaults('core');
-		$cfg['log_actions_db_name'] = $corecfg['databases'][1]['db_name'];
+		$cfg['db_server_id'] = 0;
+		$cfg['log_actions_db_name'] = $corecfg['databases'][1]['db_name'] ?? null;
 		$cfg['log_actions_db_table'] = 'log_actions';
 
 		return $cfg;
